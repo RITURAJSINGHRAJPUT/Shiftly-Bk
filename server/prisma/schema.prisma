@@ -1,0 +1,199 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  HR
+  MASTER_OF_HOUSE
+  HEAD_CHEF
+  STAFF
+}
+
+enum Department {
+  KITCHEN
+  SERVICE
+  HOUSEKEEPING
+}
+
+enum ShiftStatus {
+  ASSIGNED
+  COMPLETED
+  MISSED
+  SWAPPED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  CHECKED_IN
+  CHECKED_OUT
+  ABSENT
+  LATE
+  ON_LEAVE
+}
+
+enum LeaveType {
+  CASUAL
+  SICK
+  EARNED
+  EMERGENCY
+  UNPAID
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  COVERAGE_PENDING
+}
+
+enum NotificationType {
+  SHIFT_ASSIGNED
+  SHIFT_CHANGED
+  EMERGENCY_COVER_REQUEST
+  EMERGENCY_COVER_ACCEPTED
+  EMERGENCY_AUTO_ASSIGNED
+  LEAVE_APPROVED
+  LEAVE_REJECTED
+  ATTENDANCE_REMINDER
+  GENERAL
+}
+
+model Venue {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  address   String?
+  latitude  Float      @default(21.17)
+  longitude Float      @default(72.83)
+  radius    Int        @default(100)
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  employees Employee[]
+  shifts    Shift[]
+}
+
+model Employee {
+  id            String         @id @default(uuid())
+  employeeCode  String?        @unique
+  name          String
+  email         String?        @unique
+  phone         String?
+  password      String         @default("")
+  avatar        String?
+  role          Role           @default(STAFF)
+  department    Department
+  venueId       String
+  venue         Venue          @relation(fields: [venueId], references: [id])
+  skills        String[]       @default([])
+  isActive      Boolean        @default(true)
+  joinDate      DateTime       @default(now())
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  shifts        Shift[]
+  attendance    Attendance[]
+  leaves        Leave[]
+  notifications Notification[]
+
+  @@index([venueId])
+  @@index([department])
+  @@index([role])
+}
+
+model Shift {
+  id         String      @id @default(uuid())
+  date       DateTime
+  startTime  String
+  endTime    String
+  section    String?
+  status     ShiftStatus @default(ASSIGNED)
+  employeeId String
+  employee   Employee    @relation(fields: [employeeId], references: [id])
+  venueId    String
+  venue      Venue       @relation(fields: [venueId], references: [id])
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([date])
+  @@index([employeeId])
+  @@index([venueId])
+  @@index([date, venueId])
+}
+
+model Attendance {
+  id          String           @id @default(uuid())
+  employeeId  String
+  employee    Employee         @relation(fields: [employeeId], references: [id])
+  date        DateTime
+  checkIn     DateTime?
+  checkOut    DateTime?
+  checkInLat  Float?
+  checkInLng  Float?
+  checkOutLat Float?
+  checkOutLng Float?
+  withinRange Boolean          @default(false)
+  status      AttendanceStatus @default(ABSENT)
+  notes       String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([employeeId, date])
+  @@index([date])
+  @@index([employeeId])
+}
+
+model Leave {
+  id          String      @id @default(uuid())
+  employeeId  String
+  employee    Employee    @relation(fields: [employeeId], references: [id])
+  type        LeaveType
+  startDate   DateTime
+  endDate     DateTime
+  reason      String?
+  status      LeaveStatus @default(PENDING)
+  isEmergency Boolean     @default(false)
+  coveredById String?
+  expiresAt   DateTime?
+  approvedBy  String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([startDate, endDate])
+}
+
+model Notification {
+  id         String           @id @default(uuid())
+  employeeId String
+  employee   Employee         @relation(fields: [employeeId], references: [id])
+  type       NotificationType
+  title      String
+  message    String
+  isRead     Boolean          @default(false)
+  actionUrl  String?
+  actionData String?
+  expiresAt  DateTime?
+  createdAt  DateTime         @default(now())
+
+  @@index([employeeId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model ShiftTemplate {
+  id        String     @id @default(uuid())
+  name      String
+  startTime String
+  endTime   String
+  section   String?
+  department Department
+  createdAt DateTime   @default(now())
+}

@@ -1,0 +1,17 @@
+{
+  "short_name": "Shiftly",
+  "name": "Shiftly — Staffing CRM & Scheduler",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0a0a1a",
+  "theme_color": "#0a0a1a",
+  "display": "standalone",
+  "orientation": "portrait"
+}
