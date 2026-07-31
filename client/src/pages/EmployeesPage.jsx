@@ -1,51 +1,47 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../api/client';
 import Modal from '../components/Modal';
+import { useScope } from '../contexts/ScopeContext';
 import { Plus, Search, Filter, Edit, Trash2, X, PlusCircle } from 'lucide-react';
 
 export default function EmployeesPage() {
+  // Outlet filtering is driven by the top bar, so this page no longer carries
+  // its own outlet dropdown — two controls for one filter is a trap.
+  const { withScope, outlets, query } = useScope();
+
   const [employees, setEmployees] = useState([]);
-  const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterVenue, setFilterVenue] = useState('');
   const [filterDept, setFilterDept] = useState('');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [formData, setFormData] = useState({
-    name: '', email: '', phone: '', role: 'STAFF', department: 'KITCHEN', venueId: '', skills: [], password: ''
+    name: '', email: '', phone: '', role: 'STAFF', department: 'KITCHEN', outletId: '', skills: [], password: ''
   });
   const [newSkill, setNewSkill] = useState('');
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [empRes, venueRes] = await Promise.all([
-        api.get('/employees'),
-        api.get('/notifications/venues')
-      ]);
+      const empRes = await api.get(withScope('/employees?limit=500'));
       setEmployees(empRes.employees);
-      setVenues(venueRes);
-      if (venueRes.length > 0 && !formData.venueId) {
-        setFormData(prev => ({ ...prev, venueId: venueRes[0].id }));
-      }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [withScope]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleOpenAdd = () => {
     setEditingEmployee(null);
     setFormData({
-      name: '', email: '', phone: '', role: 'STAFF', department: 'KITCHEN', venueId: venues[0]?.id || '', skills: [], password: 'shiftly123'
+      name: '', email: '', phone: '', role: 'STAFF', department: 'KITCHEN', outletId: outlets[0]?.id || '', skills: [], password: 'shiftly123'
     });
     setIsModalOpen(true);
   };
@@ -58,7 +54,7 @@ export default function EmployeesPage() {
       phone: emp.phone || '',
       role: emp.role,
       department: emp.department,
-      venueId: emp.venueId,
+      outletId: emp.outletId,
       skills: emp.skills || []
     });
     setIsModalOpen(true);
@@ -109,9 +105,9 @@ export default function EmployeesPage() {
   const filtered = employees.filter(emp => {
     const matchesSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (emp.email && emp.email.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesVenue = !filterVenue || emp.venueId === filterVenue;
+    // Outlet scoping happens server-side via the top-bar selectors.
     const matchesDept = !filterDept || emp.department === filterDept;
-    return matchesSearch && matchesVenue && matchesDept;
+    return matchesSearch && matchesDept;
   });
 
   return (
@@ -119,7 +115,7 @@ export default function EmployeesPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Employee Directory</h1>
-          <p className="page-subtitle">Manage profiles, departments, venue assignments, and specialized culinary skills</p>
+          <p className="page-subtitle">Manage profiles, departments, outlet assignments, and specialized culinary skills</p>
         </div>
         <button className="btn btn-primary" onClick={handleOpenAdd}>
           <Plus size={16} />
@@ -141,30 +137,22 @@ export default function EmployeesPage() {
           </div>
 
           <div className="flex gap-2 items-center flex-wrap">
-            <Filter size={16} style={{ color: 'var(--text-muted)' }} />
+            <Filter size={16} className="icon-muted" />
             <select
               className="form-select"
-              style={{ width: 'auto', padding: '6px 12px' }}
-              value={filterVenue}
-              onChange={e => setFilterVenue(e.target.value)}
-            >
-              <option value="">All Venues</option>
-              {venues.map(v => (
-                <option key={v.id} value={v.id}>{v.name}</option>
-              ))}
-            </select>
-
-            <select
-              className="form-select"
-              style={{ width: 'auto', padding: '6px 12px' }}
+              style={{ width: 'auto' }}
               value={filterDept}
               onChange={e => setFilterDept(e.target.value)}
+              aria-label="Department"
             >
               <option value="">All Departments</option>
               <option value="KITCHEN">Kitchen</option>
               <option value="SERVICE">Service</option>
               <option value="HOUSEKEEPING">Housekeeping</option>
             </select>
+            {query && (
+              <span className="badge badge-primary">Outlet filter active</span>
+            )}
           </div>
         </div>
       </div>
@@ -178,7 +166,7 @@ export default function EmployeesPage() {
               <tr>
                 <th>Name</th>
                 <th>Department</th>
-                <th>Venue</th>
+                <th>Outlet</th>
                 <th>Role</th>
                 <th>Skills & Specialties</th>
                 <th>Actions</th>
@@ -188,7 +176,7 @@ export default function EmployeesPage() {
               {filtered.map(emp => (
                 <tr key={emp.id}>
                   <td>
-                    <div className="font-semibold text-primary" style={{ color: 'var(--text-primary)' }}>{emp.name}</div>
+                    <div className="font-semibold text-primary" style={{ color: 'var(--ink-strong)' }}>{emp.name}</div>
                     <div className="text-xs text-muted">{emp.email}</div>
                   </td>
                   <td>
@@ -196,7 +184,7 @@ export default function EmployeesPage() {
                       {emp.department}
                     </span>
                   </td>
-                  <td>{emp.venue?.name}</td>
+                  <td>{emp.outlet?.name}</td>
                   <td>{emp.role.replace(/_/g, ' ')}</td>
                   <td>
                     <div className="flex gap-1 flex-wrap">
@@ -281,13 +269,13 @@ export default function EmployeesPage() {
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">Venue</label>
+              <label className="form-label">Outlet</label>
               <select
                 className="form-select"
-                value={formData.venueId}
-                onChange={e => setFormData(prev => ({ ...prev, venueId: e.target.value }))}
+                value={formData.outletId}
+                onChange={e => setFormData(prev => ({ ...prev, outletId: e.target.value }))}
               >
-                {venues.map(v => (
+                {outlets.map(v => (
                   <option key={v.id} value={v.id}>{v.name}</option>
                 ))}
               </select>

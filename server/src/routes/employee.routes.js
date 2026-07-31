@@ -1,18 +1,20 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../db.js';
 import { authenticateToken, requireMinRole } from '../middleware/auth.js';
+import { outletScope, outletInclude } from '../lib/scope.js';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // GET /api/employees — list all employees (with filters)
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { venue, department, role, search, page = 1, limit = 50 } = req.query;
-    const where = { isActive: true };
+    const { department, role, search, page = 1, limit = 50 } = req.query;
 
-    if (venue) where.venueId = venue;
+    // outletScope() resolves ?org/?brand/?outlet and pins non-global roles to
+    // their own outlet, so it must be spread last.
+    const where = { isActive: true, ...outletScope(req) };
+
     if (department) where.department = department;
     if (role) where.role = role;
     if (search) {
@@ -22,15 +24,10 @@ router.get('/', authenticateToken, async (req, res) => {
       ];
     }
 
-    // Non-admin roles can only see their venue
-    if (!['SUPER_ADMIN', 'ADMIN', 'HR'].includes(req.user.role)) {
-      where.venueId = req.user.venueId;
-    }
-
     const [employees, total] = await Promise.all([
       prisma.employee.findMany({
         where,
-        include: { venue: true },
+        include: outletInclude,
         skip: (page - 1) * limit,
         take: parseInt(limit),
         orderBy: { name: 'asc' },
@@ -53,7 +50,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     const employee = await prisma.employee.findUnique({
       where: { id: req.params.id },
       include: {
-        venue: true,
+        ...outletInclude,
         shifts: { orderBy: { date: 'desc' }, take: 20 },
         attendance: { orderBy: { date: 'desc' }, take: 30 },
         leaves: { orderBy: { createdAt: 'desc' }, take: 10 },
@@ -72,7 +69,11 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // POST /api/employees — create employee
 router.post('/', authenticateToken, requireMinRole('HR'), async (req, res) => {
   try {
-    const { name, email, phone, role, department, venueId, skills, password } = req.body;
+    const { name, email, phone, role, department, outletId, skills, password } = req.body;
+
+    if (!name || !department || !outletId) {
+      return res.status(400).json({ error: 'name, department and outletId are required' });
+    }
 
     const hashedPassword = await bcrypt.hash(password || 'shiftly123', 10);
 
@@ -83,11 +84,11 @@ router.post('/', authenticateToken, requireMinRole('HR'), async (req, res) => {
         phone,
         role: role || 'STAFF',
         department,
-        venueId,
+        outletId,
         skills: skills || [],
         password: hashedPassword,
       },
-      include: { venue: true },
+      include: outletInclude,
     });
 
     const { password: _, ...sanitized } = employee;
@@ -103,7 +104,7 @@ router.post('/', authenticateToken, requireMinRole('HR'), async (req, res) => {
 // PUT /api/employees/:id
 router.put('/:id', authenticateToken, requireMinRole('HR'), async (req, res) => {
   try {
-    const { name, email, phone, role, department, venueId, skills, isActive } = req.body;
+    const { name, email, phone, role, department, outletId, skills, isActive } = req.body;
 
     const data = {};
     if (name !== undefined) data.name = name;
@@ -111,14 +112,14 @@ router.put('/:id', authenticateToken, requireMinRole('HR'), async (req, res) => 
     if (phone !== undefined) data.phone = phone;
     if (role !== undefined) data.role = role;
     if (department !== undefined) data.department = department;
-    if (venueId !== undefined) data.venueId = venueId;
+    if (outletId !== undefined) data.outletId = outletId;
     if (skills !== undefined) data.skills = skills;
     if (isActive !== undefined) data.isActive = isActive;
 
     const employee = await prisma.employee.update({
       where: { id: req.params.id },
       data,
-      include: { venue: true },
+      include: outletInclude,
     });
 
     const { password, ...sanitized } = employee;
@@ -144,19 +145,16 @@ router.delete('/:id', authenticateToken, requireMinRole('ADMIN'), async (req, re
 // GET /api/employees/stats/overview
 router.get('/stats/overview', authenticateToken, async (req, res) => {
   try {
-    const where = {};
-    if (!['SUPER_ADMIN', 'ADMIN', 'HR'].includes(req.user.role)) {
-      where.venueId = req.user.venueId;
-    }
+    const where = outletScope(req);
 
-    const [total, active, byDepartment, byVenue] = await Promise.all([
+    const [total, active, byDepartment, byOutlet] = await Promise.all([
       prisma.employee.count({ where: { ...where } }),
       prisma.employee.count({ where: { ...where, isActive: true } }),
       prisma.employee.groupBy({ by: ['department'], _count: true, where: { ...where, isActive: true } }),
-      prisma.employee.groupBy({ by: ['venueId'], _count: true, where: { ...where, isActive: true } }),
+      prisma.employee.groupBy({ by: ['outletId'], _count: true, where: { ...where, isActive: true } }),
     ]);
 
-    res.json({ total, active, byDepartment, byVenue });
+    res.json({ total, active, byDepartment, byOutlet });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

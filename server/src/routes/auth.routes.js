@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../db.js';
 import { generateToken, authenticateToken } from '../middleware/auth.js';
+import { outletInclude } from '../lib/scope.js';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
@@ -16,7 +16,7 @@ router.post('/login', async (req, res) => {
 
     const employee = await prisma.employee.findUnique({
       where: { email },
-      include: { venue: true },
+      include: outletInclude,
     });
 
     if (!employee) {
@@ -38,7 +38,8 @@ router.post('/login', async (req, res) => {
         email: employee.email,
         role: employee.role,
         department: employee.department,
-        venue: employee.venue,
+        outletId: employee.outletId,
+        outlet: employee.outlet,
         avatar: employee.avatar,
       },
     });
@@ -52,7 +53,7 @@ router.get('/me', authenticateToken, async (req, res) => {
   try {
     const employee = await prisma.employee.findUnique({
       where: { id: req.user.id },
-      include: { venue: true },
+      include: outletInclude,
     });
 
     if (!employee) return res.status(404).json({ error: 'User not found' });
@@ -63,7 +64,8 @@ router.get('/me', authenticateToken, async (req, res) => {
       email: employee.email,
       role: employee.role,
       department: employee.department,
-      venue: employee.venue,
+      outletId: employee.outletId,
+      outlet: employee.outlet,
       avatar: employee.avatar,
       phone: employee.phone,
       skills: employee.skills,

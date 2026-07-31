@@ -1,40 +1,39 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../db.js';
 import { authenticateToken, requireMinRole } from '../middleware/auth.js';
 import { autoAllocateShifts } from '../engine/shiftAllocator.js';
+import { outletScope } from '../lib/scope.js';
+import { localDateRange, startOfLocalDay } from '../lib/dates.js';
 
 const router = Router();
-const prisma = new PrismaClient();
+
+/** Outlet summary shape reused across this router's responses. */
+const outletSelect = {
+  select: { id: true, name: true, brand: { select: { id: true, name: true } } },
+};
 
 // GET /api/shifts — list shifts with filters
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { venue, date, startDate, endDate, employee, status } = req.query;
-    const where = {};
+    const { date, startDate, endDate, employee, status } = req.query;
+    const where = { ...outletScope(req) };
 
-    if (venue) where.venueId = venue;
     if (employee) where.employeeId = employee;
     if (status) where.status = status;
+    // Local-day bounds. `new Date('2026-07-27')` is UTC midnight, which sits
+    // after a row stored at local midnight east of UTC — that dropped the first
+    // day of every range.
     if (date) {
-      const d = new Date(date);
-      d.setHours(0, 0, 0, 0);
-      const next = new Date(d);
-      next.setDate(next.getDate() + 1);
-      where.date = { gte: d, lt: next };
+      where.date = localDateRange(date);
     } else if (startDate && endDate) {
-      where.date = { gte: new Date(startDate), lte: new Date(endDate) };
-    }
-
-    // Non-admin: only own venue
-    if (!['SUPER_ADMIN', 'ADMIN', 'HR'].includes(req.user.role)) {
-      where.venueId = req.user.venueId;
+      where.date = localDateRange(startDate, endDate);
     }
 
     const shifts = await prisma.shift.findMany({
       where,
       include: {
         employee: { select: { id: true, name: true, department: true, skills: true, avatar: true } },
-        venue: { select: { id: true, name: true } },
+        outlet: outletSelect,
       },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     });
@@ -48,20 +47,23 @@ router.get('/', authenticateToken, async (req, res) => {
 // POST /api/shifts — create a shift manually
 router.post('/', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res) => {
   try {
-    const { date, startTime, endTime, section, employeeId, venueId } = req.body;
+    const { date, startTime, endTime, section, employeeId, outletId } = req.body;
 
     const shift = await prisma.shift.create({
       data: {
-        date: new Date(date),
+        // Local midnight, matching the seeder and the allocator. A bare
+        // `new Date('2026-07-27')` would land at 05:30 local and break the
+        // exact-equality `date:` lookups in the emergency-leave flow.
+        date: startOfLocalDay(date),
         startTime,
         endTime,
         section,
         employeeId,
-        venueId: venueId || req.user.venueId,
+        outletId: outletId || req.user.outletId,
       },
       include: {
         employee: { select: { id: true, name: true } },
-        venue: { select: { id: true, name: true } },
+        outlet: outletSelect,
       },
     });
 
@@ -84,10 +86,10 @@ router.post('/', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res
 // POST /api/shifts/auto-allocate
 router.post('/auto-allocate', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res) => {
   try {
-    const { venueId, startDate, endDate } = req.body;
+    const { outletId, startDate, endDate } = req.body;
     const result = await autoAllocateShifts(
       prisma,
-      venueId || req.user.venueId,
+      outletId || req.user.outletId,
       startDate,
       endDate
     );
@@ -102,7 +104,7 @@ router.put('/:id', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, r
   try {
     const { date, startTime, endTime, section, employeeId, status } = req.body;
     const data = {};
-    if (date) data.date = new Date(date);
+    if (date) data.date = startOfLocalDay(date);
     if (startTime) data.startTime = startTime;
     if (endTime) data.endTime = endTime;
     if (section !== undefined) data.section = section;
@@ -114,7 +116,7 @@ router.put('/:id', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, r
       data,
       include: {
         employee: { select: { id: true, name: true } },
-        venue: { select: { id: true, name: true } },
+        outlet: outletSelect,
       },
     });
 
@@ -147,7 +149,7 @@ router.get('/my/upcoming', authenticateToken, async (req, res) => {
         status: 'ASSIGNED',
       },
       include: {
-        venue: { select: { name: true } },
+        outlet: { select: { name: true } },
       },
       orderBy: { date: 'asc' },
       take: 14,

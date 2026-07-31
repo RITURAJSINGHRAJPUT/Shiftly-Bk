@@ -66,10 +66,34 @@ enum NotificationType {
   GENERAL
 }
 
-model Venue {
+model Organization {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  brands    Brand[]
+}
+
+model Brand {
+  id             String       @id @default(uuid())
+  name           String       @unique
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  outlets        Outlet[]
+
+  @@index([organizationId])
+}
+
+model Outlet {
   id        String     @id @default(uuid())
   name      String     @unique
   address   String?
+  brandId   String
+  brand     Brand      @relation(fields: [brandId], references: [id])
   latitude  Float      @default(21.17)
   longitude Float      @default(72.83)
   radius    Int        @default(100)
@@ -78,6 +102,9 @@ model Venue {
   updatedAt DateTime   @updatedAt
   employees Employee[]
   shifts    Shift[]
+  shiftTemplates ShiftTemplate[]
+
+  @@index([brandId])
 }
 
 model Employee {
@@ -90,8 +117,8 @@ model Employee {
   avatar        String?
   role          Role           @default(STAFF)
   department    Department
-  venueId       String
-  venue         Venue          @relation(fields: [venueId], references: [id])
+  outletId      String
+  outlet        Outlet         @relation(fields: [outletId], references: [id])
   skills        String[]       @default([])
   isActive      Boolean        @default(true)
   joinDate      DateTime       @default(now())
@@ -102,7 +129,7 @@ model Employee {
   leaves        Leave[]
   notifications Notification[]
 
-  @@index([venueId])
+  @@index([outletId])
   @@index([department])
   @@index([role])
 }
@@ -116,15 +143,15 @@ model Shift {
   status     ShiftStatus @default(ASSIGNED)
   employeeId String
   employee   Employee    @relation(fields: [employeeId], references: [id])
-  venueId    String
-  venue      Venue       @relation(fields: [venueId], references: [id])
+  outletId   String
+  outlet     Outlet      @relation(fields: [outletId], references: [id])
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 
   @@index([date])
   @@index([employeeId])
-  @@index([venueId])
-  @@index([date, venueId])
+  @@index([outletId])
+  @@index([date, outletId])
 }
 
 model Attendance {
@@ -188,12 +215,23 @@ model Notification {
   @@index([createdAt])
 }
 
+/// A recurring staffing requirement at one outlet: "Pizza station, 12:00-21:00,
+/// 4 people". Auto-allocation fills `headcount` slots per template per day.
 model ShiftTemplate {
-  id        String     @id @default(uuid())
-  name      String
-  startTime String
-  endTime   String
-  section   String?
+  id         String     @id @default(uuid())
+  name       String
+  outletId   String
+  outlet     Outlet     @relation(fields: [outletId], references: [id])
   department Department
-  createdAt DateTime   @default(now())
+  section    String?
+  startTime  String
+  endTime    String
+  /// How many people this pattern needs. Previously implicit at 1, which capped
+  /// every outlet at one shift per pattern per day regardless of its size.
+  headcount  Int        @default(1)
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([outletId])
 }

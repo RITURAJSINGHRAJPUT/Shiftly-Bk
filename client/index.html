@@ -2,13 +2,50 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Generated from assets/shiftly.png by scripts/build-brand-assets.py. The
+         glyph sits on a navy plate because bare it thins out into an illegible
+         squiggle below ~48px. -->
+    <link rel="icon" type="image/png" sizes="16x16" href="/brand/favicon-16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/brand/favicon-48.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/brand/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#0a0a1a" />
+
+    <!-- Resolve the theme before first paint so the page never flashes the wrong
+         background. This is the single resolver: ThemeContext initialises from
+         the attribute set here rather than re-reading localStorage, which keeps
+         React's first render in agreement with what is already on screen. -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('shiftly_theme');
+          if (t !== 'light' && t !== 'dark') {
+            t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          document.documentElement.dataset.theme = t;
+        } catch (e) {
+          document.documentElement.dataset.theme = 'light';
+        }
+      })();
+    </script>
+
+    <meta name="theme-color" content="#f6f7fb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0d0e1c" media="(prefers-color-scheme: dark)" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="manifest" href="/manifest.json" />
-    <title>Shiftly — CRM & Shift Management</title>
+
+    <!-- Inter via <link>, not an @import inside index.css: an @import is only
+         discovered after the stylesheet has been fetched and parsed, which
+         serialises two round trips before any text can render. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    />
+
+    <title>Shiftly — CRM &amp; Shift Management</title>
   </head>
   <body>
     <div id="root"></div>

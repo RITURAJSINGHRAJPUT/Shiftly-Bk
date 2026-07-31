@@ -26,13 +26,22 @@ class ApiClient {
       headers,
     });
 
-    if (res.status === 401 || res.status === 403) {
+    // Only 401 means the token is bad. A 403 is a normal RBAC denial and must
+    // not destroy the session — it should surface as an error to the caller.
+    //
+    // The login endpoint is exempt: there a 401 means "wrong credentials", not
+    // "session expired". Redirecting on it reloaded the page and wiped the error
+    // message before it could render, so a failed sign-in appeared to do nothing
+    // at all.
+    const isLoginAttempt = path === '/auth/login';
+
+    if (res.status === 401 && !isLoginAttempt) {
       this.setToken(null);
       window.location.href = '/login';
       throw new Error('Session expired');
     }
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
       throw new Error(data.error || 'Request failed');

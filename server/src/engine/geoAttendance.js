@@ -1,6 +1,6 @@
 /**
  * Geofenced Attendance Engine
- * Uses Haversine formula to validate check-in/out within venue radius
+ * Uses Haversine formula to validate check-in/out within outlet radius
  */
 
 /**
@@ -24,14 +24,14 @@ function toRad(deg) {
 }
 
 /**
- * Validate if coordinates are within venue geofence
+ * Validate if coordinates are within outlet geofence
  */
-export function isWithinGeofence(userLat, userLng, venue) {
-  const distance = haversineDistance(userLat, userLng, venue.latitude, venue.longitude);
+export function isWithinGeofence(userLat, userLng, outlet) {
+  const distance = haversineDistance(userLat, userLng, outlet.latitude, outlet.longitude);
   return {
-    withinRange: distance <= venue.radius,
+    withinRange: distance <= outlet.radius,
     distance: Math.round(distance),
-    radius: venue.radius,
+    radius: outlet.radius,
   };
 }
 
@@ -41,12 +41,12 @@ export function isWithinGeofence(userLat, userLng, venue) {
 export async function processCheckIn(prisma, employeeId, latitude, longitude) {
   const employee = await prisma.employee.findUnique({
     where: { id: employeeId },
-    include: { venue: true },
+    include: { outlet: true },
   });
 
   if (!employee) throw new Error('Employee not found');
 
-  const geoResult = isWithinGeofence(latitude, longitude, employee.venue);
+  const geoResult = isWithinGeofence(latitude, longitude, employee.outlet);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -116,12 +116,12 @@ export async function processCheckIn(prisma, employeeId, latitude, longitude) {
 export async function processCheckOut(prisma, employeeId, latitude, longitude) {
   const employee = await prisma.employee.findUnique({
     where: { id: employeeId },
-    include: { venue: true },
+    include: { outlet: true },
   });
 
   if (!employee) throw new Error('Employee not found');
 
-  const geoResult = isWithinGeofence(latitude, longitude, employee.venue);
+  const geoResult = isWithinGeofence(latitude, longitude, employee.outlet);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 

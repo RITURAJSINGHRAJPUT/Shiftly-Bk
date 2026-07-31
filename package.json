@@ -1,0 +1,31 @@
+{
+  "name": "shiftly",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shiftly — CRM & shift management for multi-outlet hospitality. Express/Prisma API + React PWA client.",
+  "scripts": {
+    "predev": "node scripts/preflight.mjs",
+    "dev": "concurrently --names \"api,web\" --prefix-colors \"blue.bold,magenta.bold\" --handle-input \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "npm --prefix server run dev",
+    "dev:web": "npm --prefix client run dev",
+    "setup": "npm --prefix server run setup",
+    "postinstall": "npm --prefix server install && npm --prefix client install",
+    "build": "npm --prefix client run build",
+    "start": "concurrently --names \"api,web\" --prefix-colors \"blue.bold,magenta.bold\" \"npm --prefix server start\" \"npm --prefix client run preview\"",
+    "seed": "npm --prefix server run seed",
+    "db:push": "npm --prefix server run db:push",
+    "db:generate": "npm --prefix server run db:generate",
+    "db:studio": "npm --prefix server run db:studio",
+    "check": "node scripts/preflight.mjs",
+    "ports:free": "bash scripts/free-ports.sh",
+    "seed:templates": "npm --prefix server run seed:templates",
+    "managers": "npm --prefix server run managers",
+    "seed:staff": "npm --prefix server run seed:staff"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

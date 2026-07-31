@@ -3,19 +3,19 @@ import api from '../api/client';
 import { MapPin, Save, Shield } from 'lucide-react';
 
 export default function SettingsPage() {
-  const [venues, setVenues] = useState([]);
+  const [outlets, setOutlets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    loadVenues();
+    loadOutlets();
   }, []);
 
-  const loadVenues = async () => {
+  const loadOutlets = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/notifications/venues');
-      setVenues(res);
+      const res = await api.get('/outlets');
+      setOutlets(res);
     } catch (err) {
       console.error(err);
     } finally {
@@ -23,29 +23,29 @@ export default function SettingsPage() {
     }
   };
 
-  const handleVenueChange = (index, field, value) => {
-    setVenues(prev => {
+  const handleOutletChange = (index, field, value) => {
+    setOutlets(prev => {
       const next = [...prev];
       next[index] = { ...next[index], [field]: value };
       return next;
     });
   };
 
-  const handleSaveVenue = async (index) => {
-    const venue = venues[index];
+  const handleSaveOutlet = async (index) => {
+    const outlet = outlets[index];
     setSaving(true);
     try {
-      await api.put(`/notifications/venues/${venue.id}`, {
-        name: venue.name,
-        latitude: parseFloat(venue.latitude),
-        longitude: parseFloat(venue.longitude),
-        radius: parseInt(venue.radius),
-        address: venue.address
+      await api.put(`/outlets/${outlet.id}`, {
+        name: outlet.name,
+        latitude: parseFloat(outlet.latitude),
+        longitude: parseFloat(outlet.longitude),
+        radius: parseInt(outlet.radius),
+        address: outlet.address
       });
-      alert('Venue settings updated successfully!');
-      loadVenues();
+      alert('Outlet settings updated successfully!');
+      loadOutlets();
     } catch (err) {
-      alert(err.message || 'Failed to update venue');
+      alert(err.message || 'Failed to update outlet');
     } finally {
       setSaving(false);
     }
@@ -65,17 +65,25 @@ export default function SettingsPage() {
       </div>
 
       <div className="card mb-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Shield size={20} style={{ color: 'var(--primary-400)' }} />
-          <h3 className="font-bold text-sm">Location Geofences</h3>
+        <div className="card-header">
+          <div className="flex items-center gap-2">
+            <Shield size={18} className="icon-brand" />
+            <h3 className="card-title">Location Geofences</h3>
+          </div>
+          <span className="text-xs text-muted">
+            Attendance check-in is validated against these coordinates
+          </span>
         </div>
 
-        <div className="flex flex-col gap-6">
-          {venues.map((venue, index) => (
-            <div key={venue.id} className="py-4 border-b border-subtle last:border-0">
+        <div className="divided-list">
+          {outlets.map((outlet, index) => (
+            <div key={outlet.id}>
               <h4 className="font-bold text-sm mb-3 flex items-center gap-2">
-                <MapPin size={16} style={{ color: 'var(--primary-400)' }} />
-                <span>{venue.name}</span>
+                <MapPin size={16} className="icon-brand" />
+                <span className="text-strong">{outlet.name}</span>
+                {outlet.brand?.name && (
+                  <span className="badge badge-ghost">{outlet.brand.name}</span>
+                )}
               </h4>
 
               <div className="grid-3 mb-3">
@@ -85,8 +93,8 @@ export default function SettingsPage() {
                     type="number"
                     step="0.000001"
                     className="form-input"
-                    value={venue.latitude}
-                    onChange={e => handleVenueChange(index, 'latitude', e.target.value)}
+                    value={outlet.latitude}
+                    onChange={e => handleOutletChange(index, 'latitude', e.target.value)}
                   />
                 </div>
                 <div className="form-group">
@@ -95,8 +103,8 @@ export default function SettingsPage() {
                     type="number"
                     step="0.000001"
                     className="form-input"
-                    value={venue.longitude}
-                    onChange={e => handleVenueChange(index, 'longitude', e.target.value)}
+                    value={outlet.longitude}
+                    onChange={e => handleOutletChange(index, 'longitude', e.target.value)}
                   />
                 </div>
                 <div className="form-group">
@@ -104,8 +112,8 @@ export default function SettingsPage() {
                   <input
                     type="number"
                     className="form-input"
-                    value={venue.radius}
-                    onChange={e => handleVenueChange(index, 'radius', e.target.value)}
+                    value={outlet.radius}
+                    onChange={e => handleOutletChange(index, 'radius', e.target.value)}
                   />
                 </div>
               </div>
@@ -116,18 +124,18 @@ export default function SettingsPage() {
                   <input
                     type="text"
                     className="form-input"
-                    value={venue.address || ''}
-                    onChange={e => handleVenueChange(index, 'address', e.target.value)}
+                    value={outlet.address || ''}
+                    onChange={e => handleOutletChange(index, 'address', e.target.value)}
                     placeholder="Enter physical address reference"
                   />
                 </div>
                 <button
                   className="btn btn-primary"
-                  onClick={() => handleSaveVenue(index)}
+                  onClick={() => handleSaveOutlet(index)}
                   disabled={saving}
                 >
                   <Save size={16} />
-                  <span>Save Venue</span>
+                  <span>Save Outlet</span>
                 </button>
               </div>
             </div>

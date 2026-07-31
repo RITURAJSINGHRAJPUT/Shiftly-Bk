@@ -16,7 +16,7 @@ const MIN_HOURS_BEFORE_SHIFT = 2;
 export async function requestEmergencyLeave(prisma, employeeId, reason) {
   const employee = await prisma.employee.findUnique({
     where: { id: employeeId },
-    include: { venue: true },
+    include: { outlet: true },
   });
 
   if (!employee) throw new Error('Employee not found');
@@ -69,7 +69,7 @@ export async function requestEmergencyLeave(prisma, employeeId, reason) {
   // Find eligible team members to cover
   const eligibleEmployees = await prisma.employee.findMany({
     where: {
-      venueId: employee.venueId,
+      outletId: employee.outletId,
       department: employee.department,
       isActive: true,
       id: { not: employeeId },
@@ -223,7 +223,7 @@ export async function acceptEmergencyCover(prisma, volunteerId, leaveId) {
 export async function autoAssignEmergency(prisma, leaveId) {
   const leave = await prisma.leave.findUnique({
     where: { id: leaveId },
-    include: { employee: { include: { venue: true } } },
+    include: { employee: { include: { outlet: true } } },
   });
 
   if (!leave || leave.status !== 'COVERAGE_PENDING') return null;
@@ -249,7 +249,7 @@ export async function autoAssignEmergency(prisma, leaveId) {
 
   const eligibleEmployees = await prisma.employee.findMany({
     where: {
-      venueId: leave.employee.venueId,
+      outletId: leave.employee.outletId,
       department: leave.employee.department,
       isActive: true,
       id: { not: leave.employeeId },

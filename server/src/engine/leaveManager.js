@@ -12,7 +12,7 @@
 export async function processLeaveRequest(prisma, employeeId, leaveData) {
   const employee = await prisma.employee.findUnique({
     where: { id: employeeId },
-    include: { venue: true },
+    include: { outlet: true },
   });
 
   if (!employee) throw new Error('Employee not found');
@@ -125,7 +125,7 @@ export async function approveLeave(prisma, leaveId, approvedBy) {
 async function findBestReplacement(prisma, shift, excludeEmployeeId) {
   const employees = await prisma.employee.findMany({
     where: {
-      venueId: shift.venueId,
+      outletId: shift.outletId,
       isActive: true,
       id: { not: excludeEmployeeId },
     },

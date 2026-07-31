@@ -9,7 +9,10 @@
     "db:generate": "npx prisma generate",
     "db:studio": "npx prisma studio",
     "seed": "node src/scripts/seedFromCSV.js",
-    "setup": "node src/scripts/createDb.js && npx prisma db push && npx prisma generate && node src/scripts/seedFromCSV.js"
+    "setup": "node src/scripts/createDb.js && npx prisma db push && npx prisma generate && node src/scripts/seedFromCSV.js",
+    "seed:templates": "node src/scripts/seedShiftTemplates.js",
+    "managers": "node src/scripts/ensureOutletManagers.js",
+    "seed:staff": "node src/scripts/seedDemoStaff.js"
   },
   "dependencies": {
     "@prisma/client": "^6.9.0",

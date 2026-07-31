@@ -1,34 +1,42 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../db.js';
 import { authenticateToken, requireMinRole } from '../middleware/auth.js';
 import { processLeaveRequest, approveLeave, rejectLeave } from '../engine/leaveManager.js';
 import { requestEmergencyLeave, acceptEmergencyCover, autoAssignEmergency } from '../engine/emergencyLeave.js';
+import { employeeScope } from '../lib/scope.js';
 
 const router = Router();
-const prisma = new PrismaClient();
+
+/** Employee summary shape reused across this router's responses. */
+const leaveEmployeeSelect = {
+  select: {
+    id: true,
+    name: true,
+    department: true,
+    outletId: true,
+    outlet: { select: { name: true, brand: { select: { name: true } } } },
+  },
+};
 
 // GET /api/leaves — list leave requests
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const { status, employee, type } = req.query;
-    const where = {};
+    const where = { ...employeeScope(req) };
 
     if (status) where.status = status;
-    if (employee) where.employeeId = employee;
     if (type) where.type = type;
 
     // Staff can only see their own leaves
     if (req.user.role === 'STAFF') {
       where.employeeId = req.user.id;
+    } else if (employee) {
+      where.employeeId = employee;
     }
 
     const leaves = await prisma.leave.findMany({
       where,
-      include: {
-        employee: {
-          select: { id: true, name: true, department: true, venue: { select: { name: true } } },
-        },
-      },
+      include: { employee: leaveEmployeeSelect },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
@@ -101,18 +109,19 @@ router.post('/emergency/:leaveId/auto-assign', authenticateToken, requireMinRole
 });
 
 // GET /api/leaves/emergency/pending — get pending emergency leaves
+//
+// Scoped: this list drives the "volunteer to cover" action, so it must only
+// show requests the caller could actually cover. It previously returned every
+// outlet's emergencies to every authenticated user.
 router.get('/emergency/pending', authenticateToken, async (req, res) => {
   try {
     const leaves = await prisma.leave.findMany({
       where: {
+        ...employeeScope(req),
         isEmergency: true,
         status: 'COVERAGE_PENDING',
       },
-      include: {
-        employee: {
-          select: { id: true, name: true, department: true, venue: { select: { name: true } } },
-        },
-      },
+      include: { employee: leaveEmployeeSelect },
       orderBy: { createdAt: 'desc' },
     });
     res.json(leaves);
@@ -124,11 +133,14 @@ router.get('/emergency/pending', authenticateToken, async (req, res) => {
 // GET /api/leaves/stats
 router.get('/stats', authenticateToken, async (req, res) => {
   try {
+    const scope = employeeScope(req);
     const [pending, approved, emergency, total] = await Promise.all([
-      prisma.leave.count({ where: { status: 'PENDING' } }),
-      prisma.leave.count({ where: { status: 'APPROVED' } }),
-      prisma.leave.count({ where: { isEmergency: true, status: 'COVERAGE_PENDING' } }),
-      prisma.leave.count(),
+      prisma.leave.count({ where: { ...scope, status: 'PENDING' } }),
+      prisma.leave.count({ where: { ...scope, status: 'APPROVED' } }),
+      prisma.leave.count({
+        where: { ...scope, isEmergency: true, status: 'COVERAGE_PENDING' },
+      }),
+      prisma.leave.count({ where: scope }),
     ]);
     res.json({ pending, approved, emergency, total });
   } catch (err) {

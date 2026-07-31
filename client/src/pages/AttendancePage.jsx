@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
-import { MapPin, CheckCircle, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { useScope } from '../contexts/ScopeContext';
+import { MapPin, CheckCircle, ShieldCheck, LogIn, LogOut } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function AttendancePage() {
   const { user, isAdmin, isManager } = useAuth();
+  const { withScope } = useScope();
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [todayAttendance, setTodayAttendance] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -13,16 +15,11 @@ export default function AttendancePage() {
   const [coords, setCoords] = useState(null);
   const [geoResult, setGeoResult] = useState(null);
 
-  useEffect(() => {
-    loadData();
-    getCurrentLocation();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       if (isAdmin || isManager) {
-        const records = await api.get('/attendance');
+        const records = await api.get(withScope('/attendance'));
         setAttendanceRecords(records);
       } else {
         const att = await api.get('/attendance/today');
@@ -33,7 +30,16 @@ export default function AttendancePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAdmin, isManager, withScope]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    getCurrentLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.outlet?.id]);
 
   const getCurrentLocation = () => {
     if (!navigator.geolocation) return;
@@ -43,13 +49,13 @@ export default function AttendancePage() {
         const lng = position.coords.longitude;
         setCoords({ lat, lng });
 
-        // Fast client check against user's venue if present
-        if (user?.venue) {
-          const distance = calculateDistance(lat, lng, user.venue.latitude, user.venue.longitude);
+        // Fast client check against user's outlet if present
+        if (user?.outlet) {
+          const distance = calculateDistance(lat, lng, user.outlet.latitude, user.outlet.longitude);
           setGeoResult({
-            withinRange: distance <= user.venue.radius,
+            withinRange: distance <= user.outlet.radius,
             distance: Math.round(distance),
-            radius: user.venue.radius
+            radius: user.outlet.radius
           });
         }
       },
@@ -123,57 +129,80 @@ export default function AttendancePage() {
       </div>
 
       {!(isAdmin || isManager) ? (
-        // Employee Portal View
-        <div className="card checkin-card flex flex-col items-center max-w-md mx-auto">
-          <div className="flex items-center gap-2 mb-4">
-            <ShieldCheck size={20} style={{ color: 'var(--primary-400)' }} />
-            <span className="text-xs font-semibold text-muted uppercase">Secure Geofenced Check In</span>
+        // Employee portal
+        <div className="max-w-md mx-auto flex flex-col gap-4">
+          <div className="card checkin-card">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <ShieldCheck size={18} className="icon-brand" />
+              <span className="text-xs font-semibold text-muted uppercase">
+                Geofenced check-in
+              </span>
+            </div>
+
+            <div className="location-status mb-4">
+              <div className={`location-dot ${geoResult?.withinRange ? 'in-range' : 'out-range'}`} />
+              <span className="text-sm font-semibold">
+                {geoResult
+                  ? `${geoResult.distance}m from ${user?.outlet?.name} · geofence ${geoResult.radius}m`
+                  : 'Acquiring GPS coordinates…'}
+              </span>
+            </div>
+
+            {!todayAttendance ? (
+              <button className="checkin-btn check-in" onClick={handleCheckIn} disabled={checking}>
+                <CheckCircle size={28} />
+                <span>{checking ? 'Checking…' : 'Check In'}</span>
+              </button>
+            ) : !todayAttendance.checkOut ? (
+              <button className="checkin-btn check-out" onClick={handleCheckOut} disabled={checking}>
+                <MapPin size={28} />
+                <span>{checking ? 'Checking…' : 'Check Out'}</span>
+              </button>
+            ) : (
+              <div className="badge badge-accent w-full justify-center py-2 mt-4">
+                Today's attendance complete
+              </div>
+            )}
           </div>
 
-          <div className="location-status mb-4">
-            <div className={`location-dot ${geoResult?.withinRange ? 'in-range' : 'out-range'}`} />
-            <span className="text-sm font-semibold">
-              {geoResult
-                ? `${geoResult.distance}m from ${user?.venue?.name} (Geofence: ${geoResult.radius}m)`
-                : 'Acquiring GPS coordinates...'}
-            </span>
-          </div>
-
-          {todayAttendance?.checkIn && (
-            <div className="mb-4">
-              <div className="text-sm text-secondary">Checked In At:</div>
-              <div className="font-bold text-lg">{format(new Date(todayAttendance.checkIn), 'hh:mm a')}</div>
-            </div>
-          )}
-
-          {todayAttendance?.checkOut && (
-            <div className="mb-4">
-              <div className="text-sm text-secondary">Checked Out At:</div>
-              <div className="font-bold text-lg">{format(new Date(todayAttendance.checkOut), 'hh:mm a')}</div>
-            </div>
-          )}
-
-          {!todayAttendance ? (
-            <button
-              className="checkin-btn check-in"
-              onClick={handleCheckIn}
-              disabled={checking}
-            >
-              <CheckCircle size={28} />
-              <span>{checking ? 'Checking...' : 'Check In'}</span>
-            </button>
-          ) : !todayAttendance.checkOut ? (
-            <button
-              className="checkin-btn check-out"
-              onClick={handleCheckOut}
-              disabled={checking}
-            >
-              <MapPin size={28} />
-              <span>{checking ? 'Checking...' : 'Check Out'}</span>
-            </button>
-          ) : (
-            <div className="badge badge-accent mt-4 py-2 px-4 text-sm font-bold w-full justify-center">
-              Today's Attendance Completed
+          {/* Timeline of today's events. The mockup also shows break start/end;
+              the Attendance model has no break fields, so only the two real
+              events are listed rather than inventing two more. */}
+          {todayAttendance && (
+            <div className="card">
+              <div className="card-header">
+                <h3 className="card-title">Today</h3>
+                <span className="badge badge-ghost">
+                  {todayAttendance.status?.replace(/_/g, ' ')}
+                </span>
+              </div>
+              <div className="divided-list">
+                <div className="flex items-center gap-3">
+                  <LogIn size={15} className="icon-good" />
+                  <span className="text-sm text-secondary">Check In</span>
+                  <span className="text-sm font-semibold text-strong" style={{ marginLeft: 'auto' }}>
+                    {todayAttendance.checkIn
+                      ? format(new Date(todayAttendance.checkIn), 'hh:mm a')
+                      : '--:--'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <LogOut size={15} className={todayAttendance.checkOut ? 'icon-crit' : 'icon-muted'} />
+                  <span className="text-sm text-secondary">Check Out</span>
+                  <span className="text-sm font-semibold text-strong" style={{ marginLeft: 'auto' }}>
+                    {todayAttendance.checkOut
+                      ? format(new Date(todayAttendance.checkOut), 'hh:mm a')
+                      : '--:--'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <MapPin size={15} className={todayAttendance.withinRange ? 'icon-good' : 'icon-crit'} />
+                  <span className="text-sm text-secondary">Location</span>
+                  <span className="text-sm font-semibold text-strong" style={{ marginLeft: 'auto' }}>
+                    {todayAttendance.withinRange ? 'Within geofence' : 'Out of range'}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -195,8 +224,8 @@ export default function AttendancePage() {
               {attendanceRecords.map(rec => (
                 <tr key={rec.id}>
                   <td>
-                    <div className="font-semibold text-primary" style={{ color: 'var(--text-primary)' }}>{rec.employee.name}</div>
-                    <div className="text-xs text-muted">{rec.employee.venue?.name} | {rec.employee.department}</div>
+                    <div className="font-semibold text-primary" style={{ color: 'var(--ink-strong)' }}>{rec.employee.name}</div>
+                    <div className="text-xs text-muted">{rec.employee.outlet?.name} | {rec.employee.department}</div>
                   </td>
                   <td>{format(new Date(rec.date), 'MMM d, yyyy')}</td>
                   <td>{rec.checkIn ? format(new Date(rec.checkIn), 'hh:mm a') : '-'}</td>

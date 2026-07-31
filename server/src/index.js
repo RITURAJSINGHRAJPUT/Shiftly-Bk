@@ -7,6 +7,11 @@ import shiftRoutes from './routes/shift.routes.js';
 import attendanceRoutes from './routes/attendance.routes.js';
 import leaveRoutes from './routes/leave.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
+import dashboardRoutes from './routes/dashboard.routes.js';
+import organizationRoutes from './routes/organization.routes.js';
+import brandRoutes from './routes/brand.routes.js';
+import outletRoutes from './routes/outlet.routes.js';
+import shiftTemplateRoutes from './routes/shiftTemplate.routes.js';
 
 dotenv.config();
 
@@ -36,6 +41,11 @@ app.use('/api/shifts', shiftRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/organizations', organizationRoutes);
+app.use('/api/brands', brandRoutes);
+app.use('/api/outlets', outletRoutes);
+app.use('/api/shift-templates', shiftTemplateRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

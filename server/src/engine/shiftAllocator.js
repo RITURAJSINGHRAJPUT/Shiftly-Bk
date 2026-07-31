@@ -1,12 +1,25 @@
+import { startOfLocalDay, localDateKey, localDateRange } from '../lib/dates.js';
+
 /**
  * Shift Allocation Engine
  * Rule-based auto-allocation with scoring algorithm
  */
 
 /**
+ * Roles that can be put on a shift.
+ *
+ * A head chef runs the kitchen and a master of house runs the floor, so both are
+ * working managers and belong in the pool — every restaurant always has one of
+ * each. SUPER_ADMIN, ADMIN and HR are organization-level: they are Employee rows
+ * only because Employee owns the login, and without this filter the allocator
+ * was rostering them onto stations (superadmin@ turned up on Drinks).
+ */
+const ROSTERABLE_ROLES = ['STAFF', 'HEAD_CHEF', 'MASTER_OF_HOUSE'];
+
+/**
  * Score an employee for a given shift slot
  * @param {object} employee - Employee with shifts, attendance, leaves
- * @param {object} slot - { date, startTime, endTime, section, venueId }
+ * @param {object} slot - { date, startTime, endTime, section, outletId }
  * @param {object[]} existingShifts - All shifts for the week
  * @returns {number} score (higher = better fit)
  */
@@ -72,21 +85,24 @@ export function scoreEmployee(employee, slot, existingShifts, allAttendance) {
 }
 
 /**
- * Auto-allocate shifts for a given date range and venue
+ * Auto-allocate shifts for a given date range and outlet
  */
-export async function autoAllocateShifts(prisma, venueId, startDate, endDate) {
-  const venue = await prisma.venue.findUnique({ where: { id: venueId } });
-  if (!venue) throw new Error('Venue not found');
+export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
+  const outlet = await prisma.outlet.findUnique({ where: { id: outletId } });
+  if (!outlet) throw new Error('Outlet not found');
 
   const employees = await prisma.employee.findMany({
-    where: { venueId, isActive: true },
+    where: { outletId, isActive: true, role: { in: ROSTERABLE_ROLES } },
     include: { leaves: true },
   });
 
+  // Local-day bounds matter here as much as anywhere: with UTC parsing the
+  // first day's existing shifts fell outside the range, so the allocator could
+  // not see them and would happily double-book those people.
   const existingShifts = await prisma.shift.findMany({
     where: {
-      venueId,
-      date: { gte: new Date(startDate), lte: new Date(endDate) },
+      outletId,
+      date: localDateRange(startDate, endDate),
     },
   });
 
@@ -94,58 +110,123 @@ export async function autoAllocateShifts(prisma, venueId, startDate, endDate) {
     where: { employeeId: { in: employees.map(e => e.id) } },
   });
 
-  // Get shift templates or use defaults
-  const templates = await prisma.shiftTemplate.findMany();
-  const defaultTemplates = templates.length > 0 ? templates : getDefaultTemplates();
+  // This outlet's own patterns. There is deliberately no hardcoded fallback:
+  // silently applying a generic set to an outlet with none defined is what hid
+  // the fact that every restaurant was being planned identically.
+  const templates = await prisma.shiftTemplate.findMany({
+    where: { outletId, isActive: true },
+    orderBy: [{ department: 'asc' }, { startTime: 'asc' }],
+  });
+
+  if (templates.length === 0) {
+    return {
+      count: 0,
+      requested: 0,
+      shifts: [],
+      shortfalls: [],
+      outlet: { id: outlet.id, name: outlet.name },
+      message:
+        `No shift patterns are defined for ${outlet.name}. Add patterns for this ` +
+        `outlet before running allocation.`,
+    };
+  }
 
   const newShifts = [];
+  const shortfalls = [];
   const dateRange = getDateRange(startDate, endDate);
+  let requested = 0;
 
   for (const date of dateRange) {
-    for (const template of defaultTemplates) {
-      // Find eligible employees for this department
+    for (const template of templates) {
+      requested += template.headcount;
+
       const deptEmployees = employees.filter(e => e.department === template.department);
-
-      if (deptEmployees.length === 0) continue;
-
-      // Score each employee
-      const scored = deptEmployees.map(emp => ({
-        employee: emp,
-        score: scoreEmployee(emp, {
+      if (deptEmployees.length === 0) {
+        shortfalls.push({
           date,
-          startTime: template.startTime,
-          endTime: template.endTime,
+          template: template.name,
+          department: template.department,
           section: template.section,
-          venueId,
-        }, [...existingShifts, ...newShifts], allAttendance),
-      }));
+          needed: template.headcount,
+          filled: 0,
+          reason: 'no active staff in this department',
+        });
+        continue;
+      }
 
-      // Sort by score (highest first) and pick the best
-      scored.sort((a, b) => b.score - a.score);
+      const slot = {
+        date,
+        startTime: template.startTime,
+        endTime: template.endTime,
+        section: template.section,
+        outletId,
+      };
 
-      const best = scored[0];
-      if (best && best.score > -1000) {
-        const shift = {
-          date: new Date(date),
+      let filled = 0;
+
+      // One pass per required person. Re-scoring between slots is what keeps
+      // this correct without any new bookkeeping: scoreEmployee already returns
+      // -1000 for anyone holding an overlapping shift, and each pick is pushed
+      // into newShifts which is fed back in below — so nobody is booked twice,
+      // and the hours-balance and consecutive-day terms update as the week fills.
+      for (let i = 0; i < template.headcount; i++) {
+        const pool = [...existingShifts, ...newShifts];
+
+        let best = null;
+        let bestScore = -Infinity;
+        for (const emp of deptEmployees) {
+          const score = scoreEmployee(emp, slot, pool, allAttendance);
+          if (score > bestScore) {
+            bestScore = score;
+            best = emp;
+          }
+        }
+
+        // Everyone left is on leave, already working, or short of rest.
+        if (!best || bestScore <= -1000) break;
+
+        newShifts.push({
+          // Local midnight, matching the seeder, manual creation and the
+          // exact-equality `date:` lookups in the emergency-leave flow. A bare
+          // new Date('2026-07-27') is UTC midnight and would miss all of them.
+          date: startOfLocalDay(date),
           startTime: template.startTime,
           endTime: template.endTime,
           section: template.section,
           status: 'ASSIGNED',
-          employeeId: best.employee.id,
-          venueId,
-        };
-        newShifts.push(shift);
+          employeeId: best.id,
+          outletId,
+        });
+        filled++;
+      }
+
+      if (filled < template.headcount) {
+        shortfalls.push({
+          date,
+          template: template.name,
+          department: template.department,
+          section: template.section,
+          needed: template.headcount,
+          filled,
+          reason: 'no eligible staff left (leave, rest period, or already scheduled)',
+        });
       }
     }
   }
 
-  // Bulk create shifts
+  let count = 0;
   if (newShifts.length > 0) {
     const created = await prisma.shift.createMany({ data: newShifts });
-    return { count: created.count, shifts: newShifts };
+    count = created.count;
   }
 
-  return { count: 0, shifts: [] };
+  return {
+    count,
+    requested,
+    shifts: newShifts,
+    shortfalls,
+    outlet: { id: outlet.id, name: outlet.name },
+  };
 }
 
 // Helper functions
@@ -210,24 +291,17 @@ function checkRestPeriod(employeeId, shifts, slot) {
   return true;
 }
 
+/** Inclusive list of YYYY-MM-DD local dates between two date strings. */
 function getDateRange(start, end) {
   const dates = [];
-  const current = new Date(start);
-  const endDate = new Date(end);
+  const current = startOfLocalDay(start);
+  const endDate = startOfLocalDay(end);
   while (current <= endDate) {
-    dates.push(current.toISOString().split('T')[0]);
+    dates.push(localDateKey(current));
     current.setDate(current.getDate() + 1);
   }
   return dates;
 }
 
-function getDefaultTemplates() {
-  return [
-    { startTime: '12:00', endTime: '21:00', section: 'Pizza', department: 'KITCHEN' },
-    { startTime: '12:00', endTime: '21:00', section: 'Pasta', department: 'KITCHEN' },
-    { startTime: '12:00', endTime: '21:00', section: 'Drinks', department: 'KITCHEN' },
-    { startTime: '13:00', endTime: '22:00', section: null, department: 'SERVICE' },
-    { startTime: '14:00', endTime: '23:00', section: null, department: 'SERVICE' },
-    { startTime: '12:00', endTime: '22:00', section: null, department: 'HOUSEKEEPING' },
-  ];
-}
+/* getDefaultTemplates() was removed with the fallback it fed. Patterns now come
+   only from the outlet's own ShiftTemplate rows — see seedShiftTemplates.js. */

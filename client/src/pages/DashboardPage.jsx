@@ -1,234 +1,315 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useScope } from '../contexts/ScopeContext';
 import api from '../api/client';
+import StatTile from '../components/StatTile';
+import ChartCard from '../components/ChartCard';
+import Segmented from '../components/Segmented';
+import AttendanceTrendChart from '../components/charts/AttendanceTrendChart';
+import BrandPerformanceChart from '../components/charts/BrandPerformanceChart';
+import DepartmentStaffingChart from '../components/charts/DepartmentStaffingChart';
 import {
-  Users, Calendar, Clock, AlertTriangle, ArrowRight,
-  TrendingUp, MapPin, ClipboardList, RefreshCw
+  Users, Tags, Store, TrendingUp, CalendarDays, AlertTriangle,
+  ArrowRight, MapPin, RefreshCw, Clock, Plus, Upload,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { Link } from 'react-router-dom';
 
-export default function DashboardPage() {
-  const { user, isAdmin, isManager } = useAuth();
+const TREND_RANGES = [
+  { value: 7, label: '7 Days' },
+  { value: 14, label: '14 Days' },
+  { value: 30, label: '30 Days' },
+];
+
+function ManagementDashboard() {
+  const { user } = useAuth();
+  const { withScope, query } = useScope();
+
   const [stats, setStats] = useState(null);
-  const [upcomingShifts, setUpcomingShifts] = useState([]);
-  const [attendanceToday, setAttendanceToday] = useState(null);
-  const [emergencyLeaves, setEmergencyLeaves] = useState([]);
+  const [trend, setTrend] = useState(null);
+  const [brandRows, setBrandRows] = useState([]);
+  const [staffing, setStaffing] = useState(null);
+  const [emergencies, setEmergencies] = useState([]);
+  const [trendDays, setTrendDays] = useState(7);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, [user]);
-
-  const loadDashboardData = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      if (isAdmin || isManager) {
-        const [statsData, emergencyData] = await Promise.all([
-          api.get('/notifications/stats/overview').catch(() => null), // fallback if not exist
-          api.get('/dashboard/stats'),
-          api.get('/leaves/emergency/pending')
-        ]);
-        setStats(statsData || emergencyData); // unify stats
-        setEmergencyLeaves(emergencyData);
-      } else {
-        const [shiftsData, attendanceData, emergencyData] = await Promise.all([
-          api.get('/shifts/my/upcoming'),
-          api.get('/attendance/today'),
-          api.get('/leaves/emergency/pending')
-        ]);
-        setUpcomingShifts(shiftsData);
-        setAttendanceToday(attendanceData);
-        setEmergencyLeaves(emergencyData);
-      }
+      const [statsData, trendData, brandData, staffingData, emergencyData] = await Promise.all([
+        api.get(withScope('/dashboard/stats')),
+        api.get(withScope(`/dashboard/attendance-trend?days=${trendDays}`)),
+        api.get('/dashboard/brand-performance'),
+        api.get(withScope('/dashboard/department-staffing')),
+        api.get(withScope('/leaves/emergency/pending')),
+      ]);
+      setStats(statsData);
+      setTrend(trendData);
+      setBrandRows(brandData);
+      setStaffing(staffingData);
+      setEmergencies(Array.isArray(emergencyData) ? emergencyData : []);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [withScope, trendDays]);
 
-  if (loading) {
-    return <div className="page-content text-center">Loading dashboard...</div>;
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (loading && !stats) {
+    return <div className="page-content text-center text-muted">Loading dashboard…</div>;
   }
 
-  // Management View
-  if (isAdmin || isManager) {
-    return (
-      <div className="page-content animate-in">
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">Welcome back, {user?.name}</h1>
-            <p className="page-subtitle">{user?.venue?.name || 'All Venues'} Overview</p>
-          </div>
-          <button className="btn btn-ghost btn-sm" onClick={loadDashboardData}>
-            <RefreshCw size={16} />
-            <span>Reload</span>
-          </button>
-        </div>
-
-        {emergencyLeaves.length > 0 && (
-          <div className="card mb-4" style={{ borderColor: 'var(--error-500)', background: 'rgba(244, 63, 94, 0.05)' }}>
-            <div className="flex items-center gap-3">
-              <AlertTriangle size={24} style={{ color: 'var(--error-400)' }} />
-              <div>
-                <h3 className="font-bold text-sm" style={{ color: 'var(--error-400)' }}>🚨 Active Emergency Leave Requests</h3>
-                <p className="text-xs text-secondary">{emergencyLeaves.length} staff member(s) have requested emergency leave. Volunteers are being sourced.</p>
-              </div>
-              <Link to="/leaves" className="btn btn-danger btn-sm" style={{ marginLeft: 'auto' }}>Manage</Link>
-            </div>
-          </div>
-        )}
-
-        <div className="stats-grid">
-          <div className="stat-card" style={{ '--stat-color': 'var(--primary-500)' }}>
-            <div className="stat-icon" style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary-400)' }}>
-              <Users size={20} />
-            </div>
-            <div>
-              <div className="stat-value">{stats?.totalEmployees || 0}</div>
-              <div className="stat-label">Active Staff</div>
-            </div>
-          </div>
-
-          <div className="stat-card" style={{ '--stat-color': 'var(--accent-500)' }}>
-            <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--accent-400)' }}>
-              <TrendingUp size={20} />
-            </div>
-            <div>
-              <div className="stat-value">{stats?.attendanceRate || 0}%</div>
-              <div className="stat-label">Attendance Today</div>
-            </div>
-          </div>
-
-          <div className="stat-card" style={{ '--stat-color': 'var(--warn-500)' }}>
-            <div className="stat-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'var(--warn-400)' }}>
-              <Calendar size={20} />
-            </div>
-            <div>
-              <div className="stat-value">{stats?.todayShifts || 0}</div>
-              <div className="stat-label">Shifts Scheduled Today</div>
-            </div>
-          </div>
-
-          <div className="stat-card" style={{ '--stat-color': 'var(--error-500)' }}>
-            <div className="stat-icon" style={{ background: 'rgba(244, 63, 94, 0.1)', color: 'var(--error-400)' }}>
-              <AlertTriangle size={20} />
-            </div>
-            <div>
-              <div className="stat-value">{stats?.pendingLeaves || 0}</div>
-              <div className="stat-label">Pending Leaves</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid-2">
-          <div className="card">
-            <div className="card-header">
-              <h3 className="card-title">Recent Activity</h3>
-              <ClipboardList size={16} style={{ color: 'var(--text-muted)' }} />
-            </div>
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-3 py-2 border-b border-subtle">
-                <span className="badge badge-accent">Geo Match</span>
-                <div>
-                  <div className="text-sm font-semibold">Pinky checked in at Capiche Piplod</div>
-                  <div className="text-xs text-muted">Within 15 meters of location</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 py-2 border-b border-subtle">
-                <span className="badge badge-primary">Auto Allocate</span>
-                <div>
-                  <div className="text-sm font-semibold">Weekly schedule auto-allocated</div>
-                  <div className="text-xs text-muted">Optimal coverage achieved based on prediction rules</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 py-2">
-                <span className="badge badge-warn">Leave Request</span>
-                <div>
-                  <div className="text-sm font-semibold">Dhiraj requested Emergency Leave</div>
-                  <div className="text-xs text-muted">Shift starting in 4 hours</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="card flex flex-col justify-between">
-            <div>
-              <h3 className="card-title mb-4">Quick Management Actions</h3>
-              <div className="flex flex-col gap-2">
-                <Link to="/shifts" className="btn btn-ghost w-full justify-between">
-                  <span>Run Intelligent Auto-Allocation</span>
-                  <ArrowRight size={16} />
-                </Link>
-                <Link to="/employees" className="btn btn-ghost w-full justify-between">
-                  <span>Add New Employee Profile</span>
-                  <ArrowRight size={16} />
-                </Link>
-                <Link to="/attendance" className="btn btn-ghost w-full justify-between">
-                  <span>View Attendance Log & Geo-Fences</span>
-                  <ArrowRight size={16} />
-                </Link>
-              </div>
-            </div>
-            <div className="text-xs text-muted text-center mt-4">
-              Shiftly Intelligent System v1.0.0
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Staff View (Mobile PWA & Staff Dashboard)
-  const nextShift = upcomingShifts[0];
+  const scopeLabel = query ? 'Filtered view' : 'Across all outlets';
 
   return (
     <div className="page-content animate-in">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Hello, {user?.name}</h1>
-          <p className="page-subtitle">{user?.venue?.name}</p>
+          <h1 className="page-title">Welcome back, {user?.name}</h1>
+          <p className="page-subtitle">{scopeLabel} · {format(new Date(), 'EEEE, d MMMM yyyy')}</p>
         </div>
+        <button className="btn btn-ghost btn-sm" onClick={load} disabled={loading}>
+          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+          <span>Reload</span>
+        </button>
+      </div>
+
+      {emergencies.length > 0 && (
+        <div className="card card--alert-crit mb-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <AlertTriangle size={22} className="icon-crit" />
+            <div>
+              <h3 className="font-bold text-sm" style={{ color: 'var(--ink-crit)' }}>
+                Active emergency leave requests
+              </h3>
+              <p className="text-xs text-secondary">
+                {emergencies.length} staff member{emergencies.length === 1 ? '' : 's'} awaiting shift
+                cover.
+              </p>
+            </div>
+            <Link to="/leaves" className="btn btn-danger btn-sm" style={{ marginLeft: 'auto' }}>
+              Manage
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Five tiles, not the mockup's seven: Transfer Requests and Labour Cost
+          have no backing model or wage data, so they are omitted rather than
+          filled with invented numbers. */}
+      <div className="stats-grid stats-grid--kpi">
+        <StatTile
+          label="Total Employees"
+          value={stats?.totalEmployees ?? 0}
+          icon={Users}
+          tone="brand"
+          deltaNote="Active staff"
+        />
+        <StatTile
+          label="Total Brands"
+          value={stats?.totalBrands ?? 0}
+          icon={Tags}
+          tone="info"
+          deltaNote={brandRows.map((b) => b.brand).join(', ') || '—'}
+        />
+        <StatTile
+          label="Total Outlets"
+          value={stats?.totalOutlets ?? 0}
+          icon={Store}
+          tone="brand"
+          deltaNote="All active"
+        />
+        <StatTile
+          label="Today's Attendance"
+          value={`${stats?.attendanceRate ?? 0}%`}
+          icon={TrendingUp}
+          tone="good"
+          deltaNote={`${stats?.todayAttendance ?? 0} of ${stats?.todayShifts ?? 0} shifts`}
+        />
+        <StatTile
+          label="Shifts Today"
+          value={stats?.todayShifts ?? 0}
+          icon={CalendarDays}
+          tone="warn"
+          deltaNote={`${stats?.weekShifts ?? 0} this week`}
+        />
+        <StatTile
+          label="Leave Requests"
+          value={stats?.pendingLeaves ?? 0}
+          icon={Clock}
+          tone="crit"
+          deltaNote="Pending approval"
+        />
+      </div>
+
+      <div className="grid-2 mb-4">
+        <ChartCard
+          title="Attendance Trend"
+          actions={
+            <Segmented
+              options={TREND_RANGES}
+              value={trendDays}
+              onChange={setTrendDays}
+              ariaLabel="Trend range"
+            />
+          }
+        >
+          <AttendanceTrendChart series={trend?.series || []} target={trend?.target ?? 95} />
+        </ChartCard>
+
+        <ChartCard title="Brand Performance" subtitle="attendance %, this week">
+          <BrandPerformanceChart rows={brandRows} />
+        </ChartCard>
+      </div>
+
+      <div className="grid-2">
+        <ChartCard
+          title="Department Staffing"
+          subtitle={
+            staffing?.date ? `scheduled ${format(new Date(staffing.date), 'EEE d MMM')}` : 'tomorrow'
+          }
+        >
+          <DepartmentStaffingChart
+            byDepartment={staffing?.byDepartment || []}
+            total={staffing?.total || 0}
+          />
+        </ChartCard>
+
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Quick Actions</h3>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Link to="/shifts" className="btn btn-primary w-full justify-between">
+              <span>Run Auto-Allocation</span>
+              <ArrowRight size={16} />
+            </Link>
+            <Link to="/employees" className="btn btn-info w-full justify-between">
+              <span>Add Employee</span>
+              <Plus size={16} />
+            </Link>
+            <Link to="/outlets" className="btn btn-accent w-full justify-between">
+              <span>Manage Outlets</span>
+              <Store size={16} />
+            </Link>
+            <Link to="/attendance" className="btn btn-ghost w-full justify-between">
+              <span>Attendance &amp; Geofences</span>
+              <MapPin size={16} />
+            </Link>
+            <Link to="/reports" className="btn btn-ghost w-full justify-between">
+              <span>View Reports</span>
+              <Upload size={16} />
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StaffDashboard() {
+  const { user } = useAuth();
+  const [upcomingShifts, setUpcomingShifts] = useState([]);
+  const [attendanceToday, setAttendanceToday] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([api.get('/shifts/my/upcoming'), api.get('/attendance/today')])
+      .then(([shifts, attendance]) => {
+        setUpcomingShifts(shifts);
+        setAttendanceToday(attendance?.status === 'NOT_CHECKED_IN' ? null : attendance);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return <div className="page-content text-center text-muted">Loading…</div>;
+  }
+
+  const nextShift = upcomingShifts[0];
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+
+  return (
+    <div className="page-content animate-in">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">{greeting}, {user?.name?.split(' ')[0]}</h1>
+          <p className="page-subtitle">{user?.outlet?.name}</p>
+        </div>
+        <span className="badge badge-primary">{user?.department}</span>
       </div>
 
       <div className="flex flex-col gap-4">
-        {/* Next Shift Card */}
-        <div className="card checkin-card flex flex-col items-center">
-          <Clock size={32} style={{ color: 'var(--primary-400)' }} />
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Today's Shift</h3>
+            <Clock size={16} className="icon-muted" />
+          </div>
           {nextShift ? (
-            <div className="mt-2">
-              <h3 className="font-bold text-lg">Next Shift: {nextShift.section || 'General'}</h3>
-              <p className="text-sm text-secondary">
-                {format(new Date(nextShift.date), 'EEEE, MMMM d')} | {nextShift.startTime} - {nextShift.endTime}
-              </p>
-            </div>
+            <>
+              <div className="text-lg font-bold">{nextShift.section || 'General'} Shift</div>
+              <div className="text-sm text-secondary">
+                {nextShift.startTime} – {nextShift.endTime}
+              </div>
+              <div className="flex items-center gap-1 text-xs text-muted mt-1">
+                <MapPin size={12} />
+                <span>{nextShift.outlet?.name || user?.outlet?.name}</span>
+              </div>
+            </>
           ) : (
-            <div className="mt-2">
-              <h3 className="font-bold text-lg">No Shifts Scheduled</h3>
-              <p className="text-sm text-secondary">Check back later or contact HR.</p>
-            </div>
+            <>
+              <div className="text-lg font-bold">No shift scheduled</div>
+              <p className="text-sm text-secondary">Check back later or contact your manager.</p>
+            </>
           )}
-          <Link to="/attendance" className="btn btn-primary mt-4 w-full justify-center">
+          <Link to="/attendance" className="btn btn-accent w-full justify-center mt-4">
             <MapPin size={16} />
-            <span>Go to Check In Portal</span>
+            <span>{attendanceToday?.checkIn ? 'View Attendance' : 'Check In'}</span>
           </Link>
         </div>
 
-        {/* Upcoming Shifts List */}
+        <div className="grid-2">
+          <div className="card">
+            <div className="stat-label">Attendance Status</div>
+            <div className="stat-value" style={{ fontSize: 'var(--text-xl)' }}>
+              {attendanceToday?.status?.replace(/_/g, ' ') || 'Not checked in'}
+            </div>
+          </div>
+          <div className="card">
+            <div className="stat-label">Upcoming Shifts</div>
+            <div className="stat-value" style={{ fontSize: 'var(--text-xl)' }}>
+              {upcomingShifts.length}
+            </div>
+          </div>
+        </div>
+
         <div className="card">
-          <h3 className="card-title mb-4">My Upcoming Shifts</h3>
+          <div className="card-header">
+            <h3 className="card-title">My Upcoming Shifts</h3>
+          </div>
           {upcomingShifts.length === 0 ? (
-            <div className="empty-state py-4">No upcoming shifts.</div>
+            <div className="empty-state py-4">
+              <p>No upcoming shifts.</p>
+            </div>
           ) : (
-            <div className="flex flex-col gap-3">
-              {upcomingShifts.map(s => (
-                <div key={s.id} className="flex justify-between items-center py-2 border-b border-subtle last:border-0">
+            <div className="divided-list">
+              {upcomingShifts.map((s) => (
+                <div key={s.id} className="flex justify-between items-center">
                   <div>
-                    <div className="text-sm font-semibold">{format(new Date(s.date), 'EEE, MMM d')}</div>
-                    <div className="text-xs text-muted">{s.section || 'General Section'}</div>
+                    <div className="text-sm font-semibold text-strong">
+                      {format(new Date(s.date), 'EEE, d MMM')}
+                    </div>
+                    <div className="text-xs text-muted">{s.section || 'General'}</div>
                   </div>
-                  <div className="badge badge-primary">{s.startTime} - {s.endTime}</div>
+                  <span className="badge badge-primary">
+                    {s.startTime} – {s.endTime}
+                  </span>
                 </div>
               ))}
             </div>
@@ -237,4 +318,9 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+}
+
+export default function DashboardPage() {
+  const { isAdmin, isManager } = useAuth();
+  return isAdmin || isManager ? <ManagementDashboard /> : <StaffDashboard />;
 }

@@ -1,11 +1,143 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useScope } from '../contexts/ScopeContext';
 import api from '../api/client';
-import { Menu, Search, Bell, X } from 'lucide-react';
+import { Menu, Search, Bell, X, ChevronDown, LogOut, User } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { ROLES } from '../constants';
+
+/**
+ * Organization / Brand / Outlet pickers.
+ *
+ * Disabled for roles the server pins to a single outlet — offering choices that
+ * would be silently ignored is worse than showing none.
+ */
+function ScopeSelectors() {
+  const {
+    organizations, brands, visibleOutlets,
+    orgId, brandId, outletId,
+    selectOrg, selectBrand, selectOutlet,
+    locked,
+  } = useScope();
+
+  return (
+    <div className="scope-selectors">
+      <select
+        className="scope-select"
+        aria-label="Organization"
+        value={orgId}
+        disabled={locked}
+        onChange={(e) => selectOrg(e.target.value)}
+      >
+        <option value="">All Organizations</option>
+        {organizations.map((o) => (
+          <option key={o.id} value={o.id}>{o.name}</option>
+        ))}
+      </select>
+
+      <select
+        className="scope-select"
+        aria-label="Brand"
+        value={brandId}
+        disabled={locked}
+        onChange={(e) => selectBrand(e.target.value)}
+      >
+        <option value="">All Brands</option>
+        {brands.map((b) => (
+          <option key={b.id} value={b.id}>{b.name}</option>
+        ))}
+      </select>
+
+      <select
+        className="scope-select"
+        aria-label="Outlet"
+        value={outletId}
+        disabled={locked}
+        onChange={(e) => selectOutlet(e.target.value)}
+      >
+        <option value="">All Outlets</option>
+        {visibleOutlets.map((o) => (
+          <option key={o.id} value={o.id}>{o.name}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function UserMenu() {
+  const { user, logout } = useAuth();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    const onKey = (e) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  const initials =
+    user?.name?.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase() || '?';
+
+  return (
+    <div className="user-chip-wrap" ref={ref}>
+      <button
+        type="button"
+        className="user-chip"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <div className="user-avatar">{initials}</div>
+        <div>
+          <div className="user-name">{user?.name}</div>
+          <div className="user-role">{ROLES[user?.role] || user?.role}</div>
+        </div>
+        <ChevronDown size={16} className="icon-muted" />
+      </button>
+
+      {open && (
+        <div className="user-menu" role="menu">
+          <div className="user-menu-head">
+            <div className="user-name">{user?.name}</div>
+            <div className="user-menu-email">{user?.email}</div>
+          </div>
+          <Link
+            to="/profile"
+            className="user-menu-item"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+          >
+            <User size={16} />
+            <span>My Profile</span>
+          </Link>
+          {/* Sign out as an explicit menu item. It used to be the click handler
+              for the entire name block in the sidebar, so clicking your own
+              name signed you out. */}
+          <button
+            type="button"
+            className="user-menu-item is-danger"
+            role="menuitem"
+            onClick={logout}
+          >
+            <LogOut size={16} />
+            <span>Sign Out</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Header({ collapsed, onToggle }) {
-  const { user } = useAuth();
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -26,23 +158,22 @@ export default function Header({ collapsed, onToggle }) {
   const openNotifications = async () => {
     setNotifOpen(true);
     try {
-      const data = await api.get('/notifications');
-      setNotifications(data);
+      setNotifications(await api.get('/notifications'));
     } catch {}
   };
 
   const markRead = async (id) => {
     try {
       await api.put(`/notifications/${id}/read`);
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch {}
   };
 
   const markAllRead = async () => {
     try {
       await api.put('/notifications/read-all');
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch {}
   };
@@ -50,24 +181,30 @@ export default function Header({ collapsed, onToggle }) {
   return (
     <>
       <header className={`header ${collapsed ? 'collapsed' : ''}`}>
-        <div className="header-left">
-          <button className="header-toggle" onClick={onToggle}>
-            <Menu size={20} />
-          </button>
-          <div className="header-search">
-            <Search className="search-icon" size={18} />
-            <input type="text" placeholder="Search employees, shifts..." />
+        <div className="header-inner">
+          <div className="header-left">
+            <button className="header-btn" onClick={onToggle} aria-label="Toggle sidebar">
+              <Menu size={20} />
+            </button>
+            <ScopeSelectors />
           </div>
-        </div>
-        <div className="header-right">
-          <button className="header-btn" onClick={openNotifications}>
-            <Bell size={20} />
-            {unreadCount > 0 && <span className="badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
-          </button>
+
+          <div className="header-right">
+            <div className="header-search">
+              <Search className="search-icon" size={18} />
+              <input type="text" placeholder="Search employees, shifts…" aria-label="Search" />
+            </div>
+            <button className="header-btn" onClick={openNotifications} aria-label="Notifications">
+              <Bell size={20} />
+              {unreadCount > 0 && (
+                <span className="badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+              )}
+            </button>
+            <UserMenu />
+          </div>
         </div>
       </header>
 
-      {/* Notification Panel */}
       <div className={`notification-panel ${notifOpen ? 'open' : ''}`}>
         <div className="modal-header">
           <h3 className="modal-title">Notifications</h3>
@@ -75,7 +212,7 @@ export default function Header({ collapsed, onToggle }) {
             {unreadCount > 0 && (
               <button className="btn btn-ghost btn-sm" onClick={markAllRead}>Mark all read</button>
             )}
-            <button className="modal-close" onClick={() => setNotifOpen(false)}>
+            <button className="modal-close" onClick={() => setNotifOpen(false)} aria-label="Close">
               <X size={20} />
             </button>
           </div>
@@ -85,10 +222,10 @@ export default function Header({ collapsed, onToggle }) {
             <div className="empty-state">
               <Bell size={48} className="empty-icon" />
               <h3>No notifications</h3>
-              <p>You're all caught up!</p>
+              <p>You're all caught up.</p>
             </div>
           ) : (
-            notifications.map(notif => (
+            notifications.map((notif) => (
               <div
                 key={notif.id}
                 className={`notification-item ${!notif.isRead ? 'unread' : ''}`}
@@ -104,7 +241,13 @@ export default function Header({ collapsed, onToggle }) {
           )}
         </div>
       </div>
-      {notifOpen && <div className="modal-overlay" style={{ background: 'transparent' }} onClick={() => setNotifOpen(false)} />}
+      {notifOpen && (
+        <div
+          className="modal-overlay"
+          style={{ background: 'transparent' }}
+          onClick={() => setNotifOpen(false)}
+        />
+      )}
     </>
   );
 }

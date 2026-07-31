@@ -140,16 +140,18 @@ export default function LeavesPage() {
       </div>
 
       {pendingEmergencies.length > 0 && (
-        <div className="card mb-4" style={{ borderColor: 'var(--error-500)' }}>
-          <h3 className="font-bold text-sm mb-3" style={{ color: 'var(--error-400)' }}>🚨 Active Emergency Coverage Requests</h3>
-          <div className="flex flex-col gap-3">
+        <div className="card card--alert-crit mb-4">
+          <h3 className="font-bold text-sm mb-3" style={{ color: 'var(--ink-crit)' }}>
+            Active emergency coverage requests
+          </h3>
+          <div className="divided-list">
             {pendingEmergencies.map(el => {
               const isOwn = el.employeeId === user?.id;
               return (
-                <div key={el.id} className="flex justify-between items-center py-2 border-b border-subtle last:border-0 flex-wrap gap-2">
+                <div key={el.id} className="flex justify-between items-center flex-wrap gap-2">
                   <div>
                     <span className="font-semibold">{el.employee.name}</span>
-                    <span className="text-xs text-muted"> ({el.employee.venue?.name} | {el.employee.department})</span>
+                    <span className="text-xs text-muted"> ({el.employee.outlet?.name} | {el.employee.department})</span>
                     <div className="text-xs text-secondary mt-1">Reason: "{el.reason}"</div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -192,7 +194,7 @@ export default function LeavesPage() {
               {leaves.map(l => (
                 <tr key={l.id}>
                   <td>
-                    <div className="font-semibold text-primary" style={{ color: 'var(--text-primary)' }}>{l.employee.name}</div>
+                    <div className="font-semibold text-primary" style={{ color: 'var(--ink-strong)' }}>{l.employee.name}</div>
                     <div className="text-xs text-muted">{l.employee.department}</div>
                   </td>
                   <td>

@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, CalendarClock, MapPin, TreePalm, User } from 'lucide-react';
+import { LayoutDashboard, MapPin, CalendarClock, Inbox, User } from 'lucide-react';
 
+/** Bottom tab bar, in the mockup's order. */
 const MOBILE_TABS = [
   { path: '/', label: 'Home', icon: LayoutDashboard },
+  { path: '/attendance', label: 'Attendance', icon: MapPin },
   { path: '/shifts', label: 'Shifts', icon: CalendarClock },
-  { path: '/attendance', label: 'Check In', icon: MapPin },
-  { path: '/leaves', label: 'Leave', icon: TreePalm },
+  { path: '/leaves', label: 'Inbox', icon: Inbox },
   { path: '/profile', label: 'Profile', icon: User },
 ];
 

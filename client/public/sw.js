@@ -1,12 +1,17 @@
-const CACHE_NAME = 'shiftly-cache-v1';
+// v2: repointed at the generated brand icons.
+const CACHE_NAME = 'shiftly-cache-v2';
+
+// cache.addAll is atomic — one 404 rejects the whole batch and nothing is
+// cached at all. The previous list asked for /src/main.ts (this project has
+// main.jsx) along with other source paths that only exist under the dev server
+// and are bundled away by a production build, so the precache had been failing
+// on every install. Only URLs that resolve in both dev and prod belong here.
 const ASSETS = [
   '/',
   '/index.html',
-  '/src/main.ts',
-  '/src/App.jsx',
-  '/src/index.css',
   '/manifest.json',
-  '/favicon.svg'
+  '/brand/favicon-32.png',
+  '/brand/icon-192.png'
 ];
 
 self.addEventListener('install', (e) => {
@@ -14,6 +19,19 @@ self.addEventListener('install', (e) => {
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS).catch(() => {});
     })
+  );
+});
+
+// Without this, bumping CACHE_NAME achieves nothing: caches.match() below
+// searches every cache in the origin, so entries from an older version would go
+// on being served alongside the new ones.
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then((names) =>
+      Promise.all(
+        names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n))
+      )
+    )
   );
 });
 
@@ -32,8 +50,8 @@ self.addEventListener('push', (e) => {
   const data = e.data ? e.data.json() : { title: 'Shiftly Alert', body: 'New update available!' };
   const options = {
     body: data.body,
-    icon: '/favicon.svg',
-    badge: '/favicon.svg',
+    icon: '/brand/icon-192.png',
+    badge: '/brand/favicon-48.png',
     data: data.actionUrl
   };
   e.waitUntil(

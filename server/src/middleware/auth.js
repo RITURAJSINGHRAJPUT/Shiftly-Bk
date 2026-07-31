@@ -14,9 +14,25 @@ const ROLE_HIERARCHY = {
   STAFF: 1,
 };
 
+/**
+ * Payload version. Bumped when a claim changes shape.
+ *
+ * v2 renamed `venueId` to `outletId`. A v1 token presented after that rename
+ * yields `req.user.outletId === undefined`, and Prisma treats
+ * `where: { outletId: undefined }` as "no filter" — so a stale token would have
+ * widened a locked role's scope to every outlet instead of narrowing it. Tokens
+ * below the current version are rejected outright.
+ */
+const TOKEN_VERSION = 2;
+
 export function generateToken(employee) {
   return jwt.sign(
-    { id: employee.id, role: employee.role, venueId: employee.venueId },
+    {
+      v: TOKEN_VERSION,
+      id: employee.id,
+      role: employee.role,
+      outletId: employee.outletId,
+    },
     JWT_SECRET,
     { expiresIn: '7d' }
   );
@@ -30,10 +46,17 @@ export function authenticateToken(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+
+    // 401, not 403: the client only clears a dead token on 401. Returning 403
+    // here would leave the stale token in place and silently fail every request.
+    if (decoded.v !== TOKEN_VERSION) {
+      return res.status(401).json({ error: 'Session outdated — please sign in again' });
+    }
+
     req.user = decoded;
     next();
   } catch (err) {
-    return res.status(403).json({ error: 'Invalid or expired token' });
+    return res.status(401).json({ error: 'Invalid or expired token' });
   }
 }
 
