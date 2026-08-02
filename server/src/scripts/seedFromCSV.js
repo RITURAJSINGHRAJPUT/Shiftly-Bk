@@ -9,6 +9,7 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import { buildTemplatesForOutlet } from './seedShiftTemplates.js';
+import { parseCSVShiftPattern, applyCSVPattern } from '../engine/csvShiftParser.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -415,69 +416,32 @@ async function seed() {
   }
   console.log(`    ✅ ${templateCount} templates across ${Object.keys(outletRecords).length} outlets`);
 
-  // Create some sample shifts for the current week
-  console.log('\n  Creating sample shifts for current week...');
+  // Create shifts from CSV pattern — exact per-day, per-employee assignments
+  // matching the spreadsheet rather than random sampling.
+  console.log('\n  Creating shifts from CSV pattern for current week...');
   const today = new Date();
   const weekStart = new Date(today);
-  weekStart.setDate(today.getDate() - today.getDay() + 1); // Monday
+  weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7)); // Monday
+  weekStart.setHours(0, 0, 0, 0);
 
-  const allEmployees = await prisma.employee.findMany({ where: { role: 'STAFF' } });
+  const csvPatternData = parseCSVShiftPattern(csvPath);
   let shiftCount = 0;
 
-  for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
-    const shiftDate = new Date(weekStart);
-    shiftDate.setDate(weekStart.getDate() + dayOffset);
-    shiftDate.setHours(0, 0, 0, 0);
+  for (const [outletName, outlet] of Object.entries(outletRecords)) {
+    const outletData = csvPatternData[outletName];
+    if (!outletData || outletData.assignments.length === 0) {
+      console.log(`    ⚠️  ${outletName} — no shift assignments in CSV`);
+      continue;
+    }
 
-    // Assign ~60% of employees per day
-    const dailyEmployees = allEmployees.filter(() => Math.random() > 0.4);
-
-    for (const emp of dailyEmployees) {
-      const isKitchen = emp.department === 'KITCHEN';
-      const isService = emp.department === 'SERVICE';
-
-      let startTime, endTime, section;
-      if (isKitchen) {
-        const sections = emp.skills.length > 0 ? emp.skills : ['general'];
-        section = sections[Math.floor(Math.random() * sections.length)];
-        section = section.charAt(0).toUpperCase() + section.slice(1);
-        const starts = ['11:30', '12:00', '12:30', '14:00', '15:00'];
-        startTime = starts[Math.floor(Math.random() * starts.length)];
-        const [h] = startTime.split(':').map(Number);
-        endTime = `${(h + 9) % 24}:00`;
-      } else if (isService) {
-        section = null;
-        const starts = ['12:00', '13:00', '14:00', '15:00', '16:00'];
-        startTime = starts[Math.floor(Math.random() * starts.length)];
-        const [h] = startTime.split(':').map(Number);
-        endTime = `${(h + 9) % 24}:00`;
-      } else {
-        section = null;
-        const starts = ['11:00', '12:00', '14:00'];
-        startTime = starts[Math.floor(Math.random() * starts.length)];
-        const [h] = startTime.split(':').map(Number);
-        endTime = `${(h + 10) % 24}:00`;
-      }
-
-      try {
-        await prisma.shift.create({
-          data: {
-            date: shiftDate,
-            startTime,
-            endTime,
-            section,
-            employeeId: emp.id,
-            outletId: emp.outletId,
-            status: shiftDate < today ? 'COMPLETED' : 'ASSIGNED',
-          },
-        });
-        shiftCount++;
-      } catch (err) {
-        // Skip errors
-      }
+    const result = await applyCSVPattern(prisma, outlet.id, outletName, weekStart, outletData);
+    shiftCount += result.created;
+    console.log(`    ✅ ${outletName} — ${result.created} shifts (${result.skipped} skipped)`);
+    if (result.skippedNames && result.skippedNames.length > 0) {
+      console.log(`       Skipped names: ${result.skippedNames.slice(0, 10).join(', ')}`);
     }
   }
-  console.log(`    ✅ Created ${shiftCount} sample shifts`);
+  console.log(`    ✅ Created ${shiftCount} total shifts from CSV pattern`);
 
   // Create sample attendance for past days
   console.log('\n  Creating sample attendance records...');

@@ -7,6 +7,7 @@ import { format, startOfWeek, endOfWeek, addDays, isSameDay, isToday, parseISO }
 import {
   Calendar, CalendarDays, Plus, RefreshCw, CheckCircle2, AlertTriangle,
   Layers, Users, Pencil, Trash2, Store, ChevronLeft, ChevronRight,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 const SECTIONS = ['Pizza', 'Pasta', 'Drinks', 'Sushi', 'Wok', 'Side', 'Pass'];
@@ -57,6 +58,9 @@ export default function ShiftsPage() {
 
   const [allocating, setAllocating] = useState(false);
   const [allocationSummary, setAllocationSummary] = useState(null);
+
+  const [importing, setImporting] = useState(false);
+  const [importSummary, setImportSummary] = useState(null);
 
   const [isShiftModalOpen, setShiftModalOpen] = useState(false);
   const [shiftForm, setShiftForm] = useState(null);
@@ -137,7 +141,7 @@ export default function ShiftsPage() {
   useEffect(() => { loadDay(); }, [loadDay]);
 
   // Switching restaurant invalidates the previous allocation result.
-  useEffect(() => { setAllocationSummary(null); }, [selectedOutletId]);
+  useEffect(() => { setAllocationSummary(null); setImportSummary(null); }, [selectedOutletId]);
 
   const activeTemplates = useMemo(() => templates.filter((t) => t.isActive), [templates]);
   const slotsPerDay = activeTemplates.reduce((sum, t) => sum + t.headcount, 0);
@@ -194,6 +198,25 @@ export default function ShiftsPage() {
       alert(err.message || 'Auto-allocation failed');
     } finally {
       setAllocating(false);
+    }
+  };
+
+  const handleImportCSV = async () => {
+    setImporting(true);
+    setImportSummary(null);
+    try {
+      const start = dayKey(startOfWeek(weekAnchor, { weekStartsOn: 1 }));
+      const res = await api.post('/shifts/import-csv-pattern', {
+        outletId: selectedOutletId,
+        startDate: start,
+      });
+      setImportSummary(res);
+      loadWeek();
+      loadDay();
+    } catch (err) {
+      alert(err.message || 'CSV import failed');
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -297,6 +320,15 @@ export default function ShiftsPage() {
               <RefreshCw size={16} className={allocating ? 'animate-spin' : ''} />
               <span>{allocating ? 'Allocating…' : 'Auto-Allocate Week'}</span>
             </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleImportCSV}
+              disabled={importing}
+              title="Import the exact staffing pattern from the CSV spreadsheet"
+            >
+              <FileSpreadsheet size={16} className={importing ? 'animate-spin' : ''} />
+              <span>{importing ? 'Importing…' : 'Import CSV Pattern'}</span>
+            </button>
             <button className="btn btn-primary" onClick={() => openShiftModal()}>
               <Plus size={16} />
               <span>Add Shift</span>
@@ -399,6 +431,48 @@ export default function ShiftsPage() {
         </div>
       )}
 
+      {importSummary && (
+        <div
+          className={`card mb-4 ${
+            importSummary.created === 0 ? 'card--alert-crit' : 'card--alert-good'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            {importSummary.created === 0 ? (
+              <AlertTriangle size={20} className="icon-crit" />
+            ) : (
+              <CheckCircle2 size={20} className="icon-good" />
+            )}
+            <div style={{ minWidth: 0 }}>
+              <h3
+                className="font-bold text-sm"
+                style={{ color: importSummary.created === 0 ? 'var(--ink-crit)' : 'var(--ink-good)' }}
+              >
+                {importSummary.message
+                  ? 'No CSV data'
+                  : `Imported ${importSummary.created} shifts from CSV pattern`}
+              </h3>
+              <p className="text-xs text-secondary">
+                {importSummary.message ||
+                  `${importSummary.outlet?.name} · week of ${importSummary.weekStart} · ${importSummary.skipped || 0} assignments skipped (employee not found).`}
+              </p>
+              {importSummary.skippedNames?.length > 0 && (
+                <div className="mt-2">
+                  <div className="text-xs uppercase text-muted mb-1">Unmatched names</div>
+                  <div className="flex gap-1 flex-wrap">
+                    {importSummary.skippedNames.slice(0, 12).map((n, i) => (
+                      <span key={i} className="badge badge-warn">{n}</span>
+                    ))}
+                    {importSummary.skippedNames.length > 12 && (
+                      <span className="badge badge-ghost">+{importSummary.skippedNames.length - 12} more</span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {/* ============ 1 · SHIFT PATTERNS ============ */}
       <div className="card mb-4" data-section="patterns">
         <div className="card-header">

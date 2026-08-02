@@ -1,4 +1,11 @@
-const API_BASE = 'http://localhost:3001/api';
+/**
+ * Relative, so it resolves against whatever host serves the page.
+ *
+ * An absolute http://localhost:3001 works only on the machine running the API —
+ * through a tunnel or any deployment it points at the *visitor's* own computer.
+ * In development Vite proxies /api to the API server (see vite.config.js).
+ */
+const API_BASE = '/api';
 
 class ApiClient {
   constructor() {
