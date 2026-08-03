@@ -1,69 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useScope } from '../contexts/ScopeContext';
 import api from '../api/client';
 import { Menu, Search, Bell, X, ChevronDown, LogOut, User } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ROLES } from '../constants';
-
-/**
- * Organization / Brand / Outlet pickers.
- *
- * Disabled for roles the server pins to a single outlet — offering choices that
- * would be silently ignored is worse than showing none.
- */
-function ScopeSelectors() {
-  const {
-    organizations, brands, visibleOutlets,
-    orgId, brandId, outletId,
-    selectOrg, selectBrand, selectOutlet,
-    locked,
-  } = useScope();
-
-  return (
-    <div className="scope-selectors">
-      <select
-        className="scope-select"
-        aria-label="Organization"
-        value={orgId}
-        disabled={locked}
-        onChange={(e) => selectOrg(e.target.value)}
-      >
-        <option value="">All Organizations</option>
-        {organizations.map((o) => (
-          <option key={o.id} value={o.id}>{o.name}</option>
-        ))}
-      </select>
-
-      <select
-        className="scope-select"
-        aria-label="Brand"
-        value={brandId}
-        disabled={locked}
-        onChange={(e) => selectBrand(e.target.value)}
-      >
-        <option value="">All Brands</option>
-        {brands.map((b) => (
-          <option key={b.id} value={b.id}>{b.name}</option>
-        ))}
-      </select>
-
-      <select
-        className="scope-select"
-        aria-label="Outlet"
-        value={outletId}
-        disabled={locked}
-        onChange={(e) => selectOutlet(e.target.value)}
-      >
-        <option value="">All Outlets</option>
-        {visibleOutlets.map((o) => (
-          <option key={o.id} value={o.id}>{o.name}</option>
-        ))}
-      </select>
-    </div>
-  );
-}
 
 function UserMenu() {
   const { user, logout } = useAuth();
@@ -186,7 +127,6 @@ export default function Header({ collapsed, onToggle }) {
             <button className="header-btn" onClick={onToggle} aria-label="Toggle sidebar">
               <Menu size={20} />
             </button>
-            <ScopeSelectors />
           </div>
 
           <div className="header-right">

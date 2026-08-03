@@ -4,8 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import BrandLogo from './BrandLogo';
 import {
-  LayoutDashboard, Building2, Tags, Store, Users, MapPin, TreePalm,
-  CalendarClock, BrainCircuit, ArrowLeftRight, BarChart3, LineChart,
+  LayoutDashboard, Building2, Store, Users, MapPin, TreePalm,
+  CalendarClock, Layers, BrainCircuit, ArrowLeftRight, BarChart3, LineChart,
   Settings, ScrollText, UserCog, Moon, Sun, ChevronRight,
 } from 'lucide-react';
 
@@ -36,8 +36,10 @@ const NAV_SECTIONS = [
     title: 'Organisation',
     items: [
       { path: '/organizations', label: 'Organizations', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN'] },
-      { path: '/brands', label: 'Brands', icon: Tags, roles: ['SUPER_ADMIN', 'ADMIN'] },
-      { path: '/outlets', label: 'Outlets', icon: Store, roles: ['SUPER_ADMIN', 'ADMIN', 'HR'] },
+      // Brands and outlets are one page: the outlet directory was already
+      // grouped by brand, so a separate brand list was a flatter view of the
+      // same tree. Brand writes stay ADMIN-only inside the page.
+      { path: '/outlets', label: 'Brands & Outlets', icon: Store, roles: ['SUPER_ADMIN', 'ADMIN', 'HR'] },
     ],
   },
   {
@@ -52,6 +54,10 @@ const NAV_SECTIONS = [
     title: 'Operations',
     items: [
       { path: '/shifts', label: 'Shift Planning', icon: CalendarClock, roles: 'all' },
+      // Everyone except STAFF, mirroring the API's requireMinRole('HEAD_CHEF') —
+      // the sidebar should never offer a page whose every write returns 403.
+      { path: '/shift-master', label: 'Shift Master', icon: Layers,
+        roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'MASTER_OF_HOUSE', 'HEAD_CHEF'] },
       // Short labels: these rows also carry a "Soon" badge, which leaves roughly
       // 80px for text. The full names live on the destination pages in App.jsx.
       { path: '/workforce-planner', label: 'AI Planner', icon: BrainCircuit, roles: ['SUPER_ADMIN', 'ADMIN', 'HR'], stub: true },

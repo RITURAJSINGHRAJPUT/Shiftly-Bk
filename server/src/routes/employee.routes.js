@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../db.js';
-import { authenticateToken, requireMinRole } from '../middleware/auth.js';
+import { authenticateToken, requireMinRole, requireRole } from '../middleware/auth.js';
 import { outletScope, outletInclude } from '../lib/scope.js';
 
 const router = Router();
@@ -137,6 +137,96 @@ router.delete('/:id', authenticateToken, requireMinRole('ADMIN'), async (req, re
       data: { isActive: false },
     });
     res.json({ message: 'Employee deactivated' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * Bulk staff wipe — SUPER_ADMIN only.
+ *
+ * Scope is deliberately STAFF-only. Deleting every employee would remove the
+ * caller's own row while their JWT stayed valid, so every subsequent request
+ * would 500 and nobody could sign back in without terminal access. Keeping the
+ * 15 management accounts also preserves the rule that each outlet has a Master
+ * of House and a Head Chef.
+ *
+ * requireRole rather than requireMinRole: an exact match says "only this role",
+ * and cannot be satisfied by some future role ranked above SUPER_ADMIN.
+ */
+const WIPE_CONFIRMATION = 'DELETE ALL STAFF';
+
+/** The employees a wipe targets. Used by both the preview and the wipe itself. */
+const wipeTarget = (req) => ({ role: 'STAFF', id: { not: req.user.id } });
+
+// GET /api/employees/stats/wipe-preview
+//
+// Two path segments on purpose: a single-segment literal such as /wipe-preview
+// would be captured by `router.get('/:id')` above and looked up as an employee.
+router.get('/stats/wipe-preview', authenticateToken, requireRole('SUPER_ADMIN'), async (req, res) => {
+  try {
+    const targets = await prisma.employee.findMany({
+      where: wipeTarget(req),
+      select: { id: true },
+    });
+    const employeeId = { in: targets.map((t) => t.id) };
+
+    const [shifts, attendance, leaves, notifications, keeping] = await Promise.all([
+      prisma.shift.count({ where: { employeeId } }),
+      prisma.attendance.count({ where: { employeeId } }),
+      prisma.leave.count({ where: { employeeId } }),
+      prisma.notification.count({ where: { employeeId } }),
+      prisma.employee.count({ where: { role: { not: 'STAFF' } } }),
+    ]);
+
+    res.json({ employees: targets.length, shifts, attendance, leaves, notifications, keeping });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/employees/wipe-staff
+//
+// POST, not DELETE, because the API client's delete() sends no body and this
+// requires a typed confirmation.
+router.post('/wipe-staff', authenticateToken, requireRole('SUPER_ADMIN'), async (req, res) => {
+  try {
+    if (req.body?.confirm !== WIPE_CONFIRMATION) {
+      return res.status(400).json({
+        error: `Confirmation phrase required. Send { "confirm": "${WIPE_CONFIRMATION}" }.`,
+      });
+    }
+
+    // One interactive transaction so the id lookup and all five deletes commit
+    // together. No relation in the schema declares onDelete, so every foreign key
+    // to Employee defaults to Restrict — children must go first, and a failure
+    // part-way through must roll back rather than leave a half-wiped database.
+    const result = await prisma.$transaction(async (tx) => {
+      const targets = await tx.employee.findMany({
+        where: wipeTarget(req),
+        select: { id: true },
+      });
+      const employeeId = { in: targets.map((t) => t.id) };
+
+      const notifications = await tx.notification.deleteMany({ where: { employeeId } });
+      const attendance = await tx.attendance.deleteMany({ where: { employeeId } });
+      const leaves = await tx.leave.deleteMany({ where: { employeeId } });
+      const shifts = await tx.shift.deleteMany({ where: { employeeId } });
+      const employees = await tx.employee.deleteMany({ where: { id: employeeId } });
+
+      return {
+        employees: employees.count,
+        shifts: shifts.count,
+        attendance: attendance.count,
+        leaves: leaves.count,
+        notifications: notifications.count,
+      };
+    });
+
+    console.log(
+      `[wipe-staff] ${req.user.id} deleted ${result.employees} staff, ${result.shifts} shifts`
+    );
+    res.json({ message: `Deleted ${result.employees} staff accounts`, ...result });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

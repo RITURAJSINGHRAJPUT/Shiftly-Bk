@@ -37,6 +37,12 @@ router.put('/:id', authenticateToken, requireMinRole('ADMIN'), async (req, res) 
     });
     res.json(organization);
   } catch (err) {
+    if (err.code === 'P2002') {
+      return res.status(400).json({ error: 'An organization with that name already exists' });
+    }
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Organization not found' });
+    }
     res.status(500).json({ error: err.message });
   }
 });

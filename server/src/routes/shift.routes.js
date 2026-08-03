@@ -1,15 +1,9 @@
 import { Router } from 'express';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import prisma from '../db.js';
 import { authenticateToken, requireMinRole } from '../middleware/auth.js';
 import { autoAllocateShifts } from '../engine/shiftAllocator.js';
-import { parseCSVShiftPattern, applyCSVPattern } from '../engine/csvShiftParser.js';
 import { outletScope } from '../lib/scope.js';
 import { localDateRange, startOfLocalDay, localDateKey } from '../lib/dates.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const router = Router();
 
@@ -54,6 +48,23 @@ router.get('/', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res) => {
   try {
     const { date, startTime, endTime, section, employeeId, outletId } = req.body;
+
+    // A shift carries no department of its own — it inherits the one the person
+    // works in. Stations are a kitchen concept (only kitchen staff hold the
+    // skills the allocator scores them against), so a station on a service
+    // shift is dead data that still paints a station tag on the week grid.
+    if (section) {
+      const employee = await prisma.employee.findUnique({
+        where: { id: employeeId },
+        select: { name: true, department: true },
+      });
+      if (!employee) return res.status(400).json({ error: 'Employee not found' });
+      if (employee.department !== 'KITCHEN') {
+        return res.status(400).json({
+          error: `${employee.name} works in ${employee.department} — stations apply to kitchen shifts only`,
+        });
+      }
+    }
 
     const shift = await prisma.shift.create({
       data: {
@@ -101,67 +112,6 @@ router.post('/auto-allocate', authenticateToken, requireMinRole('HEAD_CHEF'), as
     );
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// POST /api/shifts/import-csv-pattern
-// Reads the CSV, parses each outlet's Mon-Sun staffing matrix, and creates
-// Shift rows that exactly match the spreadsheet's per-day assignments.
-router.post('/import-csv-pattern', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res) => {
-  try {
-    const { outletId, startDate } = req.body;
-    const targetOutletId = outletId || req.user.outletId;
-
-    // Resolve the outlet name for CSV matching
-    const outlet = await prisma.outlet.findUnique({ where: { id: targetOutletId } });
-    if (!outlet) return res.status(404).json({ error: 'Outlet not found' });
-
-    // Parse CSV
-    const csvPath = join(__dirname, '../../../assets/Shiftly Shift Shift - Sheet1.csv');
-    const csvData = parseCSVShiftPattern(csvPath);
-    const outletData = csvData[outlet.name];
-
-    if (!outletData || outletData.assignments.length === 0) {
-      return res.json({
-        created: 0,
-        skipped: 0,
-        total: 0,
-        outlet: { id: outlet.id, name: outlet.name },
-        message: `No shift assignments found in CSV for "${outlet.name}".`,
-      });
-    }
-
-    // Calculate the Monday of the target week
-    const targetDate = startDate ? startOfLocalDay(startDate) : new Date();
-    const dayOfWeek = targetDate.getDay(); // 0=Sun, 1=Mon, …
-    const weekMonday = new Date(targetDate);
-    weekMonday.setDate(targetDate.getDate() - ((dayOfWeek + 6) % 7));
-    weekMonday.setHours(0, 0, 0, 0);
-
-    // Clear existing shifts for this outlet in the target week before importing
-    const weekSunday = new Date(weekMonday);
-    weekSunday.setDate(weekMonday.getDate() + 6);
-    await prisma.shift.deleteMany({
-      where: {
-        outletId: targetOutletId,
-        date: localDateRange(
-          localDateKey(weekMonday),
-          localDateKey(weekSunday)
-        ),
-      },
-    });
-
-    // Apply the pattern
-    const result = await applyCSVPattern(prisma, targetOutletId, outlet.name, weekMonday, outletData);
-
-    res.json({
-      ...result,
-      outlet: { id: outlet.id, name: outlet.name },
-      weekStart: localDateKey(weekMonday),
-    });
-  } catch (err) {
-    console.error('CSV import error:', err);
     res.status(500).json({ error: err.message });
   }
 });

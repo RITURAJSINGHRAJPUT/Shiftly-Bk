@@ -1,18 +1,22 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../api/client';
 import Modal from '../components/Modal';
 import { useScope } from '../contexts/ScopeContext';
-import { Plus, Search, Filter, Edit, Trash2, X, PlusCircle } from 'lucide-react';
+import { GLOBAL_SCOPE_ROLES } from '../constants';
+import { Plus, Search, Filter, Edit, Trash2, X, PlusCircle, Store, ShieldCheck, Users } from 'lucide-react';
 
 export default function EmployeesPage() {
-  // Outlet filtering is driven by the top bar, so this page no longer carries
-  // its own outlet dropdown — two controls for one filter is a trap.
-  const { withScope, outlets, query } = useScope();
+  // Only for the Add/Edit modal's Outlet field — this page has no outlet filter.
+  // The list is scoped server-side from the caller's role.
+  const { outlets } = useScope();
 
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDept, setFilterDept] = useState('');
+  // Nothing selected on load — the employee list below stays empty until a card
+  // is picked.
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,14 +29,14 @@ export default function EmployeesPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const empRes = await api.get(withScope('/employees?limit=500'));
+      const empRes = await api.get('/employees?limit=500');
       setEmployees(empRes.employees);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [withScope]);
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -105,10 +109,71 @@ export default function EmployeesPage() {
   const filtered = employees.filter(emp => {
     const matchesSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (emp.email && emp.email.toLowerCase().includes(searchTerm.toLowerCase()));
-    // Outlet scoping happens server-side via the top-bar selectors.
+    // Outlet scoping happens server-side, from the caller's role.
     const matchesDept = !filterDept || emp.department === filterDept;
     return matchesSearch && matchesDept;
   });
+
+  /**
+   * Management first, then one group per outlet.
+   *
+   * Organization-level accounts still carry an outletId in the database — every
+   * one of them happens to point at the first outlet — so grouping purely by
+   * outlet filed the Super Admin, Admin and HR under Capiche PIPLOD and inflated
+   * its headcount. They are org-wide, so they get their own group and are
+   * removed from the outlet counts.
+   *
+   * The outlet groups are driven by the outlet list rather than by the employee
+   * rows, so an outlet with nobody assigned still appears with a count of zero.
+   * That absence is worth seeing.
+   */
+  const groups = useMemo(() => {
+    const management = filtered.filter(e => GLOBAL_SCOPE_ROLES.includes(e.role));
+    const outletStaff = filtered.filter(e => !GLOBAL_SCOPE_ROLES.includes(e.role));
+
+    const byOutlet = new Map(outlets.map(o => [o.id, []]));
+    const orphans = [];
+    for (const emp of outletStaff) {
+      if (byOutlet.has(emp.outletId)) byOutlet.get(emp.outletId).push(emp);
+      else orphans.push(emp);
+    }
+
+    const rows = [
+      { id: '__management__', name: 'Management', brand: null, isManagement: true, people: management },
+      ...outlets.map(o => ({
+        id: o.id,
+        name: o.name,
+        brand: o.brand?.name,
+        people: byOutlet.get(o.id),
+      })),
+    ];
+    // Only if the API ever returns someone outside the visible outlet list.
+    if (orphans.length) rows.push({ id: '__other__', name: 'Other', brand: null, people: orphans });
+    return rows;
+  }, [outlets, filtered]);
+
+  const isFiltering = searchTerm.trim() !== '' || filterDept !== '';
+
+  /**
+   * The cards above are the selector; the list below is the detail pane. Null
+   * until something is picked, so the page opens as an overview of where people
+   * are rather than a wall of names.
+   */
+  const selected = groups.find(g => g.id === selectedGroupId) || null;
+
+  /**
+   * A filter that matched someone in an unselected group would otherwise show
+   * nothing at all, so move the selection to the first group that has matches.
+   * The card counts already reflect the filter, so it stays obvious where the
+   * results are.
+   */
+  useEffect(() => {
+    if (!isFiltering) return;
+    const current = groups.find(g => g.id === selectedGroupId);
+    if (current && current.people.length > 0) return;
+    const firstHit = groups.find(g => g.people.length > 0);
+    if (firstHit) setSelectedGroupId(firstHit.id);
+  }, [isFiltering, groups, selectedGroupId]);
 
   return (
     <div className="page-content animate-in">
@@ -150,69 +215,139 @@ export default function EmployeesPage() {
               <option value="SERVICE">Service</option>
               <option value="HOUSEKEEPING">Housekeeping</option>
             </select>
-            {query && (
-              <span className="badge badge-primary">Outlet filter active</span>
-            )}
           </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="text-center py-8">Loading employees data...</div>
+        <div className="text-center py-8">Loading employees data…</div>
       ) : (
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Department</th>
-                <th>Outlet</th>
-                <th>Role</th>
-                <th>Skills & Specialties</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(emp => (
-                <tr key={emp.id}>
-                  <td>
-                    <div className="font-semibold text-primary" style={{ color: 'var(--ink-strong)' }}>{emp.name}</div>
-                    <div className="text-xs text-muted">{emp.email}</div>
-                  </td>
-                  <td>
-                    <span className={`badge ${emp.department === 'KITCHEN' ? 'badge-warn' : emp.department === 'SERVICE' ? 'badge-primary' : 'badge-accent'}`}>
-                      {emp.department}
-                    </span>
-                  </td>
-                  <td>{emp.outlet?.name}</td>
-                  <td>{emp.role.replace(/_/g, ' ')}</td>
-                  <td>
-                    <div className="flex gap-1 flex-wrap">
-                      {emp.skills?.map(skill => (
-                        <span key={skill} className="badge badge-ghost text-xs" style={{ textTransform: 'capitalize' }}>
-                          {skill}
-                        </span>
+        <>
+          {/* Selector: one card per group, showing where people actually are. */}
+          <div className="stats-grid mb-4">
+            {groups.map(group => {
+              const active = group.id === selectedGroupId;
+              return (
+                <button
+                  key={group.id}
+                  type="button"
+                  className={`card group-card ${active ? 'is-active' : ''}`}
+                  onClick={() => setSelectedGroupId(active ? null : group.id)}
+                  aria-pressed={active}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="stat-icon">
+                      {group.isManagement ? <ShieldCheck size={16} /> : <Store size={16} />}
+                    </div>
+                    <div style={{ minWidth: 0, textAlign: 'left' }}>
+                      <div className="card-title truncate">{group.name}</div>
+                      <div className="text-xs text-muted truncate">
+                        {group.brand || (group.isManagement ? 'Organization-wide' : 'No brand')}
+                      </div>
+                    </div>
+                    <div className="group-card-count">{group.people.length}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Detail: empty until a card is chosen. */}
+          {!selected ? (
+            <div className="card">
+              <div className="empty-state">
+                <Users size={48} className="empty-icon" />
+                <h3>Select a group above</h3>
+                <p>Pick an outlet or Management to see the people in it.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="card">
+              <div className="card-header">
+                <div className="flex items-center gap-2">
+                  {selected.isManagement
+                    ? <ShieldCheck size={17} className="icon-good" />
+                    : <Store size={17} className="icon-brand" />}
+                  <h3 className="card-title">{selected.name}</h3>
+                  {selected.brand && <span className="badge badge-ghost">{selected.brand}</span>}
+                  <span className="text-sm text-muted" style={{ marginLeft: 'auto' }}>
+                    {selected.people.length} {selected.people.length === 1 ? 'person' : 'people'}
+                  </span>
+                </div>
+              </div>
+
+              {selected.people.length === 0 ? (
+                <p className="text-sm text-muted">
+                  {isFiltering
+                    ? 'No one here matches the filters.'
+                    : selected.isManagement
+                      ? 'No organization-level accounts.'
+                      : 'No employees assigned to this outlet.'}
+                </p>
+              ) : (
+                <div className="table-container">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Role</th>
+                        <th>Skills &amp; Specialties</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selected.people.map(emp => (
+                        <tr key={emp.id}>
+                          <td>
+                            <div className="font-semibold" style={{ color: 'var(--ink-strong)' }}>{emp.name}</div>
+                            <div className="text-xs text-muted">{emp.email}</div>
+                          </td>
+                          <td>
+                            <span className={`badge ${emp.department === 'KITCHEN' ? 'badge-warn' : emp.department === 'SERVICE' ? 'badge-primary' : 'badge-accent'}`}>
+                              {emp.department}
+                            </span>
+                          </td>
+                          <td>{emp.role.replace(/_/g, ' ')}</td>
+                          <td>
+                            <div className="flex gap-1 flex-wrap">
+                              {emp.skills?.map(skill => (
+                                <span key={skill} className="badge badge-ghost text-xs" style={{ textTransform: 'capitalize' }}>
+                                  {skill}
+                                </span>
+                              ))}
+                              {(!emp.skills || emp.skills.length === 0) && (
+                                <span className="text-xs text-muted">-</span>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <div className="flex gap-2">
+                              <button
+                                className="btn btn-ghost btn-icon btn-sm"
+                                onClick={() => handleOpenEdit(emp)}
+                                aria-label={`Edit ${emp.name}`}
+                              >
+                                <Edit size={14} />
+                              </button>
+                              <button
+                                className="btn btn-ghost btn-icon btn-sm icon-crit"
+                                onClick={() => handleDelete(emp.id)}
+                                aria-label={`Deactivate ${emp.name}`}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
                       ))}
-                      {(!emp.skills || emp.skills.length === 0) && (
-                        <span className="text-xs text-muted">-</span>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="flex gap-2">
-                      <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleOpenEdit(emp)}>
-                        <Edit size={14} />
-                      </button>
-                      <button className="btn btn-ghost btn-icon btn-sm" style={{ color: 'var(--error-400)' }} onClick={() => handleDelete(emp.id)}>
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {/* Add / Edit Modal */}

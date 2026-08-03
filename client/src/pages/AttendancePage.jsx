@@ -1,13 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
-import { useScope } from '../contexts/ScopeContext';
 import { MapPin, CheckCircle, ShieldCheck, LogIn, LogOut } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function AttendancePage() {
   const { user, isAdmin, isManager } = useAuth();
-  const { withScope } = useScope();
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [todayAttendance, setTodayAttendance] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -19,7 +17,7 @@ export default function AttendancePage() {
     setLoading(true);
     try {
       if (isAdmin || isManager) {
-        const records = await api.get(withScope('/attendance'));
+        const records = await api.get('/attendance');
         setAttendanceRecords(records);
       } else {
         const att = await api.get('/attendance/today');
@@ -30,7 +28,7 @@ export default function AttendancePage() {
     } finally {
       setLoading(false);
     }
-  }, [isAdmin, isManager, withScope]);
+  }, [isAdmin, isManager]);
 
   useEffect(() => {
     loadData();

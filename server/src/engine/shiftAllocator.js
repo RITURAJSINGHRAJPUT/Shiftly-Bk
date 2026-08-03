@@ -137,7 +137,17 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
   let requested = 0;
 
   for (const date of dateRange) {
+    // startOfLocalDay, never new Date(date): a date-only string parses as UTC
+    // midnight, which is the *previous* day's weekday east of UTC — the same
+    // trap lib/dates.js exists to document.
+    const weekday = startOfLocalDay(date).getDay();
+
     for (const template of templates) {
+      // Before `requested`, deliberately. Counting a Friday-only pattern's
+      // headcount on a Tuesday would inflate demand sevenfold and report a
+      // shortfall for staffing nobody ever asked for.
+      if (!template.daysOfWeek.includes(weekday)) continue;
+
       requested += template.headcount;
 
       const deptEmployees = employees.filter(e => e.department === template.department);

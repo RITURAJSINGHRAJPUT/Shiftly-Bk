@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/client';
-import { useScope } from '../contexts/ScopeContext';
 import StatTile from '../components/StatTile';
 import ChartCard from '../components/ChartCard';
 import Segmented from '../components/Segmented';
@@ -17,7 +16,6 @@ const RANGES = [
 ];
 
 export default function ReportsPage() {
-  const { withScope } = useScope();
   const { departments } = useChart();
 
   const [stats, setStats] = useState(null);
@@ -31,10 +29,10 @@ export default function ReportsPage() {
     setLoading(true);
     try {
       const [statsData, trendData, brandData, deptData] = await Promise.all([
-        api.get(withScope('/dashboard/stats')),
-        api.get(withScope(`/dashboard/attendance-trend?days=${days}`)),
+        api.get('/dashboard/stats'),
+        api.get(`/dashboard/attendance-trend?days=${days}`),
         api.get('/dashboard/brand-performance'),
-        api.get(withScope('/employees/stats/overview')),
+        api.get('/employees/stats/overview'),
       ]);
       setStats(statsData);
       setTrend(trendData);
@@ -45,7 +43,7 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [withScope, days]);
+  }, [days]);
 
   useEffect(() => {
     load();

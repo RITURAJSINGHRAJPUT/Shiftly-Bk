@@ -23,9 +23,22 @@ function outletWriteDenied(req, outletId) {
   return null;
 }
 
-/** Shared validation for create and update. Returns { data } or { error }. */
-function readTemplateBody(body, { partial = false } = {}) {
-  const { name, department, section, startTime, endTime, headcount, isActive } = body;
+/**
+ * Weekday numbers as JS `Date.getDay()` returns them, so neither the allocator
+ * nor the client's week grid has to convert. Sunday is 0; the UI renders
+ * Monday-first by ordering the chips itself.
+ */
+const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6];
+
+/**
+ * Shared validation for create and update. Returns { data } or { error }.
+ *
+ * `currentDepartment` is the department the row already has, needed because PUT
+ * is partial: a request that changes only the department still has to be judged
+ * against the section already stored, and vice versa.
+ */
+function readTemplateBody(body, { partial = false, currentDepartment = null } = {}) {
+  const { name, department, section, startTime, endTime, headcount, isActive, daysOfWeek } = body;
   const data = {};
 
   if (name !== undefined) data.name = String(name).trim();
@@ -60,6 +73,36 @@ function readTemplateBody(body, { partial = false } = {}) {
 
   if (isActive !== undefined) data.isActive = Boolean(isActive);
 
+  if (daysOfWeek !== undefined) {
+    if (!Array.isArray(daysOfWeek)) return { error: 'daysOfWeek must be an array of 0-6' };
+    const days = [...new Set(daysOfWeek.map(Number))];
+    if (days.some((d) => !WEEKDAYS.includes(d))) {
+      return { error: 'daysOfWeek must contain only 0 (Sunday) to 6 (Saturday)' };
+    }
+    // A pattern that runs on no day would sit in the list looking active while
+    // the allocator skipped it every single day — silently dead weight.
+    if (days.length === 0) return { error: 'A pattern must run on at least one day' };
+    data.daysOfWeek = days.sort((a, b) => a - b);
+  }
+
+  /**
+   * Stations belong to the kitchen.
+   *
+   * The allocator scores `section` against `employee.skills`, and only kitchen
+   * staff carry skills, so a station on a service pattern can never match — it
+   * is dead data that reads like a requirement. The form disables the field, but
+   * a disabled select is a suggestion; this is the part that holds.
+   */
+  const effectiveDepartment = data.department ?? currentDepartment;
+  if (effectiveDepartment && effectiveDepartment !== 'KITCHEN') {
+    if (data.section) {
+      return { error: 'Stations apply to kitchen patterns only' };
+    }
+    // Not just when the caller sends an empty section: moving a pattern from
+    // KITCHEN to SERVICE has to drop the station it is leaving behind.
+    data.section = null;
+  }
+
   return { data };
 }
 
@@ -82,6 +125,154 @@ router.get('/', authenticateToken, async (req, res) => {
     });
 
     res.json(templates);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+const CLEAR_CONFIRMATION = 'CLEAR PATTERNS';
+
+/**
+ * GET /api/shift-templates/clear-preview?outlet= — what a clear would remove.
+ *
+ * The pattern count is already on screen, but the shift count is not: the shift
+ * list endpoint filters by the caller's own scope with no `?outlet=`, so the
+ * page cannot count another restaurant's roster without pulling every shift in
+ * the org. The confirmation names an exact number, so it comes from here.
+ *
+ * Safe under the same guard as the clear itself, so the preview can never
+ * report on an outlet the caller may not touch.
+ */
+router.get('/clear-preview', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res) => {
+  try {
+    const outletId = req.query.outlet;
+    const denied = outletWriteDenied(req, outletId);
+    if (denied) return res.status(outletId ? 403 : 400).json({ error: denied });
+
+    const [patterns, shifts] = await Promise.all([
+      prisma.shiftTemplate.count({ where: { outletId } }),
+      prisma.shift.count({ where: { outletId } }),
+    ]);
+
+    res.json({ patterns, shifts });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/shift-templates/clear — remove every pattern for one outlet.
+ *
+ * Declared above `POST '/'` only for readability; the two paths cannot collide.
+ * Scoped to a single outlet and behind a typed phrase because this is the first
+ * bulk delete on either of these tables — `shift.routes.js` has only
+ * `DELETE /:id`.
+ *
+ * Shifts are opt-in. `Shift` has no foreign key to `ShiftTemplate`, so clearing
+ * patterns never orphans anything at the database level — but shifts allocated
+ * from the old patterns then match none, and quietly destroying a roster on a
+ * button labelled "clear patterns" would be a surprise.
+ */
+router.post('/clear', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res) => {
+  try {
+    const { outletId, confirm, includeShifts } = req.body;
+
+    const denied = outletWriteDenied(req, outletId);
+    if (denied) return res.status(outletId ? 403 : 400).json({ error: denied });
+
+    if (confirm !== CLEAR_CONFIRMATION) {
+      return res.status(400).json({
+        error: `Confirmation phrase required. Send { "confirm": "${CLEAR_CONFIRMATION}" }.`,
+      });
+    }
+
+    // One transaction so the two deletes commit together: a roster left behind
+    // by a half-applied clear is worse than either outcome on its own.
+    const [patterns, shifts] = await prisma.$transaction([
+      prisma.shiftTemplate.deleteMany({ where: { outletId } }),
+      ...(includeShifts ? [prisma.shift.deleteMany({ where: { outletId } })] : []),
+    ]);
+
+    res.json({
+      patterns: patterns.count,
+      shifts: shifts?.count ?? 0,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/shift-templates/bulk — one pattern, created at many outlets.
+ *
+ * Separate from `POST '/'` rather than an `outletIds` branch inside it: that
+ * handler answers with a single template object, and returning either an object
+ * or an array depending on the request would break every existing caller's
+ * expectations. This sits beside `/clear`, which already established
+ * one-body-many-rows on this router.
+ */
+router.post('/bulk', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res) => {
+  try {
+    const { outletIds } = req.body;
+
+    if (!Array.isArray(outletIds) || outletIds.length === 0) {
+      return res.status(400).json({ error: 'outletIds must be a non-empty array' });
+    }
+
+    const { data, error } = readTemplateBody(req.body);
+    if (error) return res.status(400).json({ error });
+
+    const ids = [...new Set(outletIds)];
+
+    // Every id is checked, not just the first. GET /outlets applies no outlet
+    // scope, so a locked user's browser holds the whole directory and could
+    // offer — or a caller could simply post — an outlet they cannot write to.
+    const refused = ids.filter((id) => outletWriteDenied(req, id));
+    if (refused.length > 0) {
+      const names = await prisma.outlet.findMany({
+        where: { id: { in: refused } },
+        select: { name: true },
+      });
+      return res.status(403).json({
+        error: `You can only manage shift patterns for your own outlet` +
+          (names.length ? ` (refused: ${names.map((o) => o.name).join(', ')})` : ''),
+      });
+    }
+
+    const outlets = await prisma.outlet.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, name: true },
+    });
+    if (outlets.length !== ids.length) {
+      return res.status(400).json({ error: 'One or more outlets do not exist' });
+    }
+
+    // There is no unique constraint on (outletId, name), so re-running "apply to
+    // all outlets" after adding one restaurant would quietly duplicate the
+    // pattern everywhere else. Skipping and reporting makes it safe to repeat.
+    const clashes = await prisma.shiftTemplate.findMany({
+      where: { outletId: { in: ids }, name: { equals: data.name, mode: 'insensitive' } },
+      select: { outletId: true },
+    });
+    const taken = new Set(clashes.map((c) => c.outletId));
+
+    const targets = outlets.filter((o) => !taken.has(o.id));
+    const skipped = outlets
+      .filter((o) => taken.has(o.id))
+      .map((o) => ({ id: o.id, name: o.name, reason: `a pattern named "${data.name}" already exists` }));
+
+    // All or nothing: a half-applied fan-out leaves the restaurants disagreeing
+    // about a pattern the user believes they created everywhere.
+    const created = await prisma.$transaction(
+      targets.map((o) =>
+        prisma.shiftTemplate.create({
+          data: { ...data, outletId: o.id, headcount: data.headcount ?? 1 },
+          include: { outlet: { select: { id: true, name: true } } },
+        })
+      )
+    );
+
+    res.status(created.length > 0 ? 201 : 200).json({ created, skipped });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -120,7 +311,10 @@ router.put('/:id', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, r
       if (denied) return res.status(403).json({ error: denied });
     }
 
-    const { data, error } = readTemplateBody(req.body, { partial: true });
+    const { data, error } = readTemplateBody(req.body, {
+      partial: true,
+      currentDepartment: existing.department,
+    });
     if (error) return res.status(400).json({ error });
     if (req.body.outletId) data.outletId = req.body.outletId;
 

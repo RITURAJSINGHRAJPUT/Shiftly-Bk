@@ -119,6 +119,15 @@ router.put('/:id', authenticateToken, requireMinRole('ADMIN'), async (req, res) 
     });
     res.json(outlet);
   } catch (err) {
+    // Outlet.name is unique. POST already mapped this to a readable 400; without
+    // the same here, renaming onto an existing name surfaced as a bare 500 and
+    // read like a server fault rather than a name clash.
+    if (err.code === 'P2002') {
+      return res.status(400).json({ error: 'An outlet with that name already exists' });
+    }
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Outlet not found' });
+    }
     res.status(500).json({ error: err.message });
   }
 });

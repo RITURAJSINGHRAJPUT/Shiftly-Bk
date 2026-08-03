@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useScope } from '../contexts/ScopeContext';
+import { GLOBAL_SCOPE_ROLES } from '../constants';
 import api from '../api/client';
 import StatTile from '../components/StatTile';
 import ChartCard from '../components/ChartCard';
@@ -23,7 +23,6 @@ const TREND_RANGES = [
 
 function ManagementDashboard() {
   const { user } = useAuth();
-  const { withScope, query } = useScope();
 
   const [stats, setStats] = useState(null);
   const [trend, setTrend] = useState(null);
@@ -37,11 +36,11 @@ function ManagementDashboard() {
     setLoading(true);
     try {
       const [statsData, trendData, brandData, staffingData, emergencyData] = await Promise.all([
-        api.get(withScope('/dashboard/stats')),
-        api.get(withScope(`/dashboard/attendance-trend?days=${trendDays}`)),
+        api.get('/dashboard/stats'),
+        api.get(`/dashboard/attendance-trend?days=${trendDays}`),
         api.get('/dashboard/brand-performance'),
-        api.get(withScope('/dashboard/department-staffing')),
-        api.get(withScope('/leaves/emergency/pending')),
+        api.get('/dashboard/department-staffing'),
+        api.get('/leaves/emergency/pending'),
       ]);
       setStats(statsData);
       setTrend(trendData);
@@ -53,7 +52,7 @@ function ManagementDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [withScope, trendDays]);
+  }, [trendDays]);
 
   useEffect(() => {
     load();
@@ -63,7 +62,16 @@ function ManagementDashboard() {
     return <div className="page-content text-center text-muted">Loading dashboard…</div>;
   }
 
-  const scopeLabel = query ? 'Filtered view' : 'Across all outlets';
+  /**
+   * What this dashboard covers.
+   *
+   * Role-aware rather than a flat "Across all outlets": the server pins every
+   * role outside GLOBAL_SCOPE_ROLES to its own outlet, so that string would be
+   * plainly wrong for a Master of House or Head Chef.
+   */
+  const scopeLabel = GLOBAL_SCOPE_ROLES.includes(user?.role)
+    ? 'Across all outlets'
+    : user?.outlet?.name || 'Your outlet';
 
   return (
     <div className="page-content animate-in">

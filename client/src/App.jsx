@@ -11,12 +11,12 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import EmployeesPage from './pages/EmployeesPage';
 import ShiftsPage from './pages/ShiftsPage';
+import ShiftMasterPage from './pages/ShiftMasterPage';
 import AttendancePage from './pages/AttendancePage';
 import LeavesPage from './pages/LeavesPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import OrganizationsPage from './pages/OrganizationsPage';
-import BrandsPage from './pages/BrandsPage';
 import OutletsPage from './pages/OutletsPage';
 import StubPage from './pages/StubPage';
 import LandingPage from './pages/LandingPage';
@@ -84,12 +84,14 @@ function Layout() {
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/organizations" element={<OrganizationsPage />} />
-          <Route path="/brands" element={<BrandsPage />} />
+          {/* Merged into the outlets page; kept so old links still land. */}
+          <Route path="/brands" element={<Navigate to="/outlets" replace />} />
           <Route path="/outlets" element={<OutletsPage />} />
           <Route path="/employees" element={<EmployeesPage />} />
           <Route path="/attendance" element={<AttendancePage />} />
           <Route path="/leaves" element={<LeavesPage />} />
           <Route path="/shifts" element={<ShiftsPage />} />
+          <Route path="/shift-master" element={<ShiftMasterPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/profile" element={<MobileProfile />} />

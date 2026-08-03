@@ -229,6 +229,11 @@ model ShiftTemplate {
   /// How many people this pattern needs. Previously implicit at 1, which capped
   /// every outlet at one shift per pattern per day regardless of its size.
   headcount  Int        @default(1)
+  /// Which weekdays this pattern runs, as JS getDay() numbers (0 = Sunday …
+  /// 6 = Saturday) — the form the allocator and the week grid both already hold
+  /// dates in, so neither end converts. Defaults to all seven, so a pattern
+  /// written before this field existed behaves exactly as it did.
+  daysOfWeek Int[]      @default([0, 1, 2, 3, 4, 5, 6])
   isActive   Boolean    @default(true)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt

@@ -1,26 +1,16 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { useScope } from '../contexts/ScopeContext';
+import { ALL_WEEKDAYS, formatDays, STATIONS, departmentHasStations } from '../constants';
 import Modal from '../components/Modal';
 import { format, startOfWeek, endOfWeek, addDays, isSameDay, isToday, parseISO } from 'date-fns';
 import {
   Calendar, CalendarDays, Plus, RefreshCw, CheckCircle2, AlertTriangle,
-  Layers, Users, Pencil, Trash2, Store, ChevronLeft, ChevronRight,
-  FileSpreadsheet,
+  Layers, Users, Store, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 
-const SECTIONS = ['Pizza', 'Pasta', 'Drinks', 'Sushi', 'Wok', 'Side', 'Pass'];
-const DEPARTMENTS = ['KITCHEN', 'SERVICE', 'HOUSEKEEPING'];
-
-const emptyPattern = {
-  name: '',
-  department: 'KITCHEN',
-  section: '',
-  startTime: '12:00',
-  endTime: '21:00',
-  headcount: 1,
-};
 
 /** YYYY-MM-DD from local parts — never toISOString(), which shifts the day. */
 const dayKey = (d) => format(d, 'yyyy-MM-dd');
@@ -34,14 +24,12 @@ const slotKey = (startTime, endTime, section, department) =>
 
 export default function ShiftsPage() {
   const { user, isManager } = useAuth();
-  const { outlets, outletId: scopeOutletId, locked } = useScope();
+  const { outlets, locked } = useScope();
 
   /**
-   * Planning happens for one restaurant at a time.
-   *
-   * Local state rather than the global scope: clicking a tab here should not
-   * silently re-filter Employees, Attendance and Reports. The top bar still
-   * seeds and updates it (one-way, below).
+   * Planning happens for one restaurant at a time, chosen by the tab strip
+   * below. Seeded once from the user's own outlet, falling back to the first —
+   * the top bar's outlet selector used to seed it, and that selector is gone.
    */
   const [selectedOutletId, setSelectedOutletId] = useState('');
 
@@ -59,17 +47,9 @@ export default function ShiftsPage() {
   const [allocating, setAllocating] = useState(false);
   const [allocationSummary, setAllocationSummary] = useState(null);
 
-  const [importing, setImporting] = useState(false);
-  const [importSummary, setImportSummary] = useState(null);
-
   const [isShiftModalOpen, setShiftModalOpen] = useState(false);
   const [shiftForm, setShiftForm] = useState(null);
 
-  const [isPatternModalOpen, setPatternModalOpen] = useState(false);
-  const [editingPattern, setEditingPattern] = useState(null);
-  const [patternForm, setPatternForm] = useState(emptyPattern);
-  const [patternError, setPatternError] = useState('');
-  const [savingPattern, setSavingPattern] = useState(false);
 
   const outlet = outlets.find((o) => o.id === selectedOutletId) || null;
 
@@ -77,12 +57,11 @@ export default function ShiftsPage() {
   useEffect(() => {
     if (outlets.length === 0) return;
     const preferred =
-      scopeOutletId ||
-      (outlets.some((o) => o.id === user?.outletId) ? user.outletId : '') ||
-      outlets[0].id;
-    setSelectedOutletId((prev) => (prev && !scopeOutletId ? prev : preferred));
+      (outlets.some((o) => o.id === user?.outletId) ? user.outletId : '') || outlets[0].id;
+    // `prev ||` so a tab the user picked is never clobbered by a re-render.
+    setSelectedOutletId((prev) => prev || preferred);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [outlets, scopeOutletId]);
+  }, [outlets]);
 
   const weekDays = useMemo(() => {
     const start = startOfWeek(weekAnchor, { weekStartsOn: 1 });
@@ -141,10 +120,37 @@ export default function ShiftsPage() {
   useEffect(() => { loadDay(); }, [loadDay]);
 
   // Switching restaurant invalidates the previous allocation result.
-  useEffect(() => { setAllocationSummary(null); setImportSummary(null); }, [selectedOutletId]);
+  useEffect(() => { setAllocationSummary(null); }, [selectedOutletId]);
 
   const activeTemplates = useMemo(() => templates.filter((t) => t.isActive), [templates]);
-  const slotsPerDay = activeTemplates.reduce((sum, t) => sum + t.headcount, 0);
+
+  /**
+   * The patterns that actually run on a given date, and the slots they ask for.
+   *
+   * Patterns carry a `daysOfWeek` list, so "slots per day" is no longer one
+   * number — a Friday-only pattern must not count against a Tuesday, or every
+   * Tuesday reads as understaffed for shifts nobody ever wanted.
+   *
+   * `date` is a real Date here (built by date-fns), so `getDay()` is safe; the
+   * server takes the same care with its date-only strings via startOfLocalDay.
+   */
+  const templatesForDay = useCallback(
+    (date) => activeTemplates.filter((t) => (t.daysOfWeek ?? ALL_WEEKDAYS).includes(date.getDay())),
+    [activeTemplates]
+  );
+  const slotsForDay = useCallback(
+    (date) => templatesForDay(date).reduce((sum, t) => sum + t.headcount, 0),
+    [templatesForDay]
+  );
+
+  /** Anything to plan at all this week — what gates Auto-Allocate. */
+  const slotsThisWeek = useMemo(
+    () => weekDays.reduce((sum, d) => sum + slotsForDay(d), 0),
+    [weekDays, slotsForDay]
+  );
+
+  const dayTemplates = useMemo(() => templatesForDay(selectedDay), [templatesForDay, selectedDay]);
+  const slotsToday = dayTemplates.reduce((sum, t) => sum + t.headcount, 0);
 
   /**
    * Group the selected day's shifts under the pattern each one fills.
@@ -155,7 +161,7 @@ export default function ShiftsPage() {
    */
   const coverage = useMemo(() => {
     const buckets = new Map();
-    activeTemplates.forEach((t) => {
+    dayTemplates.forEach((t) => {
       buckets.set(slotKey(t.startTime, t.endTime, t.section, t.department), {
         template: t,
         shifts: [],
@@ -178,7 +184,7 @@ export default function ShiftsPage() {
       filled: groups.reduce((sum, g) => sum + Math.min(g.shifts.length, g.template.headcount), 0),
       assigned: groups.reduce((sum, g) => sum + g.shifts.length, 0),
     };
-  }, [dayShifts, activeTemplates]);
+  }, [dayShifts, dayTemplates]);
 
   const handleAutoAllocate = async () => {
     setAllocating(true);
@@ -201,32 +207,16 @@ export default function ShiftsPage() {
     }
   };
 
-  const handleImportCSV = async () => {
-    setImporting(true);
-    setImportSummary(null);
-    try {
-      const start = dayKey(startOfWeek(weekAnchor, { weekStartsOn: 1 }));
-      const res = await api.post('/shifts/import-csv-pattern', {
-        outletId: selectedOutletId,
-        startDate: start,
-      });
-      setImportSummary(res);
-      loadWeek();
-      loadDay();
-    } catch (err) {
-      alert(err.message || 'CSV import failed');
-    } finally {
-      setImporting(false);
-    }
-  };
-
   const openShiftModal = (dateObj) => {
+    const first = employees[0];
     setShiftForm({
       date: dayKey(dateObj || selectedDay),
       startTime: '12:00',
       endTime: '21:00',
-      section: 'Pizza',
-      employeeId: employees[0]?.id || '',
+      // Seeded from whoever is preselected rather than a fixed 'Pizza', which
+      // opened the form already contradicting itself for a service employee.
+      section: departmentHasStations(first?.department) ? 'Pizza' : '',
+      employeeId: first?.id || '',
       outletId: selectedOutletId,
     });
     setShiftModalOpen(true);
@@ -244,54 +234,9 @@ export default function ShiftsPage() {
     }
   };
 
-  const openPatternModal = (pattern) => {
-    setEditingPattern(pattern);
-    setPatternForm(
-      pattern
-        ? {
-            name: pattern.name,
-            department: pattern.department,
-            section: pattern.section || '',
-            startTime: pattern.startTime,
-            endTime: pattern.endTime,
-            headcount: pattern.headcount,
-          }
-        : emptyPattern
-    );
-    setPatternError('');
-    setPatternModalOpen(true);
-  };
-
-  const savePattern = async (e) => {
-    e.preventDefault();
-    setSavingPattern(true);
-    setPatternError('');
-    try {
-      const body = {
-        ...patternForm,
-        outletId: selectedOutletId,
-        headcount: Number(patternForm.headcount),
-      };
-      if (editingPattern) await api.put(`/shift-templates/${editingPattern.id}`, body);
-      else await api.post('/shift-templates', body);
-      setPatternModalOpen(false);
-      loadOutletData();
-    } catch (err) {
-      setPatternError(err.message || 'Failed to save pattern');
-    } finally {
-      setSavingPattern(false);
-    }
-  };
-
-  const deletePattern = async (pattern) => {
-    if (!window.confirm(`Delete the "${pattern.name}" pattern? Existing shifts are kept.`)) return;
-    try {
-      await api.delete(`/shift-templates/${pattern.id}`);
-      loadOutletData();
-    } catch (err) {
-      alert(err.message || 'Failed to delete pattern');
-    }
-  };
+  /** Who the Add Shift modal is currently assigning to — their department decides
+      whether a station applies. */
+  const shiftEmployee = employees.find((e) => e.id === shiftForm?.employeeId) || null;
 
   const shiftsForDay = (day) => weekShifts.filter((s) => isSameDay(new Date(s.date), day));
   const getSection = (section) => (section ? section.toLowerCase() : 'general');
@@ -311,23 +256,16 @@ export default function ShiftsPage() {
         </div>
         {isManager && (
           <div className="flex gap-2">
+            {/* Gated on the whole week, not one day: a Fri–Sun pattern gives
+                this week something to allocate even though Monday has none. */}
             <button
               className="btn btn-accent"
               onClick={handleAutoAllocate}
-              disabled={allocating || slotsPerDay === 0}
-              title={slotsPerDay === 0 ? 'Define shift patterns for this outlet first' : undefined}
+              disabled={allocating || slotsThisWeek === 0}
+              title={slotsThisWeek === 0 ? 'Define shift patterns for this outlet first' : undefined}
             >
               <RefreshCw size={16} className={allocating ? 'animate-spin' : ''} />
               <span>{allocating ? 'Allocating…' : 'Auto-Allocate Week'}</span>
-            </button>
-            <button
-              className="btn btn-primary"
-              onClick={handleImportCSV}
-              disabled={importing}
-              title="Import the exact staffing pattern from the CSV spreadsheet"
-            >
-              <FileSpreadsheet size={16} className={importing ? 'animate-spin' : ''} />
-              <span>{importing ? 'Importing…' : 'Import CSV Pattern'}</span>
             </button>
             <button className="btn btn-primary" onClick={() => openShiftModal()}>
               <Plus size={16} />
@@ -364,13 +302,13 @@ export default function ShiftsPage() {
       )}
 
       {/* Alerts stay near the top — transient feedback that must be seen. */}
-      {slotsPerDay === 0 && !loading && (
+      {slotsThisWeek === 0 && !loading && (
         <div className="card card--alert-crit mb-4">
           <div className="flex items-center gap-3">
             <AlertTriangle size={20} className="icon-crit" />
             <p className="text-sm text-secondary">
               <strong>{outlet?.name}</strong> has no shift patterns, so auto-allocation
-              has nothing to fill. Add one below.
+              has nothing to fill. Define them in Shift Master.
             </p>
           </div>
         </div>
@@ -431,49 +369,6 @@ export default function ShiftsPage() {
         </div>
       )}
 
-      {importSummary && (
-        <div
-          className={`card mb-4 ${
-            importSummary.created === 0 ? 'card--alert-crit' : 'card--alert-good'
-          }`}
-        >
-          <div className="flex items-start gap-3">
-            {importSummary.created === 0 ? (
-              <AlertTriangle size={20} className="icon-crit" />
-            ) : (
-              <CheckCircle2 size={20} className="icon-good" />
-            )}
-            <div style={{ minWidth: 0 }}>
-              <h3
-                className="font-bold text-sm"
-                style={{ color: importSummary.created === 0 ? 'var(--ink-crit)' : 'var(--ink-good)' }}
-              >
-                {importSummary.message
-                  ? 'No CSV data'
-                  : `Imported ${importSummary.created} shifts from CSV pattern`}
-              </h3>
-              <p className="text-xs text-secondary">
-                {importSummary.message ||
-                  `${importSummary.outlet?.name} · week of ${importSummary.weekStart} · ${importSummary.skipped || 0} assignments skipped (employee not found).`}
-              </p>
-              {importSummary.skippedNames?.length > 0 && (
-                <div className="mt-2">
-                  <div className="text-xs uppercase text-muted mb-1">Unmatched names</div>
-                  <div className="flex gap-1 flex-wrap">
-                    {importSummary.skippedNames.slice(0, 12).map((n, i) => (
-                      <span key={i} className="badge badge-warn">{n}</span>
-                    ))}
-                    {importSummary.skippedNames.length > 12 && (
-                      <span className="badge badge-ghost">+{importSummary.skippedNames.length - 12} more</span>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-      {/* ============ 1 · SHIFT PATTERNS ============ */}
       <div className="card mb-4" data-section="patterns">
         <div className="card-header">
           <div className="flex items-center gap-2">
@@ -483,20 +378,21 @@ export default function ShiftsPage() {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted">
-              {activeTemplates.length} patterns · {slotsPerDay} slots/day · {employees.length} staff
+              {activeTemplates.length} patterns · {slotsThisWeek} slots/week · {employees.length} staff
             </span>
             {isManager && (
-              <button className="btn btn-ghost btn-sm" onClick={() => openPatternModal(null)}>
-                <Plus size={14} />
-                <span>Add Pattern</span>
-              </button>
+              <Link to="/shift-master" className="btn btn-ghost btn-sm">
+                <Layers size={14} />
+                <span>Manage patterns</span>
+              </Link>
             )}
           </div>
         </div>
 
         <p className="text-xs text-muted mb-3">
-          Each pattern is a recurring requirement — station, hours and how many people
-          it needs. Auto-allocation fills every slot for each day of the week.
+          Each pattern is a recurring requirement — station, hours, how many people it
+          needs and which days it runs. Auto-allocation fills every slot on the days a
+          pattern runs. Patterns are defined in Shift Master; this is a read-only view.
         </p>
 
         {templates.length === 0 ? (
@@ -514,6 +410,7 @@ export default function ShiftsPage() {
                   <th>Department</th>
                   <th>Station</th>
                   <th>Hours</th>
+                  <th>Runs on</th>
                   <th>Needed</th>
                   {isManager && <th />}
                 </tr>
@@ -536,23 +433,16 @@ export default function ShiftsPage() {
                     <td>{t.section || <span className="text-muted">General</span>}</td>
                     <td>{t.startTime} – {t.endTime}</td>
                     <td>
+                      <span className={t.daysOfWeek?.length === 7 ? 'text-muted' : 'font-semibold text-strong'}>
+                        {formatDays(t.daysOfWeek ?? ALL_WEEKDAYS)}
+                      </span>
+                    </td>
+                    <td>
                       <span className="flex items-center gap-1">
                         <Users size={13} className="icon-muted" />
                         <strong>{t.headcount}</strong>
                       </span>
                     </td>
-                    {isManager && (
-                      <td>
-                        <div className="flex gap-1">
-                          <button className="btn btn-ghost btn-sm btn-icon" onClick={() => openPatternModal(t)} aria-label={`Edit ${t.name}`}>
-                            <Pencil size={13} />
-                          </button>
-                          <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--ink-crit)' }} onClick={() => deletePattern(t)} aria-label={`Delete ${t.name}`}>
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      </td>
-                    )}
                   </tr>
                 ))}
               </tbody>
@@ -571,7 +461,7 @@ export default function ShiftsPage() {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted">
-              {coverage.filled} of {slotsPerDay} slots filled · {dayShifts.length} shifts
+              {coverage.filled} of {slotsToday} slots filled · {dayShifts.length} shifts
             </span>
             <div className="flex gap-1">
               <button
@@ -599,10 +489,19 @@ export default function ShiftsPage() {
           <div className="text-center py-6 text-muted text-sm">Loading day…</div>
         ) : activeTemplates.length === 0 ? (
           <div className="empty-state py-6">
-            <p>Define shift patterns above to measure this day against them.</p>
+            <p>Define shift patterns in Shift Master to measure this day against them.</p>
           </div>
         ) : (
           <>
+            {/* Patterns exist, but none of them runs today. Without this the
+                coverage list is simply blank and reads like a loading bug. */}
+            {dayTemplates.length === 0 && (
+              <p className="text-sm text-muted py-4">
+                No pattern runs on {format(selectedDay, 'EEEE')}s at {outlet?.name}.
+                {' '}Nothing is scheduled to be filled on this day.
+              </p>
+            )}
+
             <div className="divided-list">
               {coverage.groups.map(({ template, shifts }) => {
                 const short = shifts.length < template.headcount;
@@ -712,8 +611,10 @@ export default function ShiftsPage() {
                     )}
                   </div>
 
+                  {/* This day's own denominator — a Fri–Sun pattern must not
+                      make Monday read 0/12 when Monday needs nothing. */}
                   <div className="text-2xs text-muted mb-1">
-                    {dShifts.length}/{slotsPerDay}
+                    {dShifts.length}/{slotsForDay(day)}
                   </div>
 
                   <div className="flex flex-col gap-1">
@@ -753,7 +654,17 @@ export default function ShiftsPage() {
               <select
                 className="form-select"
                 value={shiftForm.employeeId}
-                onChange={(e) => setShiftForm((p) => ({ ...p, employeeId: e.target.value }))}
+                onChange={(e) => {
+                  // A shift has no department of its own — it inherits the one
+                  // the person works in, so switching to a service employee
+                  // drops any kitchen station already picked.
+                  const picked = employees.find((emp) => emp.id === e.target.value);
+                  setShiftForm((p) => ({
+                    ...p,
+                    employeeId: e.target.value,
+                    section: departmentHasStations(picked?.department) ? p.section : '',
+                  }));
+                }}
                 required
               >
                 {employees.map((e) => (
@@ -788,11 +699,20 @@ export default function ShiftsPage() {
 
             <div className="form-group">
               <label className="form-label">Station</label>
-              <select className="form-select" value={shiftForm.section}
-                onChange={(e) => setShiftForm((p) => ({ ...p, section: e.target.value }))}>
-                <option value="">General (Service / Housekeeping)</option>
-                {SECTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+              <select
+                className="form-select"
+                value={shiftForm.section}
+                disabled={!departmentHasStations(shiftEmployee?.department)}
+                onChange={(e) => setShiftForm((p) => ({ ...p, section: e.target.value }))}
+              >
+                <option value="">General</option>
+                {STATIONS.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
+              {shiftEmployee && !departmentHasStations(shiftEmployee.department) && (
+                <p className="text-xs text-muted mt-1">
+                  {shiftEmployee.name} is {shiftEmployee.department} — stations apply to kitchen only.
+                </p>
+              )}
             </div>
 
             <div className="modal-footer" style={{ padding: 0, marginTop: 'var(--space-4)' }}>
@@ -803,81 +723,6 @@ export default function ShiftsPage() {
         )}
       </Modal>
 
-      {/* ---- Add / edit pattern ---- */}
-      <Modal
-        isOpen={isPatternModalOpen}
-        onClose={() => setPatternModalOpen(false)}
-        title={`${editingPattern ? 'Edit' : 'Add'} pattern · ${outlet?.name || ''}`}
-      >
-        <form onSubmit={savePattern} className="flex flex-col gap-4">
-          {patternError && <div className="login-error">{patternError}</div>}
-
-          <div className="form-group">
-            <label className="form-label">Pattern name</label>
-            <input
-              className="form-input"
-              placeholder="e.g. Pizza Station"
-              value={patternForm.name}
-              onChange={(e) => setPatternForm((p) => ({ ...p, name: e.target.value }))}
-              required
-            />
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Department</label>
-              <select className="form-select" value={patternForm.department}
-                onChange={(e) => setPatternForm((p) => ({ ...p, department: e.target.value }))}>
-                {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Station</label>
-              <select className="form-select" value={patternForm.section}
-                onChange={(e) => setPatternForm((p) => ({ ...p, section: e.target.value }))}>
-                <option value="">General</option>
-                {SECTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Start</label>
-              <input type="time" className="form-input" value={patternForm.startTime}
-                onChange={(e) => setPatternForm((p) => ({ ...p, startTime: e.target.value }))} required />
-            </div>
-            <div className="form-group">
-              <label className="form-label">End</label>
-              <input type="time" className="form-input" value={patternForm.endTime}
-                onChange={(e) => setPatternForm((p) => ({ ...p, endTime: e.target.value }))} required />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">People needed per day</label>
-            <input
-              type="number"
-              min="1"
-              max="99"
-              className="form-input"
-              value={patternForm.headcount}
-              onChange={(e) => setPatternForm((p) => ({ ...p, headcount: e.target.value }))}
-              required
-            />
-            <p className="text-xs text-muted mt-1">
-              Auto-allocation creates this many shifts for this pattern on each day.
-            </p>
-          </div>
-
-          <div className="modal-footer" style={{ padding: 0, marginTop: 'var(--space-4)' }}>
-            <button type="button" className="btn btn-ghost" onClick={() => setPatternModalOpen(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={savingPattern}>
-              {savingPattern ? 'Saving…' : 'Save Pattern'}
-            </button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 }
