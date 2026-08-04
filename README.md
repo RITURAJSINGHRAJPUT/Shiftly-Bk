@@ -156,22 +156,51 @@ cannot widen that.
 
 ---
 
-## Demo logins
+## Signing in
 
-| Role | Email | Password |
-|---|---|---|
-| Super Admin | `superadmin@shiftly.com` | `admin123` |
-| Admin | `admin@shiftly.com` | `admin123` |
-| HR | `hr@shiftly.com` | `admin123` |
-| Master of House | `moh@shiftly.com` | `admin123` |
-| Head Chef | `chef@shiftly.com` | `admin123` |
-| Kitchen Staff | `kitchen1@capichep.shiftly.com` | `shiftly123` |
+There are no shared or default passwords. The database holds **one** account —
+a super admin — who enrols everybody else.
 
-21 accounts in total — 3 organization-level, 12 outlet managers (2 × 6 outlets)
-and 6 staff. Other outlets follow the same pattern with their own slug, e.g.
-`moh@aikoahm.shiftly.com`. The login screen has one-click buttons for these.
+```bash
+npm --prefix server run reset:superadmin      # add --dry-run to see what it would do
+```
 
-Full credential tables: **[RUNNING.md](RUNNING.md#demo-logins)**.
+This deletes every employee account and everything hanging off one (shifts,
+attendance, leave, notifications), leaves organisations, brands, outlets and
+their station lists untouched, and creates a single `SUPER_ADMIN`. It prints a
+generated password **once** — it is stored only as a bcrypt hash, so that run is
+the only chance to read it.
+
+Who can do what is tabulated in **[ACCESS.md](ACCESS.md)**, generated from the
+capability registry the route guards read, so it cannot drift from the code.
+
+### How accounts work
+
+- The super admin enrols people from **Employees**. Saving generates a one-time
+  password and shows it once, to pass on however you like.
+- A new account can reach nothing until it sets its own password: its token
+  carries a `pwreset` claim and every other endpoint refuses it. The restriction
+  is in the token, not in the UI.
+- Lost a password? The key icon on an employee's row issues a new one-time one
+  and invalidates the old.
+- Anyone can change their own password under **Settings → Your Password**.
+- Deactivating someone is a real lockout — the login handler refuses an inactive
+  account.
+
+Minimum password length is 10, with no composition rules. Repeated failed
+sign-ins are rate limited.
+
+### Demo data
+
+`npm run seed`, `seed:staff` and `managers` create accounts with passwords
+written down in this repository. They refuse to run unless you opt in:
+
+```bash
+ALLOW_DEMO_SEED=true npm --prefix server run seed:staff
+```
+
+Do not point them at anything real — `seed` is destructive, and all three would
+put known passwords back into the database.
 
 ---
 

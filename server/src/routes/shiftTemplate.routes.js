@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../db.js';
-import { authenticateToken, requireMinRole } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { can } from '../lib/capabilities.js';
 import { outletScope, hasGlobalScope } from '../lib/scope.js';
 
 const router = Router();
@@ -30,6 +31,9 @@ function outletWriteDenied(req, outletId) {
  */
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6];
 
+/** Shift rows a station can run. Mirrors MAX_SHIFT_SLOTS on the client. */
+const MAX_SLOT = 6;
+
 /**
  * Shared validation for create and update. Returns { data } or { error }.
  *
@@ -38,7 +42,9 @@ const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6];
  * against the section already stored, and vice versa.
  */
 function readTemplateBody(body, { partial = false, currentDepartment = null } = {}) {
-  const { name, department, section, startTime, endTime, headcount, isActive, daysOfWeek } = body;
+  const {
+    name, department, section, startTime, endTime, headcount, isActive, daysOfWeek, slot,
+  } = body;
   const data = {};
 
   if (name !== undefined) data.name = String(name).trim();
@@ -72,6 +78,17 @@ function readTemplateBody(body, { partial = false, currentDepartment = null } = 
   }
 
   if (isActive !== undefined) data.isActive = Boolean(isActive);
+
+  if (slot !== undefined) {
+    const n = Number(slot);
+    // Six, matching the sheet's ceiling. Two is the default a station draws;
+    // beyond six the grid stops being readable, and a station running seven
+    // distinct shifts is really two stations.
+    if (!Number.isInteger(n) || n < 1 || n > MAX_SLOT) {
+      return { error: `slot must be a whole number between 1 and ${MAX_SLOT}` };
+    }
+    data.slot = n;
+  }
 
   if (daysOfWeek !== undefined) {
     if (!Array.isArray(daysOfWeek)) return { error: 'daysOfWeek must be an array of 0-6' };
@@ -143,7 +160,7 @@ const CLEAR_CONFIRMATION = 'CLEAR PATTERNS';
  * Safe under the same guard as the clear itself, so the preview can never
  * report on an outlet the caller may not touch.
  */
-router.get('/clear-preview', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res) => {
+router.get('/clear-preview', authenticateToken, can('PATTERN_CLEAR_PREVIEW'), async (req, res) => {
   try {
     const outletId = req.query.outlet;
     const denied = outletWriteDenied(req, outletId);
@@ -173,7 +190,7 @@ router.get('/clear-preview', authenticateToken, requireMinRole('HEAD_CHEF'), asy
  * from the old patterns then match none, and quietly destroying a roster on a
  * button labelled "clear patterns" would be a surprise.
  */
-router.post('/clear', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res) => {
+router.post('/clear', authenticateToken, can('PATTERN_CLEAR'), async (req, res) => {
   try {
     const { outletId, confirm, includeShifts } = req.body;
 
@@ -203,6 +220,69 @@ router.post('/clear', authenticateToken, requireMinRole('HEAD_CHEF'), async (req
 });
 
 /**
+ * PUT /api/shift-templates/grid — replace an outlet's week in one write.
+ *
+ * Shift Master edits a whole grid, so it saves as a whole: a half-applied week
+ * (some stations updated, some not) is worse than either outcome, and one
+ * request behaves the same whether it targets one outlet or a brand's six.
+ *
+ * The client merges before sending — days sharing the same row, slot, time and
+ * headcount arrive as a single template with several `daysOfWeek` — so the rows
+ * stored stay as compact as hand-written ones and the allocator sees exactly
+ * what the grid shows.
+ */
+router.put('/grid', authenticateToken, can('PATTERN_GRID'), async (req, res) => {
+  try {
+    const { outletIds, templates } = req.body;
+
+    if (!Array.isArray(outletIds) || outletIds.length === 0) {
+      return res.status(400).json({ error: 'outletIds must be a non-empty array' });
+    }
+    if (!Array.isArray(templates)) {
+      return res.status(400).json({ error: 'templates must be an array' });
+    }
+
+    const ids = [...new Set(outletIds)];
+    const refused = ids.filter((id) => outletWriteDenied(req, id));
+    if (refused.length > 0) {
+      return res.status(403).json({
+        error: 'You can only manage shift patterns for your own outlet',
+      });
+    }
+
+    // Validated up front, before anything is deleted: reusing readTemplateBody
+    // means the grid inherits the time format, headcount range, weekday and
+    // kitchen-only-station rules rather than restating them.
+    const rows = [];
+    for (const [i, t] of templates.entries()) {
+      const { data, error } = readTemplateBody(t);
+      if (error) return res.status(400).json({ error: `Row ${i + 1}: ${error}` });
+      rows.push({ ...data, headcount: data.headcount ?? 1 });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Active only. An inactive pattern is deliberately absent from the grid,
+      // so deleting it here would be silent data loss for something the user
+      // parked on purpose.
+      const removed = await tx.shiftTemplate.deleteMany({
+        where: { outletId: { in: ids }, isActive: true },
+      });
+      const created = await tx.shiftTemplate.createMany({
+        data: ids.flatMap((outletId) => rows.map((r) => ({ ...r, outletId }))),
+      });
+      const kept = await tx.shiftTemplate.count({
+        where: { outletId: { in: ids }, isActive: false },
+      });
+      return { replaced: removed.count, created: created.count, keptInactive: kept };
+    });
+
+    res.json({ ...result, outlets: ids.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * POST /api/shift-templates/bulk — one pattern, created at many outlets.
  *
  * Separate from `POST '/'` rather than an `outletIds` branch inside it: that
@@ -211,7 +291,7 @@ router.post('/clear', authenticateToken, requireMinRole('HEAD_CHEF'), async (req
  * expectations. This sits beside `/clear`, which already established
  * one-body-many-rows on this router.
  */
-router.post('/bulk', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res) => {
+router.post('/bulk', authenticateToken, can('PATTERN_BULK'), async (req, res) => {
   try {
     const { outletIds } = req.body;
 
@@ -279,7 +359,7 @@ router.post('/bulk', authenticateToken, requireMinRole('HEAD_CHEF'), async (req,
 });
 
 // POST /api/shift-templates
-router.post('/', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res) => {
+router.post('/', authenticateToken, can('PATTERN_CREATE'), async (req, res) => {
   try {
     const { outletId } = req.body;
     const denied = outletWriteDenied(req, outletId);
@@ -300,7 +380,7 @@ router.post('/', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res
 });
 
 // PUT /api/shift-templates/:id
-router.put('/:id', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res) => {
+router.put('/:id', authenticateToken, can('PATTERN_EDIT'), async (req, res) => {
   try {
     const existing = await prisma.shiftTemplate.findUnique({ where: { id: req.params.id } });
     if (!existing) return res.status(404).json({ error: 'Shift pattern not found' });
@@ -331,7 +411,7 @@ router.put('/:id', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, r
 });
 
 // DELETE /api/shift-templates/:id
-router.delete('/:id', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res) => {
+router.delete('/:id', authenticateToken, can('PATTERN_DELETE'), async (req, res) => {
   try {
     const existing = await prisma.shiftTemplate.findUnique({ where: { id: req.params.id } });
     if (!existing) return res.status(404).json({ error: 'Shift pattern not found' });

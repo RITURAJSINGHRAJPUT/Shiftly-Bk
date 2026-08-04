@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../db.js';
-import { authenticateToken, requireMinRole } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { can } from '../lib/capabilities.js';
 
 const router = Router();
 
@@ -25,7 +26,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // POST /api/brands
-router.post('/', authenticateToken, requireMinRole('ADMIN'), async (req, res) => {
+router.post('/', authenticateToken, can('BRAND_CREATE'), async (req, res) => {
   try {
     const { name, organizationId } = req.body;
     if (!name || !organizationId) {
@@ -46,13 +47,31 @@ router.post('/', authenticateToken, requireMinRole('ADMIN'), async (req, res) =>
 });
 
 // PUT /api/brands/:id
-router.put('/:id', authenticateToken, requireMinRole('ADMIN'), async (req, res) => {
+router.put('/:id', authenticateToken, can('BRAND_EDIT'), async (req, res) => {
   try {
-    const { name, organizationId, isActive } = req.body;
+    const { name, organizationId, isActive, stations } = req.body;
     const data = {};
     if (name !== undefined) data.name = name;
     if (organizationId !== undefined) data.organizationId = organizationId;
     if (isActive !== undefined) data.isActive = isActive;
+
+    if (stations !== undefined) {
+      if (!Array.isArray(stations)) {
+        return res.status(400).json({ error: 'stations must be an array of names' });
+      }
+      // Order is preserved — it is the row order of the brand's shift sheet.
+      // Trimmed and de-duplicated case-insensitively, because two rows differing
+      // only by case would read as one station and save as two.
+      const seen = new Set();
+      const cleaned = [];
+      for (const s of stations) {
+        const name = String(s).trim();
+        if (!name || seen.has(name.toLowerCase())) continue;
+        seen.add(name.toLowerCase());
+        cleaned.push(name);
+      }
+      data.stations = cleaned;
+    }
 
     const brand = await prisma.brand.update({
       where: { id: req.params.id },

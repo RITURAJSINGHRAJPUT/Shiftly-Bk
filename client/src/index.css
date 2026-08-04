@@ -1002,6 +1002,13 @@ body {
   background: var(--tint-good);
 }
 
+/* Something to attend to, but nothing is broken — a brand with no stations
+   defined yet, not a failure. */
+.card--alert-warn {
+  border-color: var(--warn-500);
+  background: var(--tint-warn);
+}
+
 /* Footer link, e.g. "View all shortages →" */
 .card-footer-link {
   display: inline-flex;
@@ -1621,65 +1628,58 @@ tbody tr:last-child td {
   margin-bottom: var(--space-4);
 }
 
-/* Follow-up line telling you which script creates a missing demo account. */
-.login-hint {
-  margin-top: var(--space-2);
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--error-500);
-  font-size: var(--text-xs);
-  line-height: 1.5;
-  color: var(--ink-base);
-}
-
-.login-hint code {
-  background: var(--surface-sunken);
-  border-radius: var(--radius-sm);
-  padding: 1px 5px;
-  font-size: var(--text-2xs);
-  color: var(--ink-strong);
-}
-
-.demo-accounts {
-  margin-top: 24px;
-  padding-top: 20px;
+/* The quick-demo-login block and the "run this seed script" hint lived here.
+   Both are gone with the demo accounts: accounts are now issued by an admin. */
+.login-footnote {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
   border-top: 1px solid var(--line-subtle);
-}
-
-.demo-accounts h3 {
-  font-size: 0.8rem;
+  font-size: var(--text-xs);
+  line-height: 1.6;
   color: var(--ink-muted);
-  margin-bottom: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  text-align: center;
 }
 
-.demo-btn {
-  width: 100%;
-  padding: 8px 12px;
-  margin-bottom: 6px;
-  background: var(--surface-sunken);
-  border: 1px solid var(--line-subtle);
-  border-radius: var(--radius-md);
-  color: var(--ink-base);
-  font-size: 0.8rem;
-  cursor: pointer;
-  text-align: left;
-  transition: all var(--transition-fast);
-  font-family: inherit;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.demo-btn:hover {
-  background: var(--surface-sunken-hover);
-  border-color: var(--primary-500);
-  color: var(--ink-strong);
-}
-
-.demo-btn .demo-role {
-  font-weight: 600;
+/* An action that reads as a link because it sits mid-sentence, but is a button
+   because it acts on this page rather than navigating. */
+.btn-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
   color: var(--primary-600);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.btn-link:hover { color: var(--primary-700); }
+
+.btn-link:focus-visible {
+  outline: none;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-ring);
+}
+
+/* Shown once after enrolling someone, and never retrievable again. Monospace
+   and roomy: this gets read aloud or copied by hand. */
+.temp-password {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.temp-password code {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-strong);
+  user-select: all;
 }
 
 /* ========================== ATTENDANCE CHECK-IN ========================== */
@@ -3044,6 +3044,171 @@ tbody tr:last-child td {
   outline: none;
   box-shadow: var(--shadow-ring);
 }
+
+/* ---- Weekly shift sheet ----
+   Station rows down the side, Mon–Sun across, two shifts per station. Wide by
+   nature, so the station column pins while the days scroll under it — losing
+   track of which row you are typing into is the whole failure mode here. */
+.shift-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.shift-grid th,
+.shift-grid td {
+  border: 1px solid var(--line-default);
+  padding: var(--space-1) var(--space-2);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.shift-grid thead th {
+  background: var(--surface-sunken);
+  color: var(--ink-muted);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.shift-grid th.grid-station {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  /* Opaque, not the card's transparent default: the day cells scroll beneath. */
+  background: var(--surface-card);
+  color: var(--ink-strong);
+  font-weight: 600;
+  font-size: var(--text-md);
+  min-width: 130px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.shift-grid thead th.grid-station { background: var(--surface-sunken); }
+
+.grid-station-dept {
+  display: block;
+  font-size: var(--text-2xs);
+  font-weight: 500;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.shift-grid td.grid-slot,
+.shift-grid th.grid-slot {
+  color: var(--ink-muted);
+  font-size: var(--text-2xs);
+  white-space: nowrap;
+  min-width: 62px;
+}
+
+/* A heavier rule between stations, so the two shift rows read as one block. */
+.shift-grid tr.is-row-start > * { border-top: 2px solid var(--line-strong); }
+
+/* A day cell now holds one number, so it needs a fraction of the width the
+   time-per-cell layout did — seven of these plus a time column is narrower than
+   seven time-and-staff cells were. */
+.grid-cell {
+  min-width: 54px;
+  text-align: center;
+}
+
+/* Wide enough for two times side by side. A time input renders in the viewer's
+   locale, so in a 12-hour one it has to fit "04:00 PM" — at 118px the value was
+   clipping to "04:0C", which reads as a typo rather than a layout bug.
+   `width: 1%` shrinks the column to that minimum instead of letting it stretch,
+   which otherwise pushes the start and end times to opposite ends of the cell. */
+.grid-time {
+  min-width: 152px;
+  width: 1%;
+  white-space: nowrap;
+}
+
+.grid-time-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+
+/* Its own row under each station, so adding a shift reads as belonging to that
+   station rather than to the table. */
+.grid-add-row td {
+  padding: 2px var(--space-2);
+  background: var(--surface-sunken);
+}
+
+.grid-input {
+  width: 100%;
+  min-width: 0;
+  background: var(--surface-input);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 2px 4px;
+  color: var(--ink-strong);
+  font-family: inherit;
+  font-size: var(--text-2xs);
+  outline: none;
+}
+
+/* The native clock button costs ~16px per input and buys nothing here — the
+   field is still typeable, and on a 14-column grid that width is the difference
+   between a readable time and a truncated one. */
+.grid-input::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+.grid-input:hover { border-color: var(--line-default); }
+
+.grid-input:focus {
+  border-color: var(--line-focus);
+  box-shadow: var(--shadow-ring);
+}
+
+.grid-input-count {
+  text-align: center;
+  font-weight: 600;
+  /* The spinner arrows steal half the width of a two-digit field. */
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.grid-input-count::-webkit-outer-spin-button,
+.grid-input-count::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.grid-cell.is-invalid,
+.grid-time.is-invalid { background: var(--tint-crit); }
+.grid-time.is-conflict { background: var(--tint-warn); }
+
+.shift-grid td.grid-slot { position: relative; }
+
+.grid-slot-remove {
+  margin-left: var(--space-1);
+  vertical-align: middle;
+}
+
+.grid-conflict {
+  display: inline-flex;
+  color: var(--ink-warn);
+  margin-top: 2px;
+}
+
+.grid-cell-read {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--text-2xs);
+  white-space: nowrap;
+}
+
+.grid-tools { width: 1%; white-space: nowrap; }
 
 /* Two columns so seven outlets fit without a scroll, collapsing to one when
    there is no room for a second. */

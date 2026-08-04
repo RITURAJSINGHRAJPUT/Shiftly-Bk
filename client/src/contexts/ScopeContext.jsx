@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../api/client';
 import { useAuth } from './AuthContext';
 import { GLOBAL_SCOPE_ROLES } from '../constants';
@@ -50,7 +50,22 @@ export function ScopeProvider({ children }) {
     };
   }, [user]);
 
-  const value = useMemo(() => ({ outlets, loading, locked }), [outlets, loading, locked]);
+  /**
+   * Re-fetch the directory.
+   *
+   * Fetched once per session is right for a list that rarely moves, but the
+   * payload now carries each brand's station list, which Shift Master lets you
+   * edit — and the alternative to refreshing here was reloading the page.
+   */
+  const refresh = useCallback(
+    () => api.get('/outlets').then(setOutlets).catch(() => {}),
+    []
+  );
+
+  const value = useMemo(
+    () => ({ outlets, loading, locked, refresh }),
+    [outlets, loading, locked, refresh]
+  );
 
   return <ScopeContext.Provider value={value}>{children}</ScopeContext.Provider>;
 }

@@ -50,6 +50,17 @@ class ApiClient {
 
     const data = await res.json().catch(() => ({}));
 
+    // The one 403 that is not an RBAC denial: this account holds a temporary
+    // password and its token is scoped to setting a new one. The session is
+    // valid, so the token is kept — the app just has nowhere to go but the
+    // set-password screen, and every other request will keep getting this.
+    if (res.status === 403 && data.code === 'PASSWORD_RESET_REQUIRED') {
+      const err = new Error(data.error || 'Set your own password before using Shiftly');
+      err.code = data.code;
+      this.onPasswordResetRequired?.();
+      throw err;
+    }
+
     if (!res.ok) {
       throw new Error(data.error || 'Request failed');
     }

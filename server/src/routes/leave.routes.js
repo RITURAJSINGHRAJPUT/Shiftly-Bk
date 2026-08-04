@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../db.js';
-import { authenticateToken, requireMinRole } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { can } from '../lib/capabilities.js';
 import { processLeaveRequest, approveLeave, rejectLeave } from '../engine/leaveManager.js';
 import { requestEmergencyLeave, acceptEmergencyCover, autoAssignEmergency } from '../engine/emergencyLeave.js';
 import { employeeScope } from '../lib/scope.js';
@@ -58,7 +59,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // POST /api/leaves/:id/approve
-router.post('/:id/approve', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res) => {
+router.post('/:id/approve', authenticateToken, can('LEAVE_APPROVE'), async (req, res) => {
   try {
     const result = await approveLeave(prisma, req.params.id, req.user.id);
     res.json(result);
@@ -68,7 +69,7 @@ router.post('/:id/approve', authenticateToken, requireMinRole('HEAD_CHEF'), asyn
 });
 
 // POST /api/leaves/:id/reject
-router.post('/:id/reject', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res) => {
+router.post('/:id/reject', authenticateToken, can('LEAVE_REJECT'), async (req, res) => {
   try {
     const result = await rejectLeave(prisma, req.params.id, req.user.id, req.body.reason);
     res.json(result);
@@ -98,7 +99,7 @@ router.post('/emergency/:leaveId/accept', authenticateToken, async (req, res) =>
 });
 
 // POST /api/leaves/emergency/:leaveId/auto-assign — called by timer/admin
-router.post('/emergency/:leaveId/auto-assign', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res) => {
+router.post('/emergency/:leaveId/auto-assign', authenticateToken, can('LEAVE_AUTO_ASSIGN'), async (req, res) => {
   try {
     const result = await autoAssignEmergency(prisma, req.params.leaveId);
     if (!result) return res.status(404).json({ error: 'Already handled or no eligible employees' });

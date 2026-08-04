@@ -80,6 +80,11 @@ model Brand {
   name           String       @unique
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
+  /// This brand's kitchen stations, in the order they appear on its shift sheet.
+  /// Ordered rather than a set: the sheet's row order is how the managers read
+  /// it. Capiche runs Pizza and Pasta, Aiko runs Sushi, Side and Wok — the two
+  /// never had a single shared list.
+  stations       String[]     @default([])
   isActive       Boolean      @default(true)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -114,11 +119,22 @@ model Employee {
   email         String?        @unique
   phone         String?
   password      String         @default("")
+  /// Set when an admin issues a one-time password. Until the account chooses its
+  /// own, its token is scoped to the change-password route and nothing else, so
+  /// a temporary password can never be left in place as a working credential.
+  mustChangePassword Boolean   @default(false)
   avatar        String?
   role          Role           @default(STAFF)
-  department    Department
-  outletId      String
-  outlet        Outlet         @relation(fields: [outletId], references: [id])
+  /// Null for the organisation-wide roles — SUPER_ADMIN, ADMIN and HR belong to
+  /// no restaurant and work no department. They were required columns, so those
+  /// accounts had to name an outlet they had nothing to do with, which then
+  /// showed up on their profile and in that outlet's headcount.
+  ///
+  /// Nothing reads them for those roles: outletScope() returns an empty filter
+  /// for GLOBAL_SCOPE_ROLES, and the allocator only rosters ROSTERABLE_ROLES.
+  department    Department?
+  outletId      String?
+  outlet        Outlet?        @relation(fields: [outletId], references: [id])
   skills        String[]       @default([])
   isActive      Boolean        @default(true)
   joinDate      DateTime       @default(now())
@@ -234,6 +250,11 @@ model ShiftTemplate {
   /// dates in, so neither end converts. Defaults to all seven, so a pattern
   /// written before this field existed behaves exactly as it did.
   daysOfWeek Int[]      @default([0, 1, 2, 3, 4, 5, 6])
+  /// Which of the day's two shifts this is — the sheet's "Shift 1" / "Shift 2".
+  /// Usually derivable from startTime, but not always: a station that runs only
+  /// an evening shift is entered on the Shift 2 row and has to stay there rather
+  /// than silently sliding up to Shift 1 on the next reload.
+  slot       Int        @default(1)
   isActive   Boolean    @default(true)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt

@@ -2,11 +2,19 @@
 
 ```bash
 npm install     # installs root + server + client
-npm run setup   # create database, push schema, seed from CSV   (first time only)
+npm run setup   # create database, push schema                  (first time only)
 npm run dev     # starts the API and the web client together
 ```
 
-Then open **http://localhost:5173** and sign in as `superadmin@shiftly.com` / `admin123`.
+Create the one account that exists, and note the password it prints:
+
+```bash
+npm --prefix server run reset:superadmin
+```
+
+Then open **http://localhost:5173**, sign in as `superadmin@shiftly.com` with that
+password, and choose your own when asked. Everybody else is enrolled from the
+Employees page.
 
 For architecture, the data model, the API reference and the conventions to know
 before extending the code, see **[DOCS.md](DOCS.md)**.
@@ -138,45 +146,51 @@ origin means adding it there.
 
 ---
 
-## Demo logins
+## Accounts
 
-**Organization-level** — password `admin123`, one of each:
+There are no shared or default passwords, and no quick-login buttons.
 
-| Role | Email | Sees |
-|---|---|---|
-| Super Admin | `superadmin@shiftly.com` | All 15 nav items, all outlets |
-| Admin | `admin@shiftly.com` | All outlets |
-| HR | `hr@shiftly.com` | 10 nav items, all outlets |
-
-**Outlet managers** — also `admin123`. Every restaurant always has a Master of
-House and a Head Chef, so there are two per outlet. The first outlet keeps the
-short addresses; the rest are per-outlet:
-
-| Outlet | Master of House | Head Chef |
-|---|---|---|
-| Capiche PIPLOD | `moh@shiftly.com` | `chef@shiftly.com` |
-| Capiche Vesu | `moh@capichev.shiftly.com` | `chef@capichev.shiftly.com` |
-| Capiche Ambli | `moh@capichea.shiftly.com` | `chef@capichea.shiftly.com` |
-| Capiche Uni | `moh@capicheu.shiftly.com` | `chef@capicheu.shiftly.com` |
-| Aiko SRT | `moh@aikosrt.shiftly.com` | `chef@aikosrt.shiftly.com` |
-| Aiko AHM | `moh@aikoahm.shiftly.com` | `chef@aikoahm.shiftly.com` |
-
-Both roles are rostered by auto-allocation — a head chef works the kitchen and a
-master of house the floor. The three organization roles are not.
-
-**Staff** — password `shiftly123`. One demo staff account per outlet, created by
-`npm run seed:staff`:
-
-| Address | Department |
+| | |
 |---|---|
-| `kitchen1@<outlet>.shiftly.com` | Kitchen — skilled on all of that outlet's stations |
+| **Create the first account** | `npm --prefix server run reset:superadmin` — deletes every employee and their shifts, attendance, leave and notifications; keeps organisations, brands, outlets and station lists; prints a generated password once |
+| **Enrol someone** | Employees → Add. Saving generates a one-time password, shown once |
+| **Someone lost theirs** | The key icon on their row issues a new one-time password |
+| **Change your own** | Settings → Your Password |
+| **Lock someone out** | Deactivate them — the login handler refuses an inactive account |
 
-Kitchen rather than service or housekeeping because that is where stations and
-skill matching apply; a service account would carry no skills to match on.
+**Who can do what: [ACCESS.md](ACCESS.md)** — a role-by-action table generated
+from the same declaration the route guards enforce, so it cannot describe
+permissions the server does not have. Regenerate with
+`npm --prefix server run access:doc`; add `--users` to list who currently holds
+each role.
 
-Outlet slugs: `capichep` · `capichev` · `capichea` · `capicheu` · `aikosrt` ·
-`aikoahm`. So the staff login for Capiche PIPLOD is
-`kitchen1@capichep.shiftly.com`.
+A new account can reach nothing until it sets its own password: its token carries
+a `pwreset` claim and every other endpoint refuses it with
+`403 PASSWORD_RESET_REQUIRED`. That restriction lives in the signed token, not in
+the UI, so it cannot be skipped by avoiding the screen.
+
+Minimum length 10, no composition rules; passwords containing your email address
+or an obvious choice are refused. Failed sign-ins are rate limited to 20 per
+15 minutes per IP — successful ones do not count, so a shift change where
+everybody signs in at once never trips it.
+
+`JWT_SECRET` has no fallback. The API refuses to start without it rather than
+signing tokens with a predictable value.
+
+### Demo data
+
+`npm run seed`, `seed:staff` and `managers` create accounts whose passwords are
+written down in this repository. They refuse to run unless you opt in:
+
+```bash
+ALLOW_DEMO_SEED=true npm --prefix server run seed:staff
+```
+
+Never point them at anything real. `seed` is destructive, and all three would put
+known passwords back into the database.
+
+Outlet slugs, which those scripts use: `capichep` · `capichev` · `capichea` ·
+`capicheu` · `aikosrt` · `aikoahm`.
 
 That makes **21 accounts in total**: 3 organization-level, 12 outlet managers
 (2 × 6 outlets) and 6 staff — one obvious login per role.

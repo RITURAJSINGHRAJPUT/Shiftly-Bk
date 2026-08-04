@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../api/client';
 import Modal from '../components/Modal';
 import { useScope } from '../contexts/ScopeContext';
-import { GLOBAL_SCOPE_ROLES } from '../constants';
-import { Plus, Search, Filter, Edit, Trash2, X, PlusCircle, Store, ShieldCheck, Users } from 'lucide-react';
+import { GLOBAL_SCOPE_ROLES, STATIONS, departmentHasStations } from '../constants';
+import { Plus, Search, Filter, Edit, Trash2, Store, ShieldCheck, Users, KeyRound, Copy } from 'lucide-react';
 
 export default function EmployeesPage() {
   // Only for the Add/Edit modal's Outlet field — this page has no outlet filter.
@@ -22,9 +22,15 @@ export default function EmployeesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [formData, setFormData] = useState({
-    name: '', email: '', phone: '', role: 'STAFF', department: 'KITCHEN', outletId: '', skills: [], password: ''
+    name: '', email: '', phone: '', role: 'STAFF', department: 'KITCHEN', outletId: '', skills: []
   });
-  const [newSkill, setNewSkill] = useState('');
+  /**
+   * The one-time password just issued, shown once and then gone.
+   *
+   * What is stored is a bcrypt hash, so this value cannot be looked up again —
+   * a lost one needs a reset, which is why it is surfaced this deliberately.
+   */
+  const [issued, setIssued] = useState(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -43,10 +49,15 @@ export default function EmployeesPage() {
   }, [loadData]);
 
   const handleOpenAdd = () => {
+    if (!addMode) return;
     setEditingEmployee(null);
-    setFormData({
-      name: '', email: '', phone: '', role: 'STAFF', department: 'KITCHEN', outletId: outlets[0]?.id || '', skills: [], password: 'shiftly123'
-    });
+    setFormData(
+      addMode === 'management'
+        ? { name: '', email: '', phone: '', role: 'HR', department: '', outletId: '', skills: [] }
+        // The card already chose the outlet, so the form does not ask again.
+        : { name: '', email: '', phone: '', role: 'STAFF', department: 'KITCHEN', outletId: selectedGroupId, skills: [] }
+    );
+    setIssued(null);
     setIsModalOpen(true);
   };
 
@@ -57,8 +68,9 @@ export default function EmployeesPage() {
       email: emp.email || '',
       phone: emp.phone || '',
       role: emp.role,
-      department: emp.department,
-      outletId: emp.outletId,
+      // Null for management accounts, and the selects need a string.
+      department: emp.department || '',
+      outletId: emp.outletId || '',
       skills: emp.skills || []
     });
     setIsModalOpen(true);
@@ -69,13 +81,30 @@ export default function EmployeesPage() {
     try {
       if (editingEmployee) {
         await api.put(`/employees/${editingEmployee.id}`, formData);
+        setIsModalOpen(false);
       } else {
-        await api.post('/employees', formData);
+        const created = await api.post('/employees', formData);
+        // The modal stays open on the reveal: closing it would throw away the
+        // only copy of the password that will ever exist.
+        setIssued({ name: created.name, email: created.email, password: created.temporaryPassword });
       }
-      setIsModalOpen(false);
       loadData();
     } catch (err) {
       alert(err.message || 'Failed to save');
+    }
+  };
+
+  const handleResetPassword = async (emp) => {
+    if (!window.confirm(
+      `Issue a new one-time password for ${emp.name}? Their current password stops working immediately.`
+    )) return;
+    try {
+      const res = await api.post(`/employees/${emp.id}/reset-password`);
+      setEditingEmployee(null);
+      setIssued({ name: res.name, email: res.email, password: res.temporaryPassword });
+      setIsModalOpen(true);
+    } catch (err) {
+      alert(err.message || 'Failed to reset the password');
     }
   };
 
@@ -89,20 +118,38 @@ export default function EmployeesPage() {
     }
   };
 
-  const handleAddSkill = () => {
-    if (newSkill.trim() && !formData.skills.includes(newSkill.trim().toLowerCase())) {
-      setFormData(prev => ({
-        ...prev,
-        skills: [...prev.skills, newSkill.trim().toLowerCase()]
-      }));
-      setNewSkill('');
-    }
-  };
+  /**
+   * Stations offered by the form: the ones the employee's own brand runs, plus
+   * any they already hold that are missing from it.
+   *
+   * That second part is not defensive padding. `Brand.stations` is editable and
+   * `npm run seed` writes station names straight from the CSV, so a stored value
+   * off the list is expected — and without it, opening someone's profile would
+   * quietly untick a station and saving would drop it.
+   */
+  const stationOptions = useMemo(() => {
+    const brandStations = outlets.find(o => o.id === formData.outletId)?.brand?.stations;
+    const offered = brandStations?.length ? brandStations : STATIONS;
+    const extras = formData.skills.filter(
+      s => !offered.some(o => o.toLowerCase() === s)
+    );
+    // Stored lowercase, shown capitalised — the same shape the list column uses.
+    return [...offered, ...extras.map(s => s.charAt(0).toUpperCase() + s.slice(1))];
+  }, [outlets, formData.outletId, formData.skills]);
 
-  const handleRemoveSkill = (skill) => {
+  /**
+   * Stored lowercase because that is what the allocator compares against:
+   * scoreEmployee tests `employee.skills.includes(slot.section.toLowerCase())`,
+   * so a capitalised value would score zero and the preference would silently
+   * never apply.
+   */
+  const toggleStation = (station) => {
+    const value = station.toLowerCase();
     setFormData(prev => ({
       ...prev,
-      skills: prev.skills.filter(s => s !== skill)
+      skills: prev.skills.includes(value)
+        ? prev.skills.filter(s => s !== value)
+        : [...prev.skills, value],
     }));
   };
 
@@ -117,11 +164,10 @@ export default function EmployeesPage() {
   /**
    * Management first, then one group per outlet.
    *
-   * Organization-level accounts still carry an outletId in the database — every
-   * one of them happens to point at the first outlet — so grouping purely by
-   * outlet filed the Super Admin, Admin and HR under Capiche PIPLOD and inflated
-   * its headcount. They are org-wide, so they get their own group and are
-   * removed from the outlet counts.
+   * Organisation-level accounts now carry no outletId at all, so the split falls
+   * out of the data. It is still done by role rather than by "has no outlet",
+   * because that is the actual rule — and it kept working through the period
+   * when those accounts were pinned to a restaurant they had nothing to do with.
    *
    * The outlet groups are driven by the outlet list rather than by the employee
    * rows, so an outlet with nobody assigned still appears with a count of zero.
@@ -162,6 +208,21 @@ export default function EmployeesPage() {
   const selected = groups.find(g => g.id === selectedGroupId) || null;
 
   /**
+   * Which kind of account the Add button will create, taken from the selected
+   * card. Management accounts belong to no restaurant, so the two forms differ
+   * in more than presentation: one has an outlet, a department and stations,
+   * the other has none of them.
+   */
+  const addMode = selected?.isManagement ? 'management' : selected ? 'staff' : null;
+
+  /**
+   * Which shape the open form takes, read from the role rather than from how the
+   * modal was opened — so editing a management account shows the short form, and
+   * changing the role inside the form switches it live.
+   */
+  const managementForm = GLOBAL_SCOPE_ROLES.includes(formData.role);
+
+  /**
    * A filter that matched someone in an unselected group would otherwise show
    * nothing at all, so move the selection to the first group that has matches.
    * The card counts already reflect the filter, so it stays obvious where the
@@ -180,11 +241,22 @@ export default function EmployeesPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Employee Directory</h1>
-          <p className="page-subtitle">Manage profiles, departments, outlet assignments, and specialized culinary skills</p>
+          <p className="page-subtitle">Manage profiles, departments, outlet assignments and kitchen stations</p>
         </div>
-        <button className="btn btn-primary" onClick={handleOpenAdd}>
+        {/* Disabled until a card is picked: without one there is no outlet to
+            put someone in, and no way to know which of the two forms to show. */}
+        <button
+          className="btn btn-primary"
+          onClick={handleOpenAdd}
+          disabled={!addMode}
+          title={addMode ? undefined : 'Pick Management or an outlet first'}
+        >
           <Plus size={16} />
-          <span>Add Employee</span>
+          <span>
+            {addMode === 'management' ? 'Add Management User'
+              : addMode === 'staff' ? `Add Employee to ${selected.name}`
+              : 'Add Employee'}
+          </span>
         </button>
       </div>
 
@@ -292,7 +364,7 @@ export default function EmployeesPage() {
                         <th>Name</th>
                         <th>Department</th>
                         <th>Role</th>
-                        <th>Skills &amp; Specialties</th>
+                        <th>Stations</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -304,9 +376,15 @@ export default function EmployeesPage() {
                             <div className="text-xs text-muted">{emp.email}</div>
                           </td>
                           <td>
-                            <span className={`badge ${emp.department === 'KITCHEN' ? 'badge-warn' : emp.department === 'SERVICE' ? 'badge-primary' : 'badge-accent'}`}>
-                              {emp.department}
-                            </span>
+                            {/* Management accounts have none — a dash rather
+                                than an empty badge. */}
+                            {emp.department ? (
+                              <span className={`badge ${emp.department === 'KITCHEN' ? 'badge-warn' : emp.department === 'SERVICE' ? 'badge-primary' : 'badge-accent'}`}>
+                                {emp.department}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted">—</span>
+                            )}
                           </td>
                           <td>{emp.role.replace(/_/g, ' ')}</td>
                           <td>
@@ -331,6 +409,14 @@ export default function EmployeesPage() {
                                 <Edit size={14} />
                               </button>
                               <button
+                                className="btn btn-ghost btn-icon btn-sm"
+                                onClick={() => handleResetPassword(emp)}
+                                aria-label={`Reset password for ${emp.name}`}
+                                title="Issue a new one-time password"
+                              >
+                                <KeyRound size={14} />
+                              </button>
+                              <button
                                 className="btn btn-ghost btn-icon btn-sm icon-crit"
                                 onClick={() => handleDelete(emp.id)}
                                 aria-label={`Deactivate ${emp.name}`}
@@ -350,12 +436,55 @@ export default function EmployeesPage() {
         </>
       )}
 
-      {/* Add / Edit Modal */}
+      {/* Add / Edit Modal. Once a password has been issued the form is replaced
+          by the reveal — there is nothing more to fill in, and the password is
+          the only thing on screen that cannot be recovered. */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={editingEmployee ? `Edit Profile: ${editingEmployee.name}` : 'Add Employee Profile'}
+        onClose={() => { setIsModalOpen(false); setIssued(null); }}
+        title={
+          issued ? `One-time password · ${issued.name}`
+            : editingEmployee ? `Edit Profile: ${editingEmployee.name}`
+            : addMode === 'management' ? 'Add Management User'
+            : `Add Employee · ${selected?.name || ''}`
+        }
       >
+        {issued ? (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-secondary">
+              Give this to <strong>{issued.name}</strong> along with their sign-in
+              address, <strong>{issued.email}</strong>. They will be asked to choose
+              their own password the first time they sign in.
+            </p>
+
+            <div className="temp-password">
+              <code>{issued.password}</code>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => navigator.clipboard?.writeText(issued.password)}
+              >
+                <Copy size={14} />
+                <span>Copy</span>
+              </button>
+            </div>
+
+            <p className="text-xs" style={{ color: 'var(--ink-warn)' }}>
+              This is shown once. Shiftly stores only a hash of it, so it cannot be
+              looked up again — if it is lost, issue a new one from the key icon on
+              their row.
+            </p>
+
+            <div className="flex gap-2" style={{ marginLeft: 'auto' }}>
+              <button
+                className="btn btn-primary"
+                onClick={() => { setIsModalOpen(false); setIssued(null); }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        ) : (
         <form onSubmit={handleSave} className="flex flex-col gap-4">
           <div className="form-group">
             <label className="form-label">Name</label>
@@ -380,7 +509,7 @@ export default function EmployeesPage() {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Phone</label>
+              <label className="form-label">Contact</label>
               <input
                 type="text"
                 className="form-input"
@@ -390,13 +519,61 @@ export default function EmployeesPage() {
             </div>
           </div>
 
+          <div className="form-group">
+            <label className="form-label">Role</label>
+            <select
+              className="form-select"
+              value={formData.role}
+              onChange={e => {
+                const role = e.target.value;
+                const toManagement = GLOBAL_SCOPE_ROLES.includes(role);
+                setFormData(prev => ({
+                  ...prev,
+                  role,
+                  // The assignment moves with the role. Promoting someone clears
+                  // the restaurant they no longer belong to; demoting them has to
+                  // land somewhere, so it falls back to the group in view.
+                  outletId: toManagement ? '' : (prev.outletId || selectedGroupId || outlets[0]?.id || ''),
+                  department: toManagement ? '' : (prev.department || 'KITCHEN'),
+                  skills: toManagement ? [] : prev.skills,
+                }));
+              }}
+            >
+              {(managementForm
+                ? [['SUPER_ADMIN', 'Super Admin'], ['ADMIN', 'Admin'], ['HR', 'HR']]
+                : [['MASTER_OF_HOUSE', 'Master of House'], ['HEAD_CHEF', 'Head Chef'], ['STAFF', 'Staff Member']]
+              ).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              {/* The other family, so an account can still be promoted or demoted
+                  while editing. The lists are split so that adding from an outlet
+                  card cannot produce an HR, and vice versa. */}
+              <optgroup label={managementForm ? 'Move to an outlet' : 'Move to management'}>
+                {(managementForm
+                  ? [['MASTER_OF_HOUSE', 'Master of House'], ['HEAD_CHEF', 'Head Chef'], ['STAFF', 'Staff Member']]
+                  : [['SUPER_ADMIN', 'Super Admin'], ['ADMIN', 'Admin'], ['HR', 'HR']]
+                ).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </optgroup>
+            </select>
+          </div>
+
+          {managementForm ? (
+            <p className="text-xs text-muted">
+              Organisation-wide — this account belongs to no restaurant, works no
+              department and has no stations.
+            </p>
+          ) : (
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">Department</label>
               <select
                 className="form-select"
                 value={formData.department}
-                onChange={e => setFormData(prev => ({ ...prev, department: e.target.value }))}
+                onChange={e => setFormData(prev => ({
+                  ...prev,
+                  department: e.target.value,
+                  // Cleared in the same update: leaving stations ticked on a
+                  // hidden field would save them anyway.
+                  skills: departmentHasStations(e.target.value) ? prev.skills : [],
+                }))}
               >
                 <option value="KITCHEN">Kitchen</option>
                 <option value="SERVICE">Service</option>
@@ -416,66 +593,47 @@ export default function EmployeesPage() {
               </select>
             </div>
           </div>
+          )}
 
-          <div className="form-group">
-            <label className="form-label">Role</label>
-            <select
-              className="form-select"
-              value={formData.role}
-              onChange={e => setFormData(prev => ({ ...prev, role: e.target.value }))}
-            >
-              <option value="SUPER_ADMIN">Super Admin</option>
-              <option value="ADMIN">Admin</option>
-              <option value="HR">HR</option>
-              <option value="MASTER_OF_HOUSE">Master of House</option>
-              <option value="HEAD_CHEF">Head Chef</option>
-              <option value="STAFF">Staff Member</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Skills & Specialties (e.g. Pizza, Pasta, Sushi, Wok)</label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Type skill and click add"
-                value={newSkill}
-                onChange={e => setNewSkill(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddSkill())}
-              />
-              <button type="button" className="btn btn-ghost" onClick={handleAddSkill}>
-                <PlusCircle size={18} />
-              </button>
-            </div>
-            <div className="flex gap-1 flex-wrap mt-2">
-              {formData.skills.map(skill => (
-                <span key={skill} className="badge badge-primary gap-2">
-                  <span style={{ textTransform: 'capitalize' }}>{skill}</span>
-                  <X size={10} style={{ cursor: 'pointer' }} onClick={() => handleRemoveSkill(skill)} />
-                </span>
-              ))}
-            </div>
-          </div>
+          {/* Kitchen only, like the pattern and shift forms: Service and House
+              Keeping have no station to work. */}
+          {!managementForm && departmentHasStations(formData.department) && (
+            <fieldset className="form-group" style={{ border: 0, padding: 0, margin: 0 }}>
+              <legend className="form-label" style={{ padding: 0 }}>Stations they work</legend>
+              <div className="outlet-picker">
+                {stationOptions.map(station => (
+                  <label key={station} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={formData.skills.includes(station.toLowerCase())}
+                      onChange={() => toggleStation(station)}
+                    />
+                    <span className="truncate" title={station}>{station}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-muted mt-1">
+                Auto-allocation prefers them for these stations. Leave all unticked if
+                they work anywhere.
+              </p>
+            </fieldset>
+          )}
 
           {!editingEmployee && (
-            <div className="form-group">
-              <label className="form-label">Temporary Password</label>
-              <input
-                type="text"
-                className="form-input"
-                value={formData.password}
-                onChange={e => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                required
-              />
-            </div>
+            <p className="text-xs text-muted">
+              A one-time password is generated when you save, and shown to you once.
+              They will be asked to choose their own the first time they sign in.
+            </p>
           )}
 
           <div className="modal-footer" style={{ padding: 0, marginTop: '16px' }}>
             <button type="button" className="btn btn-ghost" onClick={() => setIsModalOpen(false)}>Cancel</button>
-            <button type="submit" className="btn btn-primary">Save Profile</button>
+            <button type="submit" className="btn btn-primary">
+              {editingEmployee ? 'Save Profile' : 'Create and issue password'}
+            </button>
           </div>
         </form>
+        )}
       </Modal>
     </div>
   );

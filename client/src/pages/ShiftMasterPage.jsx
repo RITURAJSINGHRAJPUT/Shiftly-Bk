@@ -5,10 +5,17 @@ import Modal from '../components/Modal';
 import Switch from '../components/Switch';
 import { useAuth } from '../contexts/AuthContext';
 import { useScope } from '../contexts/ScopeContext';
+import ShiftGrid, {
+  templatesToCells, cellsToTemplates, incompleteRows, timeKey,
+} from '../components/ShiftGrid';
 import {
   WEEKDAYS, ALL_WEEKDAYS, formatDays, STATIONS, DEPARTMENTS, departmentHasStations,
+  MIN_SHIFT_SLOTS, MAX_SHIFT_SLOTS, slotsUpTo, gridRows,
 } from '../constants';
-import { Layers, Plus, Pencil, Trash2, Store, Users, AlertTriangle, CalendarClock, Eraser } from 'lucide-react';
+import {
+  Layers, Plus, Pencil, Trash2, Store, Users, AlertTriangle, CalendarClock, Eraser,
+  Save, CalendarRange, Copy, Settings2,
+} from 'lucide-react';
 
 /** Typed verbatim before a whole restaurant's patterns are cleared. */
 const CLEAR_CONFIRMATION = 'CLEAR PATTERNS';
@@ -22,6 +29,7 @@ const emptyPattern = {
   headcount: 1,
   isActive: true,
   daysOfWeek: ALL_WEEKDAYS,
+  slot: 1,
 };
 
 /** Slots this pattern asks for across a week — headcount on each day it runs. */
@@ -39,8 +47,8 @@ const weeklySlots = (t) => t.headcount * (t.daysOfWeek?.length ?? 7);
  * agree on which restaurant you are looking at.
  */
 export default function ShiftMasterPage() {
-  const { user, isManager } = useAuth();
-  const { outlets, locked } = useScope();
+  const { user, isManager, isAdmin } = useAuth();
+  const { outlets, locked, refresh } = useScope();
 
   const [selectedOutletId, setSelectedOutletId] = useState('');
   const [templates, setTemplates] = useState([]);
@@ -65,6 +73,23 @@ export default function ShiftMasterPage() {
   /** Outlet ids the create form will write to. Reset each time it opens. */
   const [targetOutletIds, setTargetOutletIds] = useState([]);
   const [saveResult, setSaveResult] = useState(null);
+
+  /**
+   * The weekly sheet, in two halves: hours once per shift row, staff numbers per
+   * day. Splitting them is what turns 21 inputs per row into 3.
+   */
+  const [times, setTimes] = useState({});
+  const [counts, setCounts] = useState({});
+  const [conflicts, setConflicts] = useState(new Set());
+  /** Shift rows added by hand this session, over and above what the data needs. */
+  const [addedSlots, setAddedSlots] = useState({});
+  const [dirty, setDirty] = useState(false);
+  const [gridSaving, setGridSaving] = useState(false);
+  const [gridError, setGridError] = useState('');
+  const [gridResult, setGridResult] = useState(null);
+  const [applyOpen, setApplyOpen] = useState(false);
+  const [stationsOpen, setStationsOpen] = useState(false);
+  const [stationDraft, setStationDraft] = useState('');
 
   const outlet = outlets.find((o) => o.id === selectedOutletId) || null;
 
@@ -93,7 +118,17 @@ export default function ShiftMasterPage() {
     setLoading(true);
     setError('');
     try {
-      setTemplates(await api.get(`/shift-templates?outlet=${selectedOutletId}`));
+      const rows = await api.get(`/shift-templates?outlet=${selectedOutletId}`);
+      setTemplates(rows);
+      // The sheet is redrawn from what was stored, not from what was typed — a
+      // save that merged days differently than expected shows up immediately
+      // rather than hiding behind stale local state.
+      const sheet = templatesToCells(rows);
+      setTimes(sheet.times);
+      setCounts(sheet.counts);
+      setConflicts(sheet.conflicts);
+      setAddedSlots({});
+      setDirty(false);
     } catch (err) {
       setError(err.message || 'Failed to load patterns');
     } finally {
@@ -123,6 +158,119 @@ export default function ShiftMasterPage() {
   // follow you to the next restaurant, which never had them.
   useEffect(() => { loadClearPreview(); setClearResult(null); }, [loadClearPreview]);
 
+  /** This brand's stations, then the two department rows. */
+  const rows = useMemo(() => gridRows(outlet?.brand?.stations ?? []), [outlet?.brand?.stations]);
+
+  /**
+   * How many shift rows a station shows: two by default, more if the stored
+   * patterns use a higher slot or the user added one this session.
+   *
+   * Derived rather than stored, so a station that genuinely runs three shifts
+   * comes back with three on every load without a second table to maintain.
+   */
+  const slotsFor = useCallback(
+    (rowKey) => {
+      let highest = MIN_SHIFT_SLOTS;
+      for (const key of Object.keys(times)) {
+        const [dept, section, slot] = key.split('|');
+        if (`${dept}|${section}` === rowKey) highest = Math.max(highest, Number(slot));
+      }
+      return Math.min(MAX_SHIFT_SLOTS, Math.max(highest, addedSlots[rowKey] ?? 0));
+    },
+    [times, addedSlots]
+  );
+
+  /** Started but unusable — staff with no hours, hours with no staff, half a time. */
+  const invalid = useMemo(
+    () => incompleteRows(times, counts, rows, slotsFor),
+    [times, counts, rows, slotsFor]
+  );
+
+  /** Sibling restaurants under the same brand, for "apply to all". */
+  const brandSiblings = useMemo(
+    () => writableOutlets.filter((o) => o.brand?.id === outlet?.brand?.id && o.id !== outlet?.id),
+    [writableOutlets, outlet]
+  );
+
+  const inactiveCount = useMemo(() => templates.filter((t) => !t.isActive).length, [templates]);
+
+  const touch = () => { setDirty(true); setGridResult(null); };
+  const editTimes = (next) => { setTimes(next); touch(); };
+  const editCounts = (next) => { setCounts(next); touch(); };
+
+  const addSlot = (rowKey) =>
+    setAddedSlots((prev) => ({
+      ...prev,
+      [rowKey]: Math.min(MAX_SHIFT_SLOTS, slotsFor(rowKey) + 1),
+    }));
+
+  // Back to whatever the data still needs — clearRow has already emptied the
+  // row, so this cannot drop anything that was filled in.
+  const removeSlot = (rowKey) =>
+    setAddedSlots((prev) => ({ ...prev, [rowKey]: MIN_SHIFT_SLOTS }));
+
+  /**
+   * Stations offered by the pattern modal.
+   *
+   * The brand's own list, plus whatever the pattern being edited already holds.
+   * Without that second part, opening a pattern whose station is not on the
+   * brand's list shows an empty select and saving silently demotes it to
+   * General — the list is editable, so a station can be retired out from under
+   * patterns that still use it.
+   */
+  const stationOptions = useMemo(() => {
+    const brandStations = outlet?.brand?.stations?.length ? outlet.brand.stations : STATIONS;
+    return form.section && !brandStations.includes(form.section)
+      ? [...brandStations, form.section]
+      : brandStations;
+  }, [outlet?.brand?.stations, form.section]);
+
+  /**
+   * Write the whole week in one request.
+   *
+   * The merge happens here rather than server-side because the grid's rows are
+   * what decides which cells belong together, and those rows are a client
+   * concept (the brand's station list plus the two departments).
+   */
+  const saveGrid = async (outletIds) => {
+    if (invalid.length > 0) {
+      // Named, not counted: "2 rows are incomplete" leaves you hunting a grid of
+      // ninety cells for which two.
+      setGridError(
+        invalid.map((i) => `${i.label} ${i.why}`).join(' · ')
+      );
+      return;
+    }
+    setGridSaving(true);
+    setGridError('');
+    try {
+      const res = await api.put('/shift-templates/grid', {
+        outletIds,
+        templates: cellsToTemplates(times, counts, rows, slotsFor),
+      });
+      setGridResult({ ...res, outletIds });
+      setApplyOpen(false);
+      load();
+      loadClearPreview();
+    } catch (err) {
+      setGridError(err.message || 'Failed to save the grid');
+    } finally {
+      setGridSaving(false);
+    }
+  };
+
+  const saveStations = async (list) => {
+    try {
+      await api.put(`/brands/${outlet.brand.id}`, { stations: list });
+      setStationsOpen(false);
+      // The station list rides on the outlet payload, so the directory has to
+      // come back before the grid can draw its new rows.
+      await refresh();
+    } catch (err) {
+      alert(err.message || 'Failed to save stations');
+    }
+  };
+
   const activeTemplates = useMemo(() => templates.filter((t) => t.isActive), [templates]);
   // Weekly, not daily: with patterns that run on different days, a single
   // per-day figure describes no actual day.
@@ -143,6 +291,7 @@ export default function ShiftMasterPage() {
             // Rows written before daysOfWeek existed carry the field by default,
             // but a stale cached response would not.
             daysOfWeek: pattern.daysOfWeek ?? ALL_WEEKDAYS,
+            slot: pattern.slot ?? 1,
           }
         : emptyPattern
     );
@@ -318,14 +467,106 @@ export default function ShiftMasterPage() {
               </h3>
               <p className="text-xs text-secondary">
                 Auto-allocation has nothing to fill for this restaurant.
-                {isManager ? ' Add a pattern below to start planning it.' : ''}
+                {isManager ? ' Fill the week below to start planning it.' : ''}
               </p>
             </div>
           </div>
         </div>
       )}
 
-      <div className="card">
+      {/* ============ The weekly sheet ============ */}
+      <div className="card mb-4" data-section="sheet">
+        <div className="card-header">
+          <div className="flex items-center gap-2">
+            <CalendarRange size={17} className="icon-brand" />
+            <h3 className="card-title">Weekly Shift Sheet</h3>
+            {outlet && <span className="badge badge-ghost">{outlet.name}</span>}
+            {dirty && <span className="badge badge-warn">Unsaved</span>}
+          </div>
+          {isManager && (
+            <div className="flex items-center gap-2">
+              {isAdmin && (
+                <button className="btn btn-ghost btn-sm" onClick={() => {
+                  setStationDraft((outlet?.brand?.stations ?? []).join('\n'));
+                  setStationsOpen(true);
+                }}>
+                  <Settings2 size={14} />
+                  <span>Stations</span>
+                </button>
+              )}
+              {brandSiblings.length > 0 && (
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setApplyOpen(true)}
+                  disabled={gridSaving}
+                  title={`Copy this sheet to the other ${outlet?.brand?.name} restaurants`}
+                >
+                  <Copy size={14} />
+                  <span>Apply to all {outlet?.brand?.name}</span>
+                </button>
+              )}
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => saveGrid([selectedOutletId])}
+                disabled={gridSaving || !dirty}
+              >
+                <Save size={14} />
+                <span>{gridSaving ? 'Saving…' : 'Save sheet'}</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        <p className="text-xs text-muted mb-3">
+          Set a shift's hours once, then fill in how many people it needs on each day.
+          Leave a day empty where the shift does not run, and use <strong>Add shift</strong>{' '}
+          for a station that runs more than two. Days asking for the same number are
+          stored as one pattern.
+        </p>
+
+        {gridError && <div className="login-error mb-3">{gridError}</div>}
+
+        {gridResult && (
+          <p className="text-sm mb-3" style={{ color: 'var(--ink-good)' }}>
+            Saved {gridResult.created} pattern{gridResult.created === 1 ? '' : 's'} across{' '}
+            {gridResult.outlets} outlet{gridResult.outlets === 1 ? '' : 's'}
+            {gridResult.keptInactive > 0 &&
+              ` · ${gridResult.keptInactive} inactive pattern${gridResult.keptInactive === 1 ? '' : 's'} kept`}.
+          </p>
+        )}
+
+        {rows.length === 2 && (
+          <div className="card card--alert-warn mb-3">
+            <p className="text-sm">
+              <strong>{outlet?.brand?.name}</strong> has no kitchen stations defined, so only
+              Service and House Keeping are shown.
+              {isAdmin ? ' Use Stations above to add them.' : ' An admin can add them.'}
+            </p>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="text-center py-8 text-muted">Loading the sheet…</div>
+        ) : (
+          <ShiftGrid
+            rows={rows}
+            times={times}
+            counts={counts}
+            conflicts={conflicts}
+            invalid={invalid}
+            slotsFor={slotsFor}
+            onTimes={editTimes}
+            onCounts={editCounts}
+            onAddSlot={addSlot}
+            onRemoveSlot={removeSlot}
+            readOnly={!isManager}
+          />
+        )}
+      </div>
+
+      {/* The stored patterns behind the sheet: where Active is toggled, where a
+          single row can be deleted, and the only place inactive ones appear. */}
+      <div className="card" data-section="patterns">
         <div className="card-header">
           <div className="flex items-center gap-2">
             <Layers size={17} className="icon-brand" />
@@ -518,7 +759,9 @@ export default function ShiftMasterPage() {
                 onChange={(e) => setForm((p) => ({ ...p, section: e.target.value }))}
               >
                 <option value="">General</option>
-                {STATIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                {/* This brand's own stations, so the modal and the sheet above
+                    cannot disagree about which rows exist. */}
+                {stationOptions.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
               {!departmentHasStations(form.department) && (
                 <p className="text-xs text-muted mt-1">Stations apply to kitchen patterns only.</p>
@@ -549,6 +792,21 @@ export default function ShiftMasterPage() {
                 required
               />
             </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="pattern-slot">Shift</label>
+            <select
+              id="pattern-slot"
+              className="form-select"
+              value={form.slot}
+              onChange={(e) => setForm((p) => ({ ...p, slot: Number(e.target.value) }))}
+            >
+              {slotsUpTo(MAX_SHIFT_SLOTS).map((s) => <option key={s} value={s}>Shift {s}</option>)}
+            </select>
+            <p className="text-xs text-muted mt-1">
+              Which row of the weekly sheet this pattern sits on.
+            </p>
           </div>
 
           <div className="form-group">
@@ -693,6 +951,80 @@ export default function ShiftMasterPage() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        isOpen={applyOpen}
+        onClose={() => setApplyOpen(false)}
+        title={`Apply this sheet to all ${outlet?.brand?.name || ''} restaurants`}
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-secondary">
+            The week you have filled in for <strong>{outlet?.name}</strong> replaces the
+            active patterns at{' '}
+            <strong>{brandSiblings.length} other {outlet?.brand?.name} restaurant
+            {brandSiblings.length === 1 ? '' : 's'}</strong>. Whatever they run now is
+            overwritten.
+          </p>
+          <ul className="divided-list">
+            {brandSiblings.map((o) => (
+              <li key={o.id} className="text-sm py-1">{o.name}</li>
+            ))}
+          </ul>
+          <p className="text-xs text-muted">
+            Other brands are untouched. Inactive patterns at each restaurant are kept.
+          </p>
+          <div className="flex gap-2" style={{ marginLeft: 'auto' }}>
+            <button className="btn btn-ghost" onClick={() => setApplyOpen(false)} disabled={gridSaving}>
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={() => saveGrid([selectedOutletId, ...brandSiblings.map((o) => o.id)])}
+              disabled={gridSaving}
+            >
+              {gridSaving ? 'Applying…' : `Apply to ${brandSiblings.length + 1} restaurants`}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={stationsOpen}
+        onClose={() => setStationsOpen(false)}
+        title={`Stations · ${outlet?.brand?.name || ''}`}
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-secondary">
+            The kitchen stations this brand runs, one per line, in the order they should
+            appear on the sheet. Every {outlet?.brand?.name} restaurant uses this list.
+          </p>
+          <div className="form-group">
+            <label className="form-label" htmlFor="brand-stations">Stations</label>
+            <textarea
+              id="brand-stations"
+              className="form-textarea"
+              rows={8}
+              value={stationDraft}
+              onChange={(e) => setStationDraft(e.target.value)}
+              placeholder={'Pass\nPizza\nPasta\nDrinks'}
+            />
+            <p className="text-xs text-muted mt-1">
+              Service and House Keeping are always shown and are not listed here — they are
+              departments, not stations. Removing a station hides its row; patterns already
+              saved for it stay in the list below until deleted.
+            </p>
+          </div>
+          <div className="flex gap-2" style={{ marginLeft: 'auto' }}>
+            <button className="btn btn-ghost" onClick={() => setStationsOpen(false)}>Cancel</button>
+            <button
+              className="btn btn-primary"
+              onClick={() => saveStations(stationDraft.split('\n').map((s) => s.trim()).filter(Boolean))}
+            >
+              Save stations
+            </button>
+          </div>
+        </div>
       </Modal>
 
       <Modal

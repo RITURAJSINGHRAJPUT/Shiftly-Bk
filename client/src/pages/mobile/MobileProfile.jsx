@@ -2,7 +2,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import Switch from '../../components/Switch';
 import { LogOut, ShieldAlert, Award, Moon, MapPin, Building2 } from 'lucide-react';
-import { ROLES } from '../../constants';
+import { ROLES, GLOBAL_SCOPE_ROLES } from '../../constants';
 
 export default function MobileProfile() {
   const { user, logout } = useAuth();
@@ -16,7 +16,7 @@ export default function MobileProfile() {
       <div className="page-header">
         <div>
           <h1 className="page-title">My Profile</h1>
-          <p className="page-subtitle">Personal info, skills and preferences</p>
+          <p className="page-subtitle">Personal info, stations and preferences</p>
         </div>
       </div>
 
@@ -32,58 +32,79 @@ export default function MobileProfile() {
         <div className="badge badge-primary mt-2">{ROLES[user?.role] || user?.role}</div>
       </div>
 
-      <div className="card mb-4">
-        <div className="card-header">
-          <div className="flex items-center gap-2">
-            <Building2 size={17} className="icon-brand" />
-            <h3 className="card-title">Assignment</h3>
+      {/* Organisation-wide roles belong to no restaurant, work no department and
+          hold no stations. These cards used to render three em-dashes and an
+          empty Stations list, which reads as missing data rather than as
+          not-applicable. */}
+      {GLOBAL_SCOPE_ROLES.includes(user?.role) ? (
+        <div className="card mb-4">
+          <div className="card-header">
+            <div className="flex items-center gap-2">
+              <Building2 size={17} className="icon-brand" />
+              <h3 className="card-title">Access</h3>
+            </div>
           </div>
+          <p className="text-sm text-secondary">
+            Organisation-wide. This account is not tied to a restaurant or a
+            department, and sees every outlet.
+          </p>
         </div>
-        <div className="divided-list">
-          <div className="flex items-center gap-2 text-sm">
-            <MapPin size={14} className="icon-muted" />
-            <span className="text-secondary">Outlet</span>
-            <span className="font-semibold text-strong" style={{ marginLeft: 'auto' }}>
-              {user?.outlet?.name || '—'}
-            </span>
+      ) : (
+        <>
+          <div className="card mb-4">
+            <div className="card-header">
+              <div className="flex items-center gap-2">
+                <Building2 size={17} className="icon-brand" />
+                <h3 className="card-title">Assignment</h3>
+              </div>
+            </div>
+            <div className="divided-list">
+              <div className="flex items-center gap-2 text-sm">
+                <MapPin size={14} className="icon-muted" />
+                <span className="text-secondary">Outlet</span>
+                <span className="font-semibold text-strong" style={{ marginLeft: 'auto' }}>
+                  {user?.outlet?.name || '—'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-secondary" style={{ paddingLeft: 22 }}>Brand</span>
+                <span className="font-semibold text-strong" style={{ marginLeft: 'auto' }}>
+                  {user?.outlet?.brand?.name || '—'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-secondary" style={{ paddingLeft: 22 }}>Department</span>
+                <span className="font-semibold text-strong" style={{ marginLeft: 'auto' }}>
+                  {user?.department || '—'}
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-secondary" style={{ paddingLeft: 22 }}>Brand</span>
-            <span className="font-semibold text-strong" style={{ marginLeft: 'auto' }}>
-              {user?.outlet?.brand?.name || '—'}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-secondary" style={{ paddingLeft: 22 }}>Department</span>
-            <span className="font-semibold text-strong" style={{ marginLeft: 'auto' }}>
-              {user?.department || '—'}
-            </span>
-          </div>
-        </div>
-      </div>
 
-      <div className="card mb-4">
-        <div className="card-header">
-          <div className="flex items-center gap-2">
-            <Award size={17} className="icon-brand" />
-            <h3 className="card-title">Station Skills</h3>
+          <div className="card mb-4">
+            <div className="card-header">
+              <div className="flex items-center gap-2">
+                <Award size={17} className="icon-brand" />
+                <h3 className="card-title">Stations</h3>
+              </div>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {user?.skills?.map((skill) => (
+                <span
+                  key={skill}
+                  className="badge badge-ghost text-xs"
+                  style={{ textTransform: 'capitalize' }}
+                >
+                  {skill}
+                </span>
+              ))}
+              {(!user?.skills || user.skills.length === 0) && (
+                <span className="text-xs text-muted">No stations recorded</span>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {user?.skills?.map((skill) => (
-            <span
-              key={skill}
-              className="badge badge-ghost text-xs"
-              style={{ textTransform: 'capitalize' }}
-            >
-              {skill}
-            </span>
-          ))}
-          {(!user?.skills || user.skills.length === 0) && (
-            <span className="text-xs text-muted">No station skills registered</span>
-          )}
-        </div>
-      </div>
+        </>
+      )}
 
       {/* The sidebar's Dark Mode toggle is hidden below the mobile breakpoint,
           so without this there is no way to change theme on a phone. */}

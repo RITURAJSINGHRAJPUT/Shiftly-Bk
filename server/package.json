@@ -12,7 +12,10 @@
     "setup": "node src/scripts/createDb.js && npx prisma db push && npx prisma generate && node src/scripts/seedFromCSV.js",
     "seed:templates": "node src/scripts/seedShiftTemplates.js",
     "managers": "node src/scripts/ensureOutletManagers.js",
-    "seed:staff": "node src/scripts/seedDemoStaff.js"
+    "seed:staff": "node src/scripts/seedDemoStaff.js",
+    "reset:superadmin": "node src/scripts/resetToSuperAdmin.js",
+    "access:doc": "node src/scripts/generateAccessDoc.js",
+    "access:check": "node src/scripts/generateAccessDoc.js --check"
   },
   "dependencies": {
     "@prisma/client": "^6.9.0",
@@ -21,6 +24,7 @@
     "csv-parse": "^5.6.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.6.1",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.22.0"
   },

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../db.js';
-import { authenticateToken, requireMinRole } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { can } from '../lib/capabilities.js';
 
 const router = Router();
 
@@ -24,7 +25,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // PUT /api/organizations/:id
-router.put('/:id', authenticateToken, requireMinRole('ADMIN'), async (req, res) => {
+router.put('/:id', authenticateToken, can('ORGANIZATION_EDIT'), async (req, res) => {
   try {
     const { name, isActive } = req.body;
     const data = {};

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../db.js';
-import { authenticateToken, requireMinRole } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { can } from '../lib/capabilities.js';
 import { autoAllocateShifts } from '../engine/shiftAllocator.js';
 import { outletScope } from '../lib/scope.js';
 import { localDateRange, startOfLocalDay, localDateKey } from '../lib/dates.js';
@@ -45,7 +46,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // POST /api/shifts — create a shift manually
-router.post('/', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res) => {
+router.post('/', authenticateToken, can('SHIFT_CREATE'), async (req, res) => {
   try {
     const { date, startTime, endTime, section, employeeId, outletId } = req.body;
 
@@ -101,7 +102,7 @@ router.post('/', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res
 });
 
 // POST /api/shifts/auto-allocate
-router.post('/auto-allocate', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res) => {
+router.post('/auto-allocate', authenticateToken, can('SHIFT_ALLOCATE'), async (req, res) => {
   try {
     const { outletId, startDate, endDate } = req.body;
     const result = await autoAllocateShifts(
@@ -117,7 +118,7 @@ router.post('/auto-allocate', authenticateToken, requireMinRole('HEAD_CHEF'), as
 });
 
 // PUT /api/shifts/:id
-router.put('/:id', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, res) => {
+router.put('/:id', authenticateToken, can('SHIFT_EDIT'), async (req, res) => {
   try {
     const { date, startTime, endTime, section, employeeId, status } = req.body;
     const data = {};
@@ -144,7 +145,7 @@ router.put('/:id', authenticateToken, requireMinRole('HEAD_CHEF'), async (req, r
 });
 
 // DELETE /api/shifts/:id
-router.delete('/:id', authenticateToken, requireMinRole('ADMIN'), async (req, res) => {
+router.delete('/:id', authenticateToken, can('SHIFT_DELETE'), async (req, res) => {
   try {
     await prisma.shift.delete({ where: { id: req.params.id } });
     res.json({ message: 'Shift deleted' });

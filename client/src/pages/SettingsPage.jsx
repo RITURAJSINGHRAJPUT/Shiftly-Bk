@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import api from '../api/client';
 import Modal from '../components/Modal';
 import { useAuth } from '../contexts/AuthContext';
-import { MapPin, Save, Shield, AlertTriangle, Trash2 } from 'lucide-react';
+import { MapPin, Save, Shield, AlertTriangle, Trash2, KeyRound } from 'lucide-react';
 
 /** Typed verbatim before the wipe will run. */
 const WIPE_CONFIRMATION = 'DELETE ALL STAFF';
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, changePassword } = useAuth();
   const [outlets, setOutlets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -17,6 +17,31 @@ export default function SettingsPage() {
   // here rather than relying on navigation to keep them out. The server
   // enforces it independently with requireRole('SUPER_ADMIN').
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+
+  const [pwCurrent, setPwCurrent] = useState('');
+  const [pwNew, setPwNew] = useState('');
+  const [pwConfirm, setPwConfirm] = useState('');
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState('');
+  const [pwDone, setPwDone] = useState(false);
+
+  const submitPassword = async (e) => {
+    e.preventDefault();
+    setPwError('');
+    setPwDone(false);
+    setPwSaving(true);
+    try {
+      // Goes through the same endpoint as the forced first change, so the
+      // strength rule cannot differ between the two paths.
+      await changePassword(pwCurrent, pwNew);
+      setPwCurrent(''); setPwNew(''); setPwConfirm('');
+      setPwDone(true);
+    } catch (err) {
+      setPwError(err.message || 'Could not change your password');
+    } finally {
+      setPwSaving(false);
+    }
+  };
 
   const [preview, setPreview] = useState(null);
   const [wipeOpen, setWipeOpen] = useState(false);
@@ -100,8 +125,63 @@ export default function SettingsPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">System Settings</h1>
-          <p className="page-subtitle">Configure GPS coordinates, allowed radius boundaries, and system preferences</p>
+          <p className="page-subtitle">Your password, GPS coordinates, allowed radius boundaries, and system preferences</p>
         </div>
+      </div>
+
+      {/* Everyone's, not just an admin's — before this there was no way for
+          anyone to change their own password at all. */}
+      <div className="card mb-4" data-section="password">
+        <div className="card-header">
+          <div className="flex items-center gap-2">
+            <KeyRound size={18} className="icon-brand" />
+            <h3 className="card-title">Your Password</h3>
+          </div>
+        </div>
+
+        {pwDone && (
+          <p className="text-sm mb-3" style={{ color: 'var(--ink-good)' }}>
+            Password changed. It applies the next time you sign in anywhere else.
+          </p>
+        )}
+        {pwError && <div className="login-error mb-3">{pwError}</div>}
+
+        <form onSubmit={submitPassword} className="flex flex-col gap-3" style={{ maxWidth: 420 }}>
+          <div className="form-group">
+            <label className="form-label" htmlFor="pw-current">Current password</label>
+            <input
+              id="pw-current" type="password" className="form-input"
+              value={pwCurrent} onChange={(e) => setPwCurrent(e.target.value)}
+              autoComplete="current-password" required
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label" htmlFor="pw-new">New password</label>
+            <input
+              id="pw-new" type="password" className="form-input"
+              value={pwNew} onChange={(e) => setPwNew(e.target.value)}
+              autoComplete="new-password" required
+            />
+            <p className="text-xs text-muted mt-1">At least 10 characters.</p>
+          </div>
+          <div className="form-group">
+            <label className="form-label" htmlFor="pw-confirm">Confirm new password</label>
+            <input
+              id="pw-confirm" type="password" className="form-input"
+              value={pwConfirm} onChange={(e) => setPwConfirm(e.target.value)}
+              autoComplete="new-password" required
+            />
+          </div>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            style={{ marginRight: 'auto' }}
+            disabled={pwSaving || !pwCurrent || pwNew.length < 10 || pwNew !== pwConfirm}
+          >
+            <Save size={16} />
+            <span>{pwSaving ? 'Changing…' : 'Change password'}</span>
+          </button>
+        </form>
       </div>
 
       <div className="card mb-4">

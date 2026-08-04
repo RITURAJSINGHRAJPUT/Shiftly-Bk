@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../db.js';
-import { authenticateToken, requireMinRole } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { can } from '../lib/capabilities.js';
 
 const router = Router();
 
@@ -18,7 +19,15 @@ router.get('/', authenticateToken, async (req, res) => {
       where,
       include: {
         brand: {
-          select: { id: true, name: true, organization: { select: { id: true, name: true } } },
+          // `stations` comes along because Shift Master's grid draws one row per
+          // station and the two brands do not share a list — without it the page
+          // would need a second round trip just to know its own row headings.
+          select: {
+            id: true,
+            name: true,
+            stations: true,
+            organization: { select: { id: true, name: true } },
+          },
         },
         _count: { select: { employees: true } },
         // Every restaurant is expected to have both of these, so they are
@@ -49,7 +58,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // POST /api/outlets
-router.post('/', authenticateToken, requireMinRole('ADMIN'), async (req, res) => {
+router.post('/', authenticateToken, can('OUTLET_CREATE'), async (req, res) => {
   try {
     const { name, brandId, address, latitude, longitude, radius } = req.body;
     if (!name || !brandId) {
@@ -80,7 +89,7 @@ router.post('/', authenticateToken, requireMinRole('ADMIN'), async (req, res) =>
 //
 // Guarded at ADMIN: this endpoint moves the geofence, so anyone who can call it
 // can defeat attendance validation. It previously shipped with no role check.
-router.put('/:id', authenticateToken, requireMinRole('ADMIN'), async (req, res) => {
+router.put('/:id', authenticateToken, can('OUTLET_EDIT'), async (req, res) => {
   try {
     const { name, brandId, address, latitude, longitude, radius, isActive } = req.body;
 

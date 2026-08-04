@@ -8,6 +8,7 @@ import { MOBILE_BREAKPOINT, SIDEBAR_COLLAPSED_KEY } from './constants';
 
 // Pages
 import LoginPage from './pages/LoginPage';
+import SetPasswordPage from './pages/SetPasswordPage';
 import DashboardPage from './pages/DashboardPage';
 import EmployeesPage from './pages/EmployeesPage';
 import ShiftsPage from './pages/ShiftsPage';
@@ -28,7 +29,7 @@ import Header from './components/Header';
 import MobileNav from './components/MobileNav';
 
 function Layout() {
-  const { user, loading } = useAuth();
+  const { user, loading, mustChangePassword } = useAuth();
   const { pathname } = useLocation();
 
   // Remembered, unlike the sidebar's open nav group. Wanting a narrow sidebar is
@@ -73,6 +74,13 @@ function Layout() {
     // break the Dashboard. ScopeProvider above is unaffected: its effect starts
     // with `if (!user) return`, so no unauthenticated request fires.
     return pathname === '/' ? <LandingPage /> : <Navigate to="/login" replace />;
+  }
+
+  // Before the chrome, not as a route: this account's token is refused by every
+  // ordinary endpoint, so rendering the app around it would only produce a
+  // sidebar full of pages that 403.
+  if (mustChangePassword) {
+    return <SetPasswordPage />;
   }
 
   return (

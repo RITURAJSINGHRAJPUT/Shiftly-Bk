@@ -13,6 +13,7 @@ import bcrypt from 'bcryptjs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
+import { requireDemoSeedOptIn } from './demoGate.js';
 import { outletSlug } from './seedFromCSV.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -132,6 +133,7 @@ async function seedDemoStaff({ dryRun = false } = {}) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  requireDemoSeedOptIn('npm run seed:staff');
   seedDemoStaff({ dryRun: process.argv.includes('--dry-run') })
     .then(() => prisma.$disconnect())
     .catch(async (err) => {

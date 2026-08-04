@@ -34,6 +34,40 @@ export const STATIONS = ['Pizza', 'Pasta', 'Drinks', 'Sushi', 'Wok', 'Side', 'Pa
 
 export const departmentHasStations = (department) => department === 'KITCHEN';
 
+/**
+ * Shift rows per station on the sheet.
+ *
+ * Two by default, because that is how the paper sheets are drawn and an empty
+ * third row on every station is noise. Stations that need a late close can grow
+ * to six — beyond that the grid stops being readable, and a station running
+ * seven distinct shifts is a sign the station itself should be split.
+ */
+export const MIN_SHIFT_SLOTS = 2;
+export const MAX_SHIFT_SLOTS = 6;
+
+/** `[1, 2, … n]` — the slot numbers to draw for one station. */
+export const slotsUpTo = (n) => Array.from({ length: n }, (_, i) => i + 1);
+
+/**
+ * The grid's rows for one outlet, in sheet order: the brand's kitchen stations
+ * first, then the two departments that have no station of their own.
+ *
+ * `key` is what the grid's state is keyed by, so it has to survive a station
+ * being renamed away and back — department plus section is exactly identifying.
+ */
+export function gridRows(brandStations = []) {
+  return [
+    ...brandStations.map((section) => ({
+      key: `KITCHEN|${section}`,
+      label: section,
+      department: 'KITCHEN',
+      section,
+    })),
+    { key: 'SERVICE|', label: 'Service', department: 'SERVICE', section: null },
+    { key: 'HOUSEKEEPING|', label: 'House Keeping', department: 'HOUSEKEEPING', section: null },
+  ];
+}
+
 /** Roles that can see data across every outlet rather than just their own. */
 export const GLOBAL_SCOPE_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR'];
 

@@ -3,12 +3,12 @@ import { Link } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { useScope } from '../contexts/ScopeContext';
-import { ALL_WEEKDAYS, formatDays, STATIONS, departmentHasStations } from '../constants';
+import { ALL_WEEKDAYS, STATIONS, departmentHasStations } from '../constants';
 import Modal from '../components/Modal';
 import { format, startOfWeek, endOfWeek, addDays, isSameDay, isToday, parseISO } from 'date-fns';
 import {
   Calendar, CalendarDays, Plus, RefreshCw, CheckCircle2, AlertTriangle,
-  Layers, Users, Store, ChevronLeft, ChevronRight,
+  Layers, Store, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 
 
@@ -251,11 +251,17 @@ export default function ShiftsPage() {
         <div>
           <h1 className="page-title">Shift Planning</h1>
           <p className="page-subtitle">
-            Plan one restaurant at a time — patterns, then today, then the week
+            Plan one restaurant at a time — today, then the week
           </p>
         </div>
         {isManager && (
           <div className="flex gap-2">
+            {/* The way back to where patterns are defined. Shift Master's header
+                carries the mirror-image link, so the pair stays symmetric. */}
+            <Link to="/shift-master" className="btn btn-ghost">
+              <Layers size={16} />
+              <span>Shift Master</span>
+            </Link>
             {/* Gated on the whole week, not one day: a Fri–Sun pattern gives
                 this week something to allocate even though Monday has none. */}
             <button
@@ -369,89 +375,12 @@ export default function ShiftsPage() {
         </div>
       )}
 
-      <div className="card mb-4" data-section="patterns">
-        <div className="card-header">
-          <div className="flex items-center gap-2">
-            <Layers size={17} className="icon-brand" />
-            <h3 className="card-title">Shift Patterns</h3>
-            <span className="badge badge-ghost">{outlet?.name}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted">
-              {activeTemplates.length} patterns · {slotsThisWeek} slots/week · {employees.length} staff
-            </span>
-            {isManager && (
-              <Link to="/shift-master" className="btn btn-ghost btn-sm">
-                <Layers size={14} />
-                <span>Manage patterns</span>
-              </Link>
-            )}
-          </div>
-        </div>
+      {/* The read-only pattern list that used to sit here is gone: Shift Master
+          owns patterns outright now, and this was the same data with fewer
+          capabilities. The templates themselves are still fetched — the coverage
+          rows and the week grid's per-day denominators are built from them. */}
 
-        <p className="text-xs text-muted mb-3">
-          Each pattern is a recurring requirement — station, hours, how many people it
-          needs and which days it runs. Auto-allocation fills every slot on the days a
-          pattern runs. Patterns are defined in Shift Master; this is a read-only view.
-        </p>
-
-        {templates.length === 0 ? (
-          <div className="empty-state py-6">
-            <Layers size={40} className="empty-icon" />
-            <h3>No patterns yet</h3>
-            <p>Add the stations and shifts this restaurant runs.</p>
-          </div>
-        ) : (
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Pattern</th>
-                  <th>Department</th>
-                  <th>Station</th>
-                  <th>Hours</th>
-                  <th>Runs on</th>
-                  <th>Needed</th>
-                  {isManager && <th />}
-                </tr>
-              </thead>
-              <tbody>
-                {templates.map((t) => (
-                  <tr key={t.id} style={{ opacity: t.isActive ? 1 : 0.5 }}>
-                    <td>
-                      <span className="font-semibold text-strong">{t.name}</span>
-                      {!t.isActive && <span className="badge badge-ghost ml-2">Inactive</span>}
-                    </td>
-                    <td>
-                      <span className={`badge ${
-                        t.department === 'KITCHEN' ? 'badge-warn'
-                        : t.department === 'SERVICE' ? 'badge-primary' : 'badge-accent'
-                      }`}>
-                        {t.department}
-                      </span>
-                    </td>
-                    <td>{t.section || <span className="text-muted">General</span>}</td>
-                    <td>{t.startTime} – {t.endTime}</td>
-                    <td>
-                      <span className={t.daysOfWeek?.length === 7 ? 'text-muted' : 'font-semibold text-strong'}>
-                        {formatDays(t.daysOfWeek ?? ALL_WEEKDAYS)}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="flex items-center gap-1">
-                        <Users size={13} className="icon-muted" />
-                        <strong>{t.headcount}</strong>
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* ============ 2 · DAILY COVERAGE ============ */}
+      {/* ============ 1 · DAILY COVERAGE ============ */}
       <div className="card mb-4" data-section="daily">
         <div className="card-header">
           <div className="flex items-center gap-2">
@@ -563,7 +492,7 @@ export default function ShiftsPage() {
         )}
       </div>
 
-      {/* ============ 3 · WEEKLY ============ */}
+      {/* ============ 2 · WEEKLY ============ */}
       <div className="card mb-4" data-section="weekly">
         <div className="card-header">
           <div className="flex items-center gap-2">

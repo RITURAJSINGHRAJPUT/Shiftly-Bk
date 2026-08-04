@@ -1,10 +1,49 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../db.js';
-import { authenticateToken, requireMinRole, requireRole } from '../middleware/auth.js';
-import { outletScope, outletInclude } from '../lib/scope.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { can } from '../lib/capabilities.js';
+import { outletScope, outletInclude, GLOBAL_SCOPE_ROLES } from '../lib/scope.js';
+import { generateTemporaryPassword } from '../lib/passwords.js';
 
 const router = Router();
+
+/**
+ * SUPER_ADMIN, ADMIN and HR are organisation-wide: no outlet, no department, no
+ * stations. Reusing GLOBAL_SCOPE_ROLES rather than restating the list keeps this
+ * in step with the scoping rule it follows from — those are exactly the roles
+ * outletScope() refuses to pin to an outlet.
+ */
+const isManagementRole = (role) => GLOBAL_SCOPE_ROLES.includes(role);
+
+/**
+ * The assignment fields for a role. Returns `{ data }` or `{ error }`.
+ *
+ * Applied on both create and update so the two cannot drift — promoting a head
+ * chef to HR has to clear the outlet they no longer belong to, and demoting an
+ * HR back has to insist on one.
+ */
+function readAssignment(role, { outletId, department, skills }, existing = {}) {
+  if (isManagementRole(role)) {
+    // Cleared rather than ignored: a promotion must not leave the old outlet
+    // behind, still counting against that restaurant's headcount.
+    return { data: { outletId: null, department: null, skills: [] } };
+  }
+
+  const nextOutlet = outletId !== undefined ? outletId : existing.outletId;
+  const nextDepartment = department !== undefined ? department : existing.department;
+
+  if (!nextOutlet) return { error: 'outletId is required for this role' };
+  if (!nextDepartment) return { error: 'department is required for this role' };
+
+  return {
+    data: {
+      outletId: nextOutlet,
+      department: nextDepartment,
+      skills: readStations(skills !== undefined ? skills : existing.skills, nextDepartment),
+    },
+  };
+}
 
 // GET /api/employees — list all employees (with filters)
 router.get('/', authenticateToken, async (req, res) => {
@@ -66,33 +105,64 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// POST /api/employees — create employee
-router.post('/', authenticateToken, requireMinRole('HR'), async (req, res) => {
-  try {
-    const { name, email, phone, role, department, outletId, skills, password } = req.body;
+/**
+ * Stations an employee works, stored on `skills`.
+ *
+ * Lowercased because that is what the allocator compares against —
+ * `scoreEmployee` tests `employee.skills.includes(slot.section.toLowerCase())`,
+ * so a capitalised value stores fine and then silently never matches. Blanks
+ * dropped and duplicates collapsed, because a station listed twice is still one
+ * station.
+ *
+ * Non-kitchen staff get none: stations are a kitchen concept, and only kitchen
+ * shifts carry a section to match against.
+ */
+function readStations(skills, department) {
+  if (department && department !== 'KITCHEN') return [];
+  if (!Array.isArray(skills)) return [];
+  return [...new Set(
+    skills.map((s) => String(s).trim().toLowerCase()).filter(Boolean)
+  )];
+}
 
-    if (!name || !department || !outletId) {
-      return res.status(400).json({ error: 'name, department and outletId are required' });
+// POST /api/employees — create employee
+router.post('/', authenticateToken, can('EMPLOYEE_CREATE'), async (req, res) => {
+  try {
+    const { name, email, phone, role, department, outletId, skills } = req.body;
+
+    if (!name) return res.status(400).json({ error: 'name is required' });
+    if (!email) {
+      return res.status(400).json({ error: 'email is required — it is how they sign in' });
     }
 
-    const hashedPassword = await bcrypt.hash(password || 'shiftly123', 10);
+    // Which fields are even asked for depends on the role: an HR account has no
+    // outlet or department to give, and demanding them was why the super admin
+    // ended up claiming a restaurant it had nothing to do with.
+    const effectiveRole = role || 'STAFF';
+    const { data: assignment, error } = readAssignment(effectiveRole, { outletId, department, skills });
+    if (error) return res.status(400).json({ error });
+
+    // Generated here, never supplied. The old `password || 'shiftly123'` meant
+    // every account in the system shared one password that nobody could change.
+    const temporaryPassword = generateTemporaryPassword();
 
     const employee = await prisma.employee.create({
       data: {
         name,
         email,
         phone,
-        role: role || 'STAFF',
-        department,
-        outletId,
-        skills: skills || [],
-        password: hashedPassword,
+        role: effectiveRole,
+        ...assignment,
+        password: await bcrypt.hash(temporaryPassword, 10),
+        mustChangePassword: true,
       },
       include: outletInclude,
     });
 
     const { password: _, ...sanitized } = employee;
-    res.status(201).json(sanitized);
+    // The only time this value is ever readable. What is stored is a bcrypt
+    // hash, so nothing can recover it later — a lost one needs a reset.
+    res.status(201).json({ ...sanitized, temporaryPassword });
   } catch (err) {
     if (err.code === 'P2002') {
       return res.status(400).json({ error: 'Email already exists' });
@@ -102,19 +172,33 @@ router.post('/', authenticateToken, requireMinRole('HR'), async (req, res) => {
 });
 
 // PUT /api/employees/:id
-router.put('/:id', authenticateToken, requireMinRole('HR'), async (req, res) => {
+router.put('/:id', authenticateToken, can('EMPLOYEE_EDIT'), async (req, res) => {
   try {
     const { name, email, phone, role, department, outletId, skills, isActive } = req.body;
+
+    const existing = await prisma.employee.findUnique({
+      where: { id: req.params.id },
+      select: { role: true, department: true, outletId: true, skills: true },
+    });
+    if (!existing) return res.status(404).json({ error: 'Employee not found' });
 
     const data = {};
     if (name !== undefined) data.name = name;
     if (email !== undefined) data.email = email;
     if (phone !== undefined) data.phone = phone;
     if (role !== undefined) data.role = role;
-    if (department !== undefined) data.department = department;
-    if (outletId !== undefined) data.outletId = outletId;
-    if (skills !== undefined) data.skills = skills;
     if (isActive !== undefined) data.isActive = isActive;
+
+    // Judged against the *effective* role, because this handler is partial: a
+    // request that changes only the role still has to move the assignment with
+    // it — promoting a head chef to HR clears the outlet, and demoting an HR
+    // back has to be given one rather than silently landing nowhere.
+    const effectiveRole = role ?? existing.role;
+    const { data: assignment, error } = readAssignment(
+      effectiveRole, { outletId, department, skills }, existing
+    );
+    if (error) return res.status(400).json({ error });
+    Object.assign(data, assignment);
 
     const employee = await prisma.employee.update({
       where: { id: req.params.id },
@@ -125,12 +209,53 @@ router.put('/:id', authenticateToken, requireMinRole('HR'), async (req, res) => 
     const { password, ...sanitized } = employee;
     res.json(sanitized);
   } catch (err) {
+    // Both were mapped on POST but not here, so renaming onto a taken email or
+    // editing a row deleted underneath you surfaced as a bare 500.
+    if (err.code === 'P2002') {
+      return res.status(400).json({ error: 'Email already exists' });
+    }
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/employees/:id/reset-password
+ *
+ * Issues a fresh one-time password and re-arms the forced change, for the
+ * everyday case of somebody locked out. The value is returned exactly once —
+ * what is stored is a hash, so there is no way to look it up again.
+ */
+router.post('/:id/reset-password', authenticateToken, can('EMPLOYEE_RESET_PW'), async (req, res) => {
+  try {
+    const employee = await prisma.employee.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, name: true, email: true },
+    });
+    if (!employee) return res.status(404).json({ error: 'Employee not found' });
+
+    const temporaryPassword = generateTemporaryPassword();
+    await prisma.employee.update({
+      where: { id: employee.id },
+      data: {
+        password: await bcrypt.hash(temporaryPassword, 10),
+        mustChangePassword: true,
+      },
+    });
+
+    res.json({ id: employee.id, name: employee.name, email: employee.email, temporaryPassword });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 // DELETE /api/employees/:id (soft delete)
-router.delete('/:id', authenticateToken, requireMinRole('ADMIN'), async (req, res) => {
+//
+// Deactivation is now a real lockout: the login handler refuses an inactive
+// account, which it did not before.
+router.delete('/:id', authenticateToken, can('EMPLOYEE_DEACTIVATE'), async (req, res) => {
   try {
     await prisma.employee.update({
       where: { id: req.params.id },
@@ -138,6 +263,9 @@ router.delete('/:id', authenticateToken, requireMinRole('ADMIN'), async (req, re
     });
     res.json({ message: 'Employee deactivated' });
   } catch (err) {
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
     res.status(500).json({ error: err.message });
   }
 });
@@ -151,8 +279,10 @@ router.delete('/:id', authenticateToken, requireMinRole('ADMIN'), async (req, re
  * 15 management accounts also preserves the rule that each outlet has a Master
  * of House and a Head Chef.
  *
- * requireRole rather than requireMinRole: an exact match says "only this role",
- * and cannot be satisfied by some future role ranked above SUPER_ADMIN.
+ * Guarded by STAFF_WIPE, whose floor is SUPER_ADMIN. That used to be an exact
+ * `requireRole('SUPER_ADMIN')`, to say "only this role" — identical today, since
+ * SUPER_ADMIN tops ROLE_HIERARCHY. Adding a role above it would widen this, so
+ * that is the moment to reach for an exact match again.
  */
 const WIPE_CONFIRMATION = 'DELETE ALL STAFF';
 
@@ -163,7 +293,7 @@ const wipeTarget = (req) => ({ role: 'STAFF', id: { not: req.user.id } });
 //
 // Two path segments on purpose: a single-segment literal such as /wipe-preview
 // would be captured by `router.get('/:id')` above and looked up as an employee.
-router.get('/stats/wipe-preview', authenticateToken, requireRole('SUPER_ADMIN'), async (req, res) => {
+router.get('/stats/wipe-preview', authenticateToken, can('STAFF_WIPE_PREVIEW'), async (req, res) => {
   try {
     const targets = await prisma.employee.findMany({
       where: wipeTarget(req),
@@ -189,7 +319,7 @@ router.get('/stats/wipe-preview', authenticateToken, requireRole('SUPER_ADMIN'),
 //
 // POST, not DELETE, because the API client's delete() sends no body and this
 // requires a typed confirmation.
-router.post('/wipe-staff', authenticateToken, requireRole('SUPER_ADMIN'), async (req, res) => {
+router.post('/wipe-staff', authenticateToken, can('STAFF_WIPE'), async (req, res) => {
   try {
     if (req.body?.confirm !== WIPE_CONFIRMATION) {
       return res.status(400).json({

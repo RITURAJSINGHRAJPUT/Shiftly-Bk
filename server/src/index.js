@@ -12,6 +12,7 @@ import organizationRoutes from './routes/organization.routes.js';
 import brandRoutes from './routes/brand.routes.js';
 import outletRoutes from './routes/outlet.routes.js';
 import shiftTemplateRoutes from './routes/shiftTemplate.routes.js';
+import { apiLimiter } from './middleware/rateLimit.js';
 
 dotenv.config();
 
@@ -33,6 +34,10 @@ app.use((req, res, next) => {
   });
   next();
 });
+
+// A backstop on everything. The strict credential limiter is applied inside
+// auth.routes.js, on the two endpoints that actually check a password.
+app.use('/api', apiLimiter);
 
 // Routes
 app.use('/api/auth', authRoutes);

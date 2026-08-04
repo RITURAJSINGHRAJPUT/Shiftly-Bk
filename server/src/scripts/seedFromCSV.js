@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
+import { requireDemoSeedOptIn } from './demoGate.js';
 import { buildTemplatesForOutlet } from './seedShiftTemplates.js';
 import { parseCSVShiftPattern, applyCSVPattern } from '../engine/csvShiftParser.js';
 
@@ -508,6 +509,7 @@ async function seed() {
 // this file executes the whole destructive seed as a side effect — which is
 // exactly what happened when ensureOutletManagers.js imported the helpers.
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  requireDemoSeedOptIn('npm run seed');
   seed().catch(err => {
     console.error('Seed error:', err);
     prisma.$disconnect();
