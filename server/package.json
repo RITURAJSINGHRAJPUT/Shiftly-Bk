@@ -17,7 +17,8 @@
     "access:doc": "node src/scripts/generateAccessDoc.js",
     "access:check": "node src/scripts/generateAccessDoc.js --check",
     "postinstall": "prisma generate",
-    "migrate:structure": "node src/scripts/migrateStructure.js"
+    "migrate:structure": "node src/scripts/migrateStructure.js",
+    "seed:crew": "node src/scripts/seedOutletCrew.js"
   },
   "dependencies": {
     "@prisma/client": "^6.9.0",

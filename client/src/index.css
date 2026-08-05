@@ -2925,6 +2925,15 @@ tbody tr:last-child td {
   .notification-panel { width: 100%; }
   .user-chip .user-name, .user-chip .user-role { display: none; }
 
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .page-header .flex {
+    flex-wrap: wrap;
+  }
+
   /* ---- landing ---- */
   .landing-nav-links { display: none; }
   .landing-hero,
@@ -2947,6 +2956,7 @@ tbody tr:last-child td {
   .stats-grid { grid-template-columns: 1fr; }
   .login-card { padding: var(--space-6); }
   .page-header { flex-direction: column; align-items: flex-start; }
+  .page-header .btn { width: 100%; justify-content: center; }
 
   /* ---- landing ---- */
   .landing-grid,

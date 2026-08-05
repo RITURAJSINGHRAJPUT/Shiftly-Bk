@@ -303,7 +303,9 @@ export default function ShiftsPage() {
         <div className="flex items-center gap-2 mb-4">
           <Store size={16} className="icon-brand" />
           <h2 className="card-title">{outlet?.name}</h2>
-          {outlet?.brand?.name && <span className="badge badge-ghost">{outlet.brand.name}</span>}
+          {outlet?.brand?.name && user?.role !== 'STAFF' && (
+            <span className="badge badge-ghost">{outlet.brand.name}</span>
+          )}
         </div>
       )}
 
@@ -547,21 +549,40 @@ export default function ShiftsPage() {
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    {dShifts.map((s) => (
-                      <div
-                        key={s.id}
-                        className="calendar-shift"
-                        data-section={getSection(s.section)}
-                        title={`${s.employee?.name} · ${s.section || 'General'} · ${s.startTime}-${s.endTime}`}
-                      >
-                        <div className="font-semibold truncate text-xs text-strong">{s.employee?.name}</div>
-                        <div className="text-2xs text-muted">{s.startTime} – {s.endTime}</div>
-                        {s.section && <div className="text-2xs font-semibold" style={{ opacity: 0.8 }}>{s.section}</div>}
-                      </div>
-                    ))}
-                    {dShifts.length === 0 && (
-                      <div className="text-2xs text-muted text-center py-4">No shifts</div>
-                    )}
+                    {(() => {
+                      const groups = new Map();
+                      for (const s of dShifts) {
+                        const key = slotKey(s.startTime, s.endTime, s.section, s.employee?.department);
+                        if (!groups.has(key)) {
+                          groups.set(key, { section: s.section, startTime: s.startTime, endTime: s.endTime, shifts: [] });
+                        }
+                        groups.get(key).shifts.push(s);
+                      }
+                      return groups.size > 0 ? [...groups.values()].map((g) => (
+                        <div
+                          key={`${g.startTime}-${g.endTime}-${normSection(g.section)}`}
+                          className="calendar-shift"
+                          data-section={getSection(g.section)}
+                          title={g.shifts.map((s) => s.employee?.name).join(', ')}
+                        >
+                          <div className="font-semibold truncate text-xs text-strong">
+                            {g.section || 'General'}
+                          </div>
+                          <div className="text-2xs text-muted">
+                            {g.startTime} – {g.endTime} · {g.shifts.length}
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {g.shifts.map((s) => (
+                              <span key={s.id} className="text-2xs" style={{ opacity: 0.85 }}>
+                                {s.employee?.name?.split(' ')[0]}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )) : (
+                        <div className="text-2xs text-muted text-center py-4">No shifts</div>
+                      );
+                    })()}
                   </div>
                 </div>
               );
