@@ -4,18 +4,29 @@
 :root {
   color-scheme: light;
 
-  /* ==================== BRAND — theme-invariant ==================== */
-  --primary-50: #eef2ff;
-  --primary-100: #e0e7ff;
-  --primary-200: #c7d2fe;
-  --primary-300: #a5b4fc;
-  --primary-400: #818cf8;
-  --primary-500: #6366f1;
-  --primary-600: #4f46e5;
-  --primary-700: #4338ca;
-  --primary-800: #3730a3;
-  --primary-900: #312e81;
-  --primary-950: #1e1b4b;
+  /* ==================== BRAND — theme-invariant ====================
+     Anchored on the logo. 600 is the mark's own field (#205cee) rather than a
+     near-miss from a stock palette, so a primary button and the tile sitting on
+     it are the same blue instead of two blues that almost agree. The rest is
+     Tailwind's blue ramp, which 600 sits inside cleanly.
+
+     Both ends carry weight: 950 is the sidebar's chrome and 50 is the soft tint
+     behind KPI icons, so this scale sets the whole app's temperature.
+
+     White on 600 is 5.5:1 — past the 4.5:1 floor, but lower than the indigo it
+     replaced (6.3:1). Anything pairing --ink-onbrand with a brand background was
+     re-measured rather than assumed; see the note on --sidebar-active-bg. */
+  --primary-50: #eff6ff;
+  --primary-100: #dbeafe;
+  --primary-200: #bfdbfe;
+  --primary-300: #93c5fd;
+  --primary-400: #60a5fa;
+  --primary-500: #3b82f6;
+  --primary-600: #205cee;
+  --primary-700: #1d4ed8;
+  --primary-800: #1e40af;
+  --primary-900: #1e3a8a;
+  --primary-950: #172554;
 
   /* ==================== STATUS HUES — theme-invariant ==================== */
   --accent-400: #34d399;
@@ -43,7 +54,7 @@
   --surface-scrim: rgba(15, 23, 42, 0.45);
 
   /* Soft tints — the KPI tile icon squares, badges, alert cards */
-  --tint-brand: #eef2ff;
+  --tint-brand: #eff6ff;
   --tint-good: #ecfdf5;
   --tint-warn: #fffbeb;
   --tint-crit: #fff1f2;
@@ -72,12 +83,12 @@
      Deliberately NOT redeclared in the dark block. The mockup keeps the
      sidebar navy in both themes, so it must not follow the surface tokens.
      Every rule inside .sidebar reads from this set and nothing else. */
-  --sidebar-bg: #1e1b4b;
+  --sidebar-bg: #172554;
   --sidebar-bg-elev: rgba(255, 255, 255, 0.06);
   --sidebar-ink: #a9b0d6;
   --sidebar-ink-strong: #ffffff;
   --sidebar-ink-muted: #8f97c4;
-  --sidebar-active-bg: #4f46e5;
+  --sidebar-active-bg: #205cee;
   --sidebar-hover: rgba(255, 255, 255, 0.07);
   --sidebar-line: rgba(255, 255, 255, 0.09);
 
@@ -124,7 +135,7 @@
   --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
   --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
   --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12);
-  --shadow-ring: 0 0 0 3px rgba(79, 70, 229, 0.14);
+  --shadow-ring: 0 0 0 3px rgba(32, 92, 238, 0.14);
 
   /* ==================== LAYOUT ==================== */
   /* Every consumer reads these — .sidebar, .main-content's margin and .header's
@@ -168,7 +179,7 @@
   --surface-input: #101124;
   --surface-scrim: rgba(0, 0, 0, 0.62);
 
-  --tint-brand: rgba(99, 102, 241, 0.14);
+  --tint-brand: rgba(59, 130, 246, 0.14);
   --tint-good: rgba(16, 185, 129, 0.14);
   --tint-warn: rgba(245, 158, 11, 0.14);
   --tint-crit: rgba(244, 63, 94, 0.14);
@@ -206,7 +217,7 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
-  --shadow-ring: 0 0 0 3px rgba(129, 140, 248, 0.22);
+  --shadow-ring: 0 0 0 3px rgba(96, 165, 250, 0.22);
 }
 
 *, *::before, *::after {
@@ -336,9 +347,10 @@ body {
   width: var(--sidebar-collapsed);
 }
 
-/* Vertical padding is --space-2, not --space-4: the wordmark image is taller
-   than the 18px text it replaced, and at 16px top and bottom the box grew to
-   78px and stopped lining up with the 64px top bar.
+/* Vertical padding is --space-2, not --space-4: the lockup is taller than the
+   18px text it replaced, and at 16px top and bottom the box grew to 78px and
+   stopped lining up with the 64px top bar. min-height holds it at 64px now that
+   the tagline is gone, so the sidebar header still meets the top bar.
    justify-content centres the logo across the sidebar's full width rather than
    letting it sit against the left padding. */
 .sidebar-logo {
@@ -351,15 +363,51 @@ body {
   flex-shrink: 0;
 }
 
-/* Shared by every logo image, from the 30px landing mark to the login wordmark.
-   The width/height attributes on the element are the asset's intrinsic size, so
-   each use below sets its own height and lets width follow. */
+/* The lockup, shared by every use from the landing nav to the login card. */
+/* The lockup: the mark tile beside the name, which is live text rather than
+   artwork. One knob drives it — set `font-size` on .brand-logo and the mark
+   scales with the text, so every use below sets that and nothing else. */
 .brand-logo {
-  display: block;
-  width: auto;
-  object-fit: contain;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
   flex-shrink: 0;
   user-select: none;
+  line-height: 1;
+}
+
+/* Rounded here rather than baked into the PNG: the same file is the favicon and
+   the PWA icon, where the OS applies its own corner treatment and a pre-rounded
+   square would show as a rounded square inside a rounded square. */
+.brand-mark {
+  display: block;
+  height: 1.55em;
+  width: auto;
+  border-radius: 22%;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.brand-name {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  color: var(--ink-strong);
+}
+
+/* The sidebar is navy in light mode too, so this cannot key off the theme. */
+.brand-logo.is-on-dark .brand-name {
+  color: var(--sidebar-ink-strong);
+}
+
+/* The tile alone, filling whatever box the caller sized. */
+.brand-logo--mark {
+  display: block;
+}
+
+.brand-logo--mark .brand-mark {
+  height: 100%;
+  width: 100%;
 }
 
 /* Doubles as the collapse control, so it is a <button> and needs the usual
@@ -367,9 +415,12 @@ body {
 .sidebar-logo .logo-icon {
   width: 32px;
   height: 32px;
-  background: var(--sidebar-active-bg);
+  /* No plate. The old mark was a transparent glyph and needed one; this tile
+     brings its own field, and an indigo square behind a blue one just reads as
+     a mismatched border. */
+  background: none;
   border: 0;
-  padding: 4px;
+  padding: 0;
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -424,19 +475,11 @@ body {
   outline-offset: 4px;
 }
 
-/* 30px, not more: .sidebar-logo must stay at --header-height (64px) so the
-   sidebar header lines up with the top bar, and the tagline sits under this. */
+/* Sized by font-size now that the name is text: the mark follows it. 15px keeps
+   .sidebar-logo at --header-height (64px) so the sidebar header lines up with
+   the top bar, with the tagline under it. */
 .sidebar-logo .logo-text {
-  height: 30px;
-}
-
-.sidebar-logo .logo-tagline {
-  font-size: var(--text-2xs);
-  color: var(--sidebar-ink-muted);
-  white-space: nowrap;
-  display: block;
-  text-align: center;
-  margin-top: -2px;
+  font-size: 15px;
 }
 
 /* The role is not repeated here — the top-bar user chip already shows it under
@@ -453,8 +496,8 @@ body {
   text-overflow: ellipsis;
 }
 
-/* .logo-text / .logo-tagline are not listed: the collapsed sidebar renders the
-   mark instead of the wordmark, so neither element exists to hide. */
+/* .logo-text is not listed: the collapsed sidebar renders the mark instead of
+   the wordmark, so the element does not exist to hide. */
 .sidebar.collapsed .nav-label,
 .sidebar.collapsed .nav-badge,
 .sidebar.collapsed .theme-toggle-label {
@@ -1600,16 +1643,14 @@ tbody tr:last-child td {
   margin-bottom: 32px;
 }
 
-/* The wordmark is the heading. The card is 420px wide with --space-10 padding,
-   so 200px leaves it comfortably inset rather than spanning edge to edge. */
+/* The lockup is the heading, centred in a 420px card. */
 .login-logo h1 {
   display: flex;
   justify-content: center;
 }
 
 .login-logo h1 .brand-logo {
-  width: 200px;
-  height: auto;
+  font-size: 22px;
 }
 
 .login-logo p {
@@ -2093,6 +2134,13 @@ tbody tr:last-child td {
 :root[data-theme='dark'] .icon-warn { color: var(--warn-400); }
 :root[data-theme='dark'] .icon-crit { color: var(--error-400); }
 
+/* The same lightening the status icons above get, which the brand-toned stat
+   tile never had: --primary-600 on a 14%-alpha tint over the dark card measured
+   2.4:1 under the old indigo and 2.7:1 under this blue — both under the 3:1
+   floor for a non-text graphic. --primary-400 puts it at 5.8:1. Light mode is
+   unaffected; there the same pairing is already 5.0:1. */
+:root[data-theme='dark'] .stat-card .stat-icon { color: var(--primary-400); }
+
 /* --- grid --- */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
@@ -2152,22 +2200,11 @@ tbody tr:last-child td {
   flex-shrink: 0;
 }
 
-/* Indigo chip like the sidebar's, so the glyph inside is always the light one
-   regardless of theme. flex-shrink guards it in the nav's flex row — the sidebar
-   mark has always had it, this one did not. */
-.landing-logo-mark {
-  width: 30px;
-  height: 30px;
-  padding: 4px;
-  border-radius: var(--radius-md);
-  background: var(--primary-600);
-  flex-shrink: 0;
-}
-
-/* 24px keeps the nav the same height it was with the 18px text wordmark, since
-   the 30px chip next to it still sets the row height. */
+/* One lockup, not a chip plus a wordmark: the wordmark variant already includes
+   the mark, so rendering both showed it twice. 17px keeps the nav the height it
+   was when a 30px chip set it. */
 .landing-logo-text {
-  height: 24px;
+  font-size: 17px;
 }
 
 .landing-nav-links {

@@ -103,7 +103,7 @@ export function authenticateToken(req, res, next) {
   if (decoded.pwreset) {
     return res.status(403).json({
       code: 'PASSWORD_RESET_REQUIRED',
-      error: 'Set your own password before using Shiftly',
+      error: 'Set your own password before using Bookends Shiftly',
     });
   }
 

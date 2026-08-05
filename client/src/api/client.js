@@ -55,7 +55,7 @@ class ApiClient {
     // valid, so the token is kept — the app just has nowhere to go but the
     // set-password screen, and every other request will keep getting this.
     if (res.status === 403 && data.code === 'PASSWORD_RESET_REQUIRED') {
-      const err = new Error(data.error || 'Set your own password before using Shiftly');
+      const err = new Error(data.error || 'Set your own password before using Bookends Shiftly');
       err.code = data.code;
       this.onPasswordResetRequired?.();
       throw err;

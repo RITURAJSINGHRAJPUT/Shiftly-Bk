@@ -182,7 +182,6 @@ export default function Sidebar({ collapsed, onToggle }) {
           >
             {/* onDark unconditionally: the sidebar is navy in light mode too. */}
             <BrandLogo variant="wordmark" onDark className="logo-text" />
-            <span className="logo-tagline">Staffing &amp; Scheduling</span>
           </button>
         )}
       </div>

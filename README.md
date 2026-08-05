@@ -1,8 +1,8 @@
-# Shiftly
+# Bookends Shiftly
 
-**CRM and intelligent shift management for multi-outlet hospitality.**
+**Workforce intelligence for multi-outlet hospitality.**
 
-Shiftly plans staffing per restaurant. Each outlet runs its own stations, hours
+Bookends Shiftly plans staffing per restaurant. Each outlet runs its own stations, hours
 and headcount, so a schedule generated for one venue means nothing at another —
 the allocator works from each outlet's own shift patterns, its own people, and
 its own coverage targets.

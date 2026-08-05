@@ -1,4 +1,4 @@
-# Shiftly — Technical Documentation
+# Bookends Shiftly — Technical Documentation
 
 CRM and shift management for multi-outlet hospitality. Express + Prisma +
 PostgreSQL API, React PWA client.

@@ -470,7 +470,7 @@ export default function EmployeesPage() {
             </div>
 
             <p className="text-xs" style={{ color: 'var(--ink-warn)' }}>
-              This is shown once. Shiftly stores only a hash of it, so it cannot be
+              This is shown once. Bookends Shiftly stores only a hash of it, so it cannot
               looked up again — if it is lost, issue a new one from the key icon on
               their row.
             </p>

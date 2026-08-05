@@ -128,8 +128,7 @@ export default function LandingPage() {
       <header className="landing-nav">
         <div className="landing-nav-inner">
           {/* alt="" on both — the link's aria-label is the accessible name. */}
-          <Link to="/" className="landing-logo" aria-label="Shiftly home">
-            <BrandLogo variant="mark" onDark className="landing-logo-mark" alt="" />
+          <Link to="/" className="landing-logo" aria-label="Bookends Shiftly home">
             <BrandLogo variant="wordmark" className="landing-logo-text" alt="" />
           </Link>
 
@@ -168,7 +167,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="landing-lead">
-            Shiftly plans staffing per restaurant — each venue's own stations, hours
+            Bookends Shiftly plans staffing per restaurant — each venue's own stations, hours
             and required headcount — then fills the roster automatically, respecting
             skills, rest periods and workload balance. Attendance is geofenced to
             each outlet.
@@ -269,7 +268,7 @@ export default function LandingPage() {
           </div>
 
           <div className="landing-panel landing-panel--navy">
-            <h2 className="landing-h3">Shiftly: the operations layer for hospitality.</h2>
+            <h2 className="landing-h3">Bookends Shiftly: the operations layer for hospitality.</h2>
             <div className="landing-list">
               {SOLUTIONS.map((s) => (
                 <div key={s.title} className="landing-list-item">
@@ -482,8 +481,7 @@ export default function LandingPage() {
         <div className="landing-footer-inner">
           <div className="landing-footer-brand">
             {/* aria-label to match the nav copy, which had one where this did not. */}
-            <Link to="/" className="landing-logo" aria-label="Shiftly home">
-              <BrandLogo variant="mark" onDark className="landing-logo-mark" alt="" />
+            <Link to="/" className="landing-logo" aria-label="Bookends Shiftly home">
               <BrandLogo variant="wordmark" className="landing-logo-text" alt="" />
             </Link>
             <p>CRM and shift management for multi-outlet hospitality.</p>
@@ -513,7 +511,7 @@ export default function LandingPage() {
         </div>
 
         <div className="landing-footer-bottom">
-          <span>© {new Date().getFullYear()} Shiftly. All rights reserved.</span>
+          <span>© {new Date().getFullYear()} Bookends Shiftly. All rights reserved.</span>
           <span className="landing-footer-note">
             <Clock size={12} /> Some features marked “Coming soon” are not yet built.
           </span>

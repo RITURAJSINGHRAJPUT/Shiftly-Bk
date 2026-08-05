@@ -1,6 +1,6 @@
 {
-  "short_name": "Shiftly",
-  "name": "Shiftly — Staffing CRM & Scheduler",
+  "short_name": "Bookends Shiftly",
+  "name": "Bookends Shiftly — Workforce Intelligence",
   "icons": [
     {
       "src": "/brand/icon-192.png",
@@ -23,7 +23,7 @@
   ],
   "start_url": "/",
   "background_color": "#f6f7fb",
-  "theme_color": "#1e1b4b",
+  "theme_color": "#205cee",
   "display": "standalone",
   "orientation": "portrait"
 }

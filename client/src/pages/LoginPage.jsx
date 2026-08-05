@@ -37,13 +37,12 @@ export default function LoginPage() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-logo">
-          {/* The wordmark replaces the old chip + <h1>Shiftly</h1> pair. It stays
-              inside the h1 so the card keeps its heading, with alt carrying the
-              text the heading used to hold. */}
+          {/* The lockup is the heading: the mark plus the name as live text, so
+              the h1 has real text in it rather than an image with alt. */}
           <h1>
             <BrandLogo variant="wordmark" />
           </h1>
-          <p>CRM & Intelligent Shift Management</p>
+          <p>Workforce Intelligence</p>
         </div>
 
         {error && (

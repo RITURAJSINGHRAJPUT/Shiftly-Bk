@@ -15,7 +15,8 @@
     "seed:staff": "node src/scripts/seedDemoStaff.js",
     "reset:superadmin": "node src/scripts/resetToSuperAdmin.js",
     "access:doc": "node src/scripts/generateAccessDoc.js",
-    "access:check": "node src/scripts/generateAccessDoc.js --check"
+    "access:check": "node src/scripts/generateAccessDoc.js --check",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.9.0",

@@ -1,4 +1,4 @@
-# Running Shiftly
+# Running Bookends Shiftly
 
 ```bash
 npm install     # installs root + server + client
@@ -15,6 +15,9 @@ npm --prefix server run reset:superadmin
 Then open **http://localhost:5173**, sign in as `superadmin@shiftly.com` with that
 password, and choose your own when asked. Everybody else is enrolled from the
 Employees page.
+
+To put it online, see **[DEPLOY.md](DEPLOY.md)** — one Render service serving both
+the app and the API, with Supabase for Postgres.
 
 For architecture, the data model, the API reference and the conventions to know
 before extending the code, see **[DOCS.md](DOCS.md)**.
@@ -121,7 +124,7 @@ Output is prefixed per service, and `Ctrl+C` stops both:
 
 ```
 ✓ preflight ok — starting api on :3001 and web on :5173
-[api] 🚀 Shiftly API running on http://localhost:3001
+[api] 🚀 Bookends Shiftly listening on port 3001
 [web]   ➜  Local:   http://localhost:5173/
 [api] POST /login 200 121ms
 ```
