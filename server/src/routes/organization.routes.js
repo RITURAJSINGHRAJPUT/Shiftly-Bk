@@ -24,6 +24,36 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/organizations
+ *
+ * This router had only GET and PUT, which made an empty database unusable:
+ * `Brand.organizationId` is required, so with no organisation you cannot create
+ * a brand, therefore no outlet, therefore no employee — every account needs one.
+ * The only code that had ever created one was the demo seeder, which is gated
+ * and destructive, so a fresh deployment looked healthy and could do nothing.
+ */
+router.post('/', authenticateToken, can('ORGANIZATION_CREATE'), async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+
+    const organization = await prisma.organization.create({
+      data: { name: String(name).trim() },
+    });
+    res.status(201).json(organization);
+  } catch (err) {
+    // Organization.name is unique. Mapped here as the brand and outlet POSTs
+    // already do, so a duplicate reads as a name clash rather than a server fault.
+    if (err.code === 'P2002') {
+      return res.status(400).json({ error: 'An organization with that name already exists' });
+    }
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // PUT /api/organizations/:id
 router.put('/:id', authenticateToken, can('ORGANIZATION_EDIT'), async (req, res) => {
   try {

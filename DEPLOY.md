@@ -135,10 +135,39 @@ used instead of the pooler.
 
 ---
 
-## 4 · Create your account
+## 4 · Move your restaurants across
 
-The database is empty, so there is nobody to sign in as. Run this **from your own
-machine**, pointed at the Supabase database:
+`prisma db push` creates tables, not rows, so Supabase has the schema and nothing
+in it. Copy the organisation, brands and outlets — including each brand's station
+list — from the database you built them in:
+
+```bash
+# see what it would copy, without writing
+TARGET_DATABASE_URL='<the pooler string from step 1>' \
+  npm --prefix server run migrate:structure -- --dry-run
+
+# then for real
+TARGET_DATABASE_URL='<the pooler string from step 1>' \
+  npm --prefix server run migrate:structure
+```
+
+It preserves ids, so running it twice updates the same rows rather than making a
+second copy of everything.
+
+**People are deliberately not copied.** Employee rows carry password hashes and,
+in a database you have been developing against, test accounts. You create the
+real ones in the next step.
+
+> Starting from nothing instead? Skip this. Since the super admin can now create
+> an organisation from the **Organizations** page, you can build the whole
+> hierarchy in the app — organisation, then brands, then outlets.
+
+---
+
+## 5 · Create your account
+
+The database has your restaurants but nobody to sign in as. Run this **from your
+own machine**, pointed at the Supabase database:
 
 ```bash
 DATABASE_URL='<the pooler string from step 1>' \
@@ -161,7 +190,7 @@ Who can do what is in [ACCESS.md](ACCESS.md).
 
 ---
 
-## 5 · Check it actually works
+## 6 · Check it actually works
 
 Not just that it loaded — that the parts which are easy to get wrong are right.
 

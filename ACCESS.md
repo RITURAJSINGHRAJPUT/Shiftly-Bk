@@ -32,11 +32,14 @@ query parameter, so it cannot be widened by asking differently.
 
 | Action | Super Admin | Admin | HR | Master of House | Head Chef | Staff |
 |---|---|---|---|---|---|---|
+| Create an organisation | ✅ | ✅ | — | — | — | — |
 | Rename the organisation | ✅ | ✅ | — | — | — | — |
 | Create a brand | ✅ | ✅ | — | — | — | — |
 | Edit a brand, including its station list | ✅ | ✅ | — | — | — | — |
 | Create a restaurant | ✅ | ✅ | — | — | — | — |
 | Edit a restaurant, including its geofence | ✅ | ✅ | — | — | — | — |
+
+> **Create an organisation** — Every brand belongs to one, so an empty database cannot be set up without this.
 
 > **Edit a brand, including its station list** — Station lists drive the Shift Master sheet for every outlet in the brand.
 

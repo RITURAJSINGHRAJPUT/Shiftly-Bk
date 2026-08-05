@@ -19,6 +19,10 @@ import { requireMinRole } from '../middleware/auth.js';
  * than its neighbours.
  */
 export const CAPABILITIES = {
+  ORGANIZATION_CREATE: {
+    group: 'Organisation', label: 'Create an organisation', minRole: 'ADMIN',
+    note: 'Every brand belongs to one, so an empty database cannot be set up without this.',
+  },
   ORGANIZATION_EDIT: {
     group: 'Organisation', label: 'Rename the organisation', minRole: 'ADMIN',
   },
