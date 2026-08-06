@@ -113,7 +113,7 @@ app.use('/api', (req, res) => {
 });
 
 if (serveClient) {
-  app.use(express.static(CLIENT_DIST));
+  app.use(express.static(CLIENT_DIST, { dotfiles: 'allow' }));
 
   // Express 5 rejects `app.get('*')` — the bare wildcard is no longer a valid
   // path pattern and throws at startup. Plain middleware, after the /api 404
