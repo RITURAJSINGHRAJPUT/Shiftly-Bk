@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.onrender.shiftly_bk.twa",
+    "sha256_cert_fingerprints": ["48:3E:50:84:D3:78:0B:A1:7D:B4:A7:68:A0:37:FF:01:31:B4:CC:ED:22:55:9D:52:B5:4D:23:6E:BA:F0:DD:27"]
+  }
+}]
