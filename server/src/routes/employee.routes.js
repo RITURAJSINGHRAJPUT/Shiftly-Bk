@@ -257,11 +257,15 @@ router.post('/:id/reset-password', authenticateToken, can('EMPLOYEE_RESET_PW'), 
 // account, which it did not before.
 router.delete('/:id', authenticateToken, can('EMPLOYEE_DEACTIVATE'), async (req, res) => {
   try {
-    await prisma.employee.update({
-      where: { id: req.params.id },
-      data: { isActive: false },
+    const id = req.params.id;
+    await prisma.$transaction(async (tx) => {
+      await tx.notification.deleteMany({ where: { employeeId: id } });
+      await tx.attendance.deleteMany({ where: { employeeId: id } });
+      await tx.leave.deleteMany({ where: { employeeId: id } });
+      await tx.shift.deleteMany({ where: { employeeId: id } });
+      await tx.employee.delete({ where: { id } });
     });
-    res.json({ message: 'Employee deactivated' });
+    res.json({ message: 'Employee permanently deleted' });
   } catch (err) {
     if (err.code === 'P2025') {
       return res.status(404).json({ error: 'Employee not found' });

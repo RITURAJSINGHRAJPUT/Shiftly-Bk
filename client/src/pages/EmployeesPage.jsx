@@ -109,7 +109,7 @@ export default function EmployeesPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to deactivate this employee profile?')) return;
+    if (!window.confirm('Are you sure you want to permanently delete this employee? This cannot be undone.')) return;
     try {
       await api.delete(`/employees/${id}`);
       loadData();
