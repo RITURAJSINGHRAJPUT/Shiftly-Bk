@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../api/client';
 import Modal from '../components/Modal';
 import { useScope } from '../contexts/ScopeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { GLOBAL_SCOPE_ROLES, STATIONS, departmentHasStations } from '../constants';
 import { Plus, Search, Filter, Edit, Trash2, Store, ShieldCheck, Users, KeyRound, Copy } from 'lucide-react';
 
@@ -9,6 +10,8 @@ export default function EmployeesPage() {
   // Only for the Add/Edit modal's Outlet field — this page has no outlet filter.
   // The list is scoped server-side from the caller's role.
   const { outlets } = useScope();
+  const { user } = useAuth();
+  const isHR = user?.role === 'HR';
 
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -539,19 +542,20 @@ export default function EmployeesPage() {
                 }));
               }}
             >
-              {(managementForm
-                ? [['SUPER_ADMIN', 'Super Admin'], ['ADMIN', 'Admin'], ['HR', 'HR']]
-                : [['MASTER_OF_HOUSE', 'Master of House'], ['HEAD_CHEF', 'Head Chef'], ['STAFF', 'Staff Member']]
+              {(isHR
+                ? [['MASTER_OF_HOUSE', 'Master of House'], ['HEAD_CHEF', 'Head Chef'], ['STAFF', 'Staff Member']]
+                : managementForm
+                  ? [['SUPER_ADMIN', 'Super Admin'], ['ADMIN', 'Admin'], ['HR', 'HR']]
+                  : [['MASTER_OF_HOUSE', 'Master of House'], ['HEAD_CHEF', 'Head Chef'], ['STAFF', 'Staff Member']]
               ).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-              {/* The other family, so an account can still be promoted or demoted
-                  while editing. The lists are split so that adding from an outlet
-                  card cannot produce an HR, and vice versa. */}
+              {!isHR && (
               <optgroup label={managementForm ? 'Move to an outlet' : 'Move to management'}>
                 {(managementForm
                   ? [['MASTER_OF_HOUSE', 'Master of House'], ['HEAD_CHEF', 'Head Chef'], ['STAFF', 'Staff Member']]
                   : [['SUPER_ADMIN', 'Super Admin'], ['ADMIN', 'Admin'], ['HR', 'HR']]
                 ).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </optgroup>
+              )}
             </select>
           </div>
 

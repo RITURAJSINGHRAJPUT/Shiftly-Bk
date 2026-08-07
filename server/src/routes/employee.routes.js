@@ -139,6 +139,11 @@ router.post('/', authenticateToken, can('EMPLOYEE_CREATE'), async (req, res) => 
     // outlet or department to give, and demanding them was why the super admin
     // ended up claiming a restaurant it had nothing to do with.
     const effectiveRole = role || 'STAFF';
+
+    if (req.user.role === 'HR' && GLOBAL_SCOPE_ROLES.includes(effectiveRole)) {
+      return res.status(403).json({ error: 'HR cannot assign management roles' });
+    }
+
     const { data: assignment, error } = readAssignment(effectiveRole, { outletId, department, skills });
     if (error) return res.status(400).json({ error });
 
@@ -194,6 +199,11 @@ router.put('/:id', authenticateToken, can('EMPLOYEE_EDIT'), async (req, res) => 
     // it — promoting a head chef to HR clears the outlet, and demoting an HR
     // back has to be given one rather than silently landing nowhere.
     const effectiveRole = role ?? existing.role;
+
+    if (req.user.role === 'HR' && GLOBAL_SCOPE_ROLES.includes(effectiveRole)) {
+      return res.status(403).json({ error: 'HR cannot assign management roles' });
+    }
+
     const { data: assignment, error } = readAssignment(
       effectiveRole, { outletId, department, skills }, existing
     );
