@@ -38,7 +38,26 @@ export async function processLeaveRequest(prisma, employeeId, leaveData) {
 
   if (overlapping) throw new Error('Overlapping leave request exists');
 
-  // Create leave request
+  const isSingleDay = start.toDateString() === end.toDateString();
+  const dayOfWeek = start.getDay();
+  let autoApprove = isSingleDay && dayOfWeek >= 1 && dayOfWeek <= 4;
+
+  if (autoApprove && employee.outletId && employee.department) {
+    const colleagueOnLeave = await prisma.leave.findFirst({
+      where: {
+        status: 'APPROVED',
+        startDate: { lte: end },
+        endDate: { gte: start },
+        employee: {
+          outletId: employee.outletId,
+          department: employee.department,
+          id: { not: employeeId },
+        },
+      },
+    });
+    if (colleagueOnLeave) autoApprove = false;
+  }
+
   const leave = await prisma.leave.create({
     data: {
       employeeId,
@@ -46,7 +65,7 @@ export async function processLeaveRequest(prisma, employeeId, leaveData) {
       startDate: start,
       endDate: end,
       reason,
-      status: 'PENDING',
+      status: autoApprove ? 'APPROVED' : 'PENDING',
       isEmergency: false,
     },
   });

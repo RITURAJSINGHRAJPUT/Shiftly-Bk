@@ -211,6 +211,9 @@ export default function LeavesPage() {
                     <span className={`badge ${l.status === 'APPROVED' ? 'badge-accent' : l.status === 'PENDING' || l.status === 'COVERAGE_PENDING' ? 'badge-warn' : 'badge-error'}`}>
                       {l.status.replace(/_/g, ' ')}
                     </span>
+                    {l.status === 'APPROVED' && !l.approvedBy && (
+                      <span className="badge badge-ghost ml-1" style={{ fontSize: '0.65rem' }}>Auto</span>
+                    )}
                   </td>
                   {isManager && (
                     <td>

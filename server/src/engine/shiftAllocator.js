@@ -131,9 +131,94 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
     };
   }
 
+  // --- Weekly off: ensure every employee has 1 approved leave Mon–Thu ------
+  // Group dates by ISO week. For each employee without a Mon–Thu leave that
+  // week, pick the day where their department has the most other available
+  // staff and create an auto-approved leave.
+  const dateRange = getDateRange(startDate, endDate);
+  const weekBuckets = new Map();
+  for (const d of dateRange) {
+    const dt = startOfLocalDay(d);
+    const day = dt.getDay();
+    if (day < 1 || day > 4) continue; // only Mon(1)–Thu(4)
+    const thu = new Date(dt);
+    thu.setDate(thu.getDate() - (day - 1)); // Monday of this week as key
+    const wk = localDateKey(thu);
+    if (!weekBuckets.has(wk)) weekBuckets.set(wk, []);
+    weekBuckets.get(wk).push(d);
+  }
+
+  for (const [, weekDays] of weekBuckets) {
+    // Track which department+day combos are already taken so no two
+    // same-department employees share an off-day.
+    const deptDayTaken = new Set();
+
+    // Seed with existing approved leaves
+    for (const emp of employees) {
+      for (const l of (emp.leaves || [])) {
+        if (l.status !== 'APPROVED') continue;
+        for (const wd of weekDays) {
+          const d = startOfLocalDay(wd);
+          if (d >= new Date(l.startDate) && d <= new Date(l.endDate)) {
+            deptDayTaken.add(`${emp.department}:${wd}`);
+          }
+        }
+      }
+    }
+
+    for (const emp of employees) {
+      const hasOff = emp.leaves?.some(l => {
+        if (l.status !== 'APPROVED') return false;
+        const ls = new Date(l.startDate);
+        const le = new Date(l.endDate);
+        return weekDays.some(wd => {
+          const d = startOfLocalDay(wd);
+          return d >= ls && d <= le;
+        });
+      });
+      if (hasOff) continue;
+
+      // Pick a day where no same-department colleague is already off
+      const freeDays = weekDays.filter(wd => !deptDayTaken.has(`${emp.department}:${wd}`));
+      const candidates = freeDays.length > 0 ? freeDays : weekDays;
+
+      let bestDay = candidates[0];
+      let bestCount = -1;
+      for (const wd of candidates) {
+        const d = startOfLocalDay(wd);
+        const available = employees.filter(e => {
+          if (e.id === emp.id) return false;
+          if (e.department !== emp.department) return false;
+          return !e.leaves?.some(l =>
+            l.status === 'APPROVED' && new Date(l.startDate) <= d && new Date(l.endDate) >= d
+          );
+        }).length;
+        if (available > bestCount) {
+          bestCount = available;
+          bestDay = wd;
+        }
+      }
+
+      deptDayTaken.add(`${emp.department}:${bestDay}`);
+
+      const offDate = startOfLocalDay(bestDay);
+      const leave = await prisma.leave.create({
+        data: {
+          employeeId: emp.id,
+          type: 'CASUAL',
+          startDate: offDate,
+          endDate: offDate,
+          reason: 'Weekly off (auto-assigned)',
+          status: 'APPROVED',
+          isEmergency: false,
+        },
+      });
+      emp.leaves = [...(emp.leaves || []), leave];
+    }
+  }
+
   const newShifts = [];
   const shortfalls = [];
-  const dateRange = getDateRange(startDate, endDate);
   let requested = 0;
 
   for (const date of dateRange) {
