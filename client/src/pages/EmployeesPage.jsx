@@ -188,7 +188,7 @@ export default function EmployeesPage() {
     }
 
     const rows = [
-      { id: '__management__', name: 'Management', brand: null, isManagement: true, people: management },
+      ...(!isHR ? [{ id: '__management__', name: 'Management', brand: null, isManagement: true, people: management }] : []),
       ...outlets.map(o => ({
         id: o.id,
         name: o.name,
@@ -199,7 +199,7 @@ export default function EmployeesPage() {
     // Only if the API ever returns someone outside the visible outlet list.
     if (orphans.length) rows.push({ id: '__other__', name: 'Other', brand: null, people: orphans });
     return rows;
-  }, [outlets, filtered]);
+  }, [outlets, filtered, isHR]);
 
   const isFiltering = searchTerm.trim() !== '' || filterDept !== '';
 

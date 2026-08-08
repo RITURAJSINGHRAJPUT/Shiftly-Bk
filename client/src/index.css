@@ -1569,7 +1569,10 @@ tbody tr:last-child td {
 .calendar-shift[data-section='wok'] { border-left-color: var(--series-5); }
 .calendar-shift[data-section='side'] { border-left-color: var(--series-6); }
 .calendar-shift[data-section='pass'] { border-left-color: var(--series-7); }
-.calendar-shift[data-section='general'] { border-left-color: var(--line-strong); }
+.calendar-shift[data-section='service'] { border-left-color: var(--series-8, #8b5cf6); }
+.calendar-shift[data-section='housekeeping'] { border-left-color: var(--series-9, #14b8a6); }
+.calendar-shift[data-section='kitchen'] { border-left-color: var(--line-strong); }
+.calendar-shift[data-section='unassigned'] { border-left-color: var(--line-strong); }
 
 /* ========================== MOBILE NAV ========================== */
 .mobile-nav {

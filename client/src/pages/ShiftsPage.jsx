@@ -16,7 +16,7 @@ import {
 const dayKey = (d) => format(d, 'yyyy-MM-dd');
 
 /** Sections are stored capitalised on patterns, lowercase on some shifts. */
-const normSection = (s) => (s ? String(s).toLowerCase().trim() : 'general');
+const normSection = (s) => (s ? String(s).toLowerCase().trim() : 'unassigned');
 
 /** Identity of a staffing slot: same hours, same station, same department. */
 const slotKey = (startTime, endTime, section, department) =>
@@ -44,6 +44,7 @@ export default function ShiftsPage() {
   const [loading, setLoading] = useState(true);
   const [dayLoading, setDayLoading] = useState(false);
 
+  const [weekLeaves, setWeekLeaves] = useState([]);
   const [allocating, setAllocating] = useState(false);
   const [allocationSummary, setAllocationSummary] = useState(null);
 
@@ -92,7 +93,12 @@ export default function ShiftsPage() {
       const end = dayKey(endOfWeek(weekAnchor, { weekStartsOn: 1 }));
       // Explicit ?outlet= rather than the global scope, so the grid is always
       // exactly one restaurant.
-      setWeekShifts(await api.get(`/shifts?outlet=${selectedOutletId}&startDate=${start}&endDate=${end}`));
+      const [shifts, leaves] = await Promise.all([
+        api.get(`/shifts?outlet=${selectedOutletId}&startDate=${start}&endDate=${end}`),
+        api.get(`/leaves?status=APPROVED&startDate=${start}&endDate=${end}`),
+      ]);
+      setWeekShifts(shifts);
+      setWeekLeaves(leaves);
     } catch (err) {
       console.error(err);
     }
@@ -239,7 +245,7 @@ export default function ShiftsPage() {
   const shiftEmployee = employees.find((e) => e.id === shiftForm?.employeeId) || null;
 
   const shiftsForDay = (day) => weekShifts.filter((s) => isSameDay(new Date(s.date), day));
-  const getSection = (section) => (section ? section.toLowerCase() : 'general');
+  const getSection = (section) => (section ? section.toLowerCase() : 'unassigned');
 
   if (outlets.length === 0) {
     return <div className="page-content text-center text-muted">Loading outlets…</div>;
@@ -483,7 +489,7 @@ export default function ShiftsPage() {
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {coverage.unmatched.map((s) => (
-                    <span key={s.id} className="badge badge-ghost" title={`${s.employee?.department} · ${s.section || 'General'}`}>
+                    <span key={s.id} className="badge badge-ghost" title={`${s.employee?.department} · ${s.section || s.employee?.department || 'Unassigned'}`}>
                       {s.employee?.name} · {s.startTime}–{s.endTime}
                     </span>
                   ))}
@@ -566,7 +572,7 @@ export default function ShiftsPage() {
                           title={g.shifts.map((s) => s.employee?.name).join(', ')}
                         >
                           <div className="font-semibold truncate text-xs text-strong">
-                            {g.section || 'General'}
+                            {g.section || g.shifts[0]?.employee?.department || 'Unassigned'}
                           </div>
                           <div className="text-2xs text-muted">
                             {g.startTime} – {g.endTime} · {g.shifts.length}
@@ -574,7 +580,7 @@ export default function ShiftsPage() {
                           <div className="flex flex-wrap gap-1 mt-1">
                             {g.shifts.map((s) => (
                               <span key={s.id} className="text-2xs" style={{ opacity: 0.85 }}>
-                                {s.employee?.name?.split(' ')[0]}
+                                {s.employee?.name}
                               </span>
                             ))}
                           </div>
@@ -590,6 +596,68 @@ export default function ShiftsPage() {
           </div>
         )}
       </div>
+
+      {/* ============ 3 · LEAVE SCHEDULE ============ */}
+      {weekLeaves.length > 0 && (
+      <div className="card mb-4" data-section="leaves">
+        <div className="card-header">
+          <div className="flex items-center gap-2">
+            <Calendar size={17} className="icon-brand" />
+            <h3 className="card-title">Leave Schedule</h3>
+          </div>
+          <span className="text-xs text-muted">{weekLeaves.length} approved this week</span>
+        </div>
+        <div className="shift-calendar">
+          {weekDays.map((day) => {
+            const dayStart = new Date(day); dayStart.setHours(0, 0, 0, 0);
+            const dayEnd = new Date(day); dayEnd.setHours(23, 59, 59, 999);
+            const dayLeaves = weekLeaves.filter(l => {
+              const ls = new Date(l.startDate);
+              const le = new Date(l.endDate);
+              return ls <= dayEnd && le >= dayStart;
+            });
+
+            const byStation = new Map();
+            for (const l of dayLeaves) {
+              const stations = l.employee?.skills?.length ? l.employee.skills : [l.employee?.department || 'Unassigned'];
+              for (const st of stations) {
+                const key = st.charAt(0).toUpperCase() + st.slice(1).toLowerCase();
+                if (!byStation.has(key)) byStation.set(key, []);
+                byStation.get(key).push(l);
+              }
+            }
+
+            return (
+              <div key={day.toISOString()} className="calendar-day">
+                <div>
+                  <span className="calendar-day-header">{format(day, 'eee')}</span>
+                  <div className="calendar-day-number">{format(day, 'd')}</div>
+                </div>
+                <div className="text-2xs text-muted mb-1">
+                  {dayLeaves.length} off
+                </div>
+                <div className="flex flex-col gap-1">
+                  {byStation.size > 0 ? [...byStation.entries()].map(([station, leaves]) => (
+                    <div key={station} className="calendar-shift" data-section={station.toLowerCase()} style={{ borderLeft: '3px solid var(--primary-400)' }}>
+                      <div className="font-semibold truncate text-xs text-strong">{station}</div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {leaves.map(l => (
+                          <span key={l.id} className="text-2xs" style={{ opacity: 0.85 }}>
+                            {l.employee?.name}{!l.approvedBy ? ' ✓' : ''}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="text-2xs text-muted text-center py-2">—</div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      )}
 
       {/* ---- Add shift ---- */}
       <Modal

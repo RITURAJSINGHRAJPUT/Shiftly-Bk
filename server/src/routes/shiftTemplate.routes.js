@@ -3,6 +3,7 @@ import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { can } from '../lib/capabilities.js';
 import { outletScope, hasGlobalScope } from '../lib/scope.js';
+import { logAudit } from '../lib/audit.js';
 
 const router = Router();
 
@@ -102,23 +103,6 @@ function readTemplateBody(body, { partial = false, currentDepartment = null } = 
     data.daysOfWeek = days.sort((a, b) => a - b);
   }
 
-  /**
-   * Stations belong to the kitchen.
-   *
-   * The allocator scores `section` against `employee.skills`, and only kitchen
-   * staff carry skills, so a station on a service pattern can never match — it
-   * is dead data that reads like a requirement. The form disables the field, but
-   * a disabled select is a suggestion; this is the part that holds.
-   */
-  const effectiveDepartment = data.department ?? currentDepartment;
-  if (effectiveDepartment && effectiveDepartment !== 'KITCHEN') {
-    if (data.section) {
-      return { error: 'Stations apply to kitchen patterns only' };
-    }
-    // Not just when the caller sends an empty section: moving a pattern from
-    // KITCHEN to SERVICE has to drop the station it is leaving behind.
-    data.section = null;
-  }
 
   return { data };
 }
@@ -209,6 +193,8 @@ router.post('/clear', authenticateToken, can('PATTERN_CLEAR'), async (req, res) 
       prisma.shiftTemplate.deleteMany({ where: { outletId } }),
       ...(includeShifts ? [prisma.shift.deleteMany({ where: { outletId } })] : []),
     ]);
+
+    logAudit({ action: 'PATTERN_CLEAR', entity: 'ShiftTemplate', actor: req.user, details: { outletId, patterns: patterns.count, shifts: shifts?.count ?? 0 } });
 
     res.json({
       patterns: patterns.count,
@@ -372,6 +358,8 @@ router.post('/', authenticateToken, can('PATTERN_CREATE'), async (req, res) => {
       data: { ...data, outletId, headcount: data.headcount ?? 1 },
       include: { outlet: { select: { id: true, name: true } } },
     });
+
+    logAudit({ action: 'PATTERN_CREATE', entity: 'ShiftTemplate', entityId: template.id, actor: req.user, details: { name: template.name, outletId } });
 
     res.status(201).json(template);
   } catch (err) {

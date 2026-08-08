@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useScope } from '../contexts/ScopeContext';
 import { GLOBAL_SCOPE_ROLES } from '../constants';
 import api from '../api/client';
 import StatTile from '../components/StatTile';
@@ -9,6 +10,7 @@ import Segmented from '../components/Segmented';
 import AttendanceTrendChart from '../components/charts/AttendanceTrendChart';
 import BrandPerformanceChart from '../components/charts/BrandPerformanceChart';
 import DepartmentStaffingChart from '../components/charts/DepartmentStaffingChart';
+import Modal from '../components/Modal';
 import {
   Users, Tags, Store, TrendingUp, CalendarDays, AlertTriangle,
   ArrowRight, MapPin, RefreshCw, Clock, Plus, Upload,
@@ -23,30 +25,36 @@ const TREND_RANGES = [
 
 function ManagementDashboard() {
   const { user } = useAuth();
+  const { outlets } = useScope();
 
   const [stats, setStats] = useState(null);
   const [trend, setTrend] = useState(null);
   const [brandRows, setBrandRows] = useState([]);
   const [staffing, setStaffing] = useState(null);
   const [emergencies, setEmergencies] = useState([]);
+  const [todayShifts, setTodayShifts] = useState([]);
+  const [selectedOutlet, setSelectedOutlet] = useState(null);
   const [trendDays, setTrendDays] = useState(7);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [statsData, trendData, brandData, staffingData, emergencyData] = await Promise.all([
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const [statsData, trendData, brandData, staffingData, emergencyData, shiftsData] = await Promise.all([
         api.get('/dashboard/stats'),
         api.get(`/dashboard/attendance-trend?days=${trendDays}`),
         api.get('/dashboard/brand-performance'),
         api.get('/dashboard/department-staffing'),
         api.get('/leaves/emergency/pending'),
+        api.get(`/shifts?date=${today}`),
       ]);
       setStats(statsData);
       setTrend(trendData);
       setBrandRows(brandData);
       setStaffing(staffingData);
       setEmergencies(Array.isArray(emergencyData) ? emergencyData : []);
+      setTodayShifts(Array.isArray(shiftsData) ? shiftsData : []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -153,6 +161,75 @@ function ManagementDashboard() {
           deltaNote="Pending approval"
         />
       </div>
+
+      {outlets.length > 0 && (
+        <div className="flex flex-wrap gap-3 mb-4">
+          {outlets.map((outlet) => {
+            const count = todayShifts.filter((s) => s.outletId === outlet.id).length;
+            return (
+              <div
+                key={outlet.id}
+                className="card"
+                style={{ cursor: 'pointer', flex: '1 1 200px', maxWidth: '300px' }}
+                onClick={() => setSelectedOutlet(outlet.id)}
+              >
+                <div className="card-header">
+                  <Store size={17} className="icon-brand" />
+                  <h3 className="card-title" style={{ flex: 1 }}>{outlet.name}</h3>
+                  <span className="badge badge-primary">{count}</span>
+                </div>
+                <div className="text-2xs text-muted" style={{ padding: '0 var(--card-pad) var(--card-pad)' }}>
+                  {outlet.brand?.name || '—'}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <Modal
+        isOpen={!!selectedOutlet}
+        onClose={() => setSelectedOutlet(null)}
+        title={`${outlets.find((o) => o.id === selectedOutlet)?.name || 'Outlet'} — Today's Shifts`}
+      >
+        {(() => {
+          const shifts = todayShifts.filter((s) => s.outletId === selectedOutlet);
+          if (shifts.length === 0) {
+            return <div className="text-center text-muted py-4">No shifts today</div>;
+          }
+          const bySection = new Map();
+          for (const s of shifts) {
+            const key = `${s.section || s.employee?.department || 'Unassigned'}|${s.startTime}|${s.endTime}`;
+            if (!bySection.has(key)) {
+              bySection.set(key, {
+                section: s.section || s.employee?.department || 'Unassigned',
+                startTime: s.startTime,
+                endTime: s.endTime,
+                employees: [],
+              });
+            }
+            bySection.get(key).employees.push(s.employee?.name || 'Unknown');
+          }
+          return (
+            <div className="divided-list">
+              {[...bySection.values()].map((g) => (
+                <div key={`${g.section}-${g.startTime}-${g.endTime}`} className="py-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-semibold text-sm text-strong">{g.section}</span>
+                    <span className="text-2xs text-muted">{g.startTime} – {g.endTime}</span>
+                    <span className="badge badge-ghost text-2xs">{g.employees.length}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {g.employees.map((name, i) => (
+                      <span key={i} className="badge badge-ghost text-2xs">{name}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+      </Modal>
 
       <div className="grid-2 mb-4">
         <ChartCard
@@ -261,7 +338,7 @@ function StaffDashboard() {
           </div>
           {nextShift ? (
             <>
-              <div className="text-lg font-bold">{nextShift.section || 'General'} Shift</div>
+              <div className="text-lg font-bold">{nextShift.section || 'Unassigned'} Shift</div>
               <div className="text-sm text-secondary">
                 {nextShift.startTime} – {nextShift.endTime}
               </div>
@@ -313,7 +390,7 @@ function StaffDashboard() {
                     <div className="text-sm font-semibold text-strong">
                       {format(new Date(s.date), 'EEE, d MMM')}
                     </div>
-                    <div className="text-xs text-muted">{s.section || 'General'}</div>
+                    <div className="text-xs text-muted">{s.section || 'Unassigned'}</div>
                   </div>
                   <span className="badge badge-primary">
                     {s.startTime} – {s.endTime}

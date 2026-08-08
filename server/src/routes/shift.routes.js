@@ -5,6 +5,7 @@ import { can } from '../lib/capabilities.js';
 import { autoAllocateShifts } from '../engine/shiftAllocator.js';
 import { outletScope } from '../lib/scope.js';
 import { localDateRange, startOfLocalDay, localDateKey } from '../lib/dates.js';
+import { logAudit } from '../lib/audit.js';
 
 const router = Router();
 
@@ -95,6 +96,8 @@ router.post('/', authenticateToken, can('SHIFT_CREATE'), async (req, res) => {
       },
     });
 
+    logAudit({ action: 'SHIFT_CREATE', entity: 'Shift', entityId: shift.id, actor: req.user, details: { employeeName: shift.employee?.name, date, section } });
+
     res.status(201).json(shift);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -105,12 +108,11 @@ router.post('/', authenticateToken, can('SHIFT_CREATE'), async (req, res) => {
 router.post('/auto-allocate', authenticateToken, can('SHIFT_ALLOCATE'), async (req, res) => {
   try {
     const { outletId, startDate, endDate } = req.body;
-    const result = await autoAllocateShifts(
-      prisma,
-      outletId || req.user.outletId,
-      startDate,
-      endDate
-    );
+    const targetOutletId = outletId || req.user.outletId;
+    const result = await autoAllocateShifts(prisma, targetOutletId, startDate, endDate);
+
+    logAudit({ action: 'SHIFT_ALLOCATE', entity: 'Shift', actor: req.user, details: { outletId: targetOutletId, count: result.count, startDate, endDate } });
+
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -148,6 +150,9 @@ router.put('/:id', authenticateToken, can('SHIFT_EDIT'), async (req, res) => {
 router.delete('/:id', authenticateToken, can('SHIFT_DELETE'), async (req, res) => {
   try {
     await prisma.shift.delete({ where: { id: req.params.id } });
+
+    logAudit({ action: 'SHIFT_DELETE', entity: 'Shift', entityId: req.params.id, actor: req.user });
+
     res.json({ message: 'Shift deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });

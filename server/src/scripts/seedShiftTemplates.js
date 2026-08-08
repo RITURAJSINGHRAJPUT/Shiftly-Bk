@@ -68,7 +68,7 @@ export function buildTemplatesForOutlet(outletId, employees) {
       name: 'Kitchen — General',
       outletId,
       department: 'KITCHEN',
-      section: null,
+      section: 'Kitchen',
       startTime: '11:30',
       endTime: '20:30',
       headcount: half(unskilled),
@@ -82,7 +82,7 @@ export function buildTemplatesForOutlet(outletId, employees) {
     const early = Math.ceil(onShift / 2);
     SERVICE_PATTERNS.forEach((p, i) => {
       const headcount = i === 0 ? early : Math.max(1, onShift - early);
-      rows.push({ ...p, outletId, department: 'SERVICE', section: null, headcount });
+      rows.push({ ...p, outletId, department: 'SERVICE', section: 'Service', headcount });
     });
   }
 
@@ -93,7 +93,7 @@ export function buildTemplatesForOutlet(outletId, employees) {
       name: 'Housekeeping — Day',
       outletId,
       department: 'HOUSEKEEPING',
-      section: null,
+      section: 'Housekeeping',
       startTime: '11:00',
       endTime: '21:00',
       headcount: half(hk.length),

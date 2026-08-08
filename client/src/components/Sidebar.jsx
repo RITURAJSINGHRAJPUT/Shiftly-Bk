@@ -61,7 +61,7 @@ const NAV_SECTIONS = [
       // Short labels: these rows also carry a "Soon" badge, which leaves roughly
       // 80px for text. The full names live on the destination pages in App.jsx.
       { path: '/workforce-planner', label: 'AI Planner', icon: BrainCircuit, roles: ['SUPER_ADMIN', 'ADMIN', 'HR'], stub: true },
-      { path: '/transfers', label: 'Transfers', icon: ArrowLeftRight, roles: ['SUPER_ADMIN', 'ADMIN', 'HR'], stub: true },
+      { path: '/transfers', label: 'Transfers', icon: ArrowLeftRight, roles: 'all' },
     ],
   },
   {
@@ -75,7 +75,7 @@ const NAV_SECTIONS = [
     title: 'System',
     items: [
       { path: '/settings', label: 'Settings', icon: Settings, roles: ['SUPER_ADMIN', 'ADMIN'] },
-      { path: '/audit-logs', label: 'Audit Logs', icon: ScrollText, roles: ['SUPER_ADMIN'], stub: true },
+      { path: '/audit-logs', label: 'Audit Logs', icon: ScrollText, roles: ['SUPER_ADMIN', 'ADMIN'] },
       { path: '/user-management', label: 'Users', icon: UserCog, roles: ['SUPER_ADMIN'], stub: true },
     ],
   },

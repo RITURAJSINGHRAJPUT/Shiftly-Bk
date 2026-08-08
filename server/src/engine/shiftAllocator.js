@@ -110,6 +110,33 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
     where: { employeeId: { in: employees.map(e => e.id) } },
   });
 
+  // Clear previous auto-allocated data so re-runs are idempotent.
+  const dateRangeBounds = localDateRange(startDate, endDate);
+  const employeeIds = employees.map(e => e.id);
+
+  await prisma.shift.deleteMany({
+    where: { outletId, status: 'ASSIGNED', date: dateRangeBounds },
+  });
+
+  await prisma.leave.deleteMany({
+    where: {
+      reason: 'Weekly off (auto-assigned)',
+      startDate: dateRangeBounds.gte ? { gte: dateRangeBounds.gte } : undefined,
+      endDate: dateRangeBounds.lte ? { lte: dateRangeBounds.lte } : undefined,
+      employeeId: { in: employeeIds },
+    },
+  });
+
+  for (const emp of employees) {
+    emp.leaves = (emp.leaves || []).filter(l =>
+      l.reason !== 'Weekly off (auto-assigned)' ||
+      new Date(l.startDate) < (dateRangeBounds.gte || 0) ||
+      new Date(l.endDate) > (dateRangeBounds.lte || Infinity)
+    );
+  }
+
+  const keptShifts = existingShifts.filter(s => s.status !== 'ASSIGNED');
+
   // This outlet's own patterns. There is deliberately no hardcoded fallback:
   // silently applying a generic set to an outlet with none defined is what hid
   // the fact that every restaurant was being planned identically.
@@ -149,11 +176,15 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
   }
 
   for (const [, weekDays] of weekBuckets) {
-    // Track which department+day combos are already taken so no two
+    // Count leaves per day to distribute evenly across Mon–Thu.
+    const dayCount = new Map();
+    for (const wd of weekDays) dayCount.set(wd, 0);
+
+    // Track which department+day combos are taken so no two
     // same-department employees share an off-day.
     const deptDayTaken = new Set();
 
-    // Seed with existing approved leaves
+    // Seed from existing approved leaves
     for (const emp of employees) {
       for (const l of (emp.leaves || [])) {
         if (l.status !== 'APPROVED') continue;
@@ -161,6 +192,7 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
           const d = startOfLocalDay(wd);
           if (d >= new Date(l.startDate) && d <= new Date(l.endDate)) {
             deptDayTaken.add(`${emp.department}:${wd}`);
+            dayCount.set(wd, (dayCount.get(wd) || 0) + 1);
           }
         }
       }
@@ -178,28 +210,20 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
       });
       if (hasOff) continue;
 
-      // Pick a day where no same-department colleague is already off
+      // Prefer days where no same-department colleague is off
       const freeDays = weekDays.filter(wd => !deptDayTaken.has(`${emp.department}:${wd}`));
       const candidates = freeDays.length > 0 ? freeDays : weekDays;
 
+      // Pick the day with the fewest total leaves — evens out the spread
       let bestDay = candidates[0];
-      let bestCount = -1;
+      let lowest = Infinity;
       for (const wd of candidates) {
-        const d = startOfLocalDay(wd);
-        const available = employees.filter(e => {
-          if (e.id === emp.id) return false;
-          if (e.department !== emp.department) return false;
-          return !e.leaves?.some(l =>
-            l.status === 'APPROVED' && new Date(l.startDate) <= d && new Date(l.endDate) >= d
-          );
-        }).length;
-        if (available > bestCount) {
-          bestCount = available;
-          bestDay = wd;
-        }
+        const c = dayCount.get(wd) || 0;
+        if (c < lowest) { lowest = c; bestDay = wd; }
       }
 
       deptDayTaken.add(`${emp.department}:${bestDay}`);
+      dayCount.set(bestDay, (dayCount.get(bestDay) || 0) + 1);
 
       const offDate = startOfLocalDay(bestDay);
       const leave = await prisma.leave.create({
@@ -259,13 +283,8 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
 
       let filled = 0;
 
-      // One pass per required person. Re-scoring between slots is what keeps
-      // this correct without any new bookkeeping: scoreEmployee already returns
-      // -1000 for anyone holding an overlapping shift, and each pick is pushed
-      // into newShifts which is fed back in below — so nobody is booked twice,
-      // and the hours-balance and consecutive-day terms update as the week fills.
       for (let i = 0; i < template.headcount; i++) {
-        const pool = [...existingShifts, ...newShifts];
+        const pool = [...keptShifts, ...newShifts];
 
         let best = null;
         let bestScore = -Infinity;
@@ -340,7 +359,14 @@ function hasTimeOverlap(s1Start, s1End, s2Start, s2End) {
   };
   const a1 = toMin(s1Start), b1 = toMin(s1End);
   const a2 = toMin(s2Start), b2 = toMin(s2End);
-  return a1 < b2 && a2 < b1;
+
+  const wrap1 = b1 <= a1;
+  const wrap2 = b2 <= a2;
+
+  if (!wrap1 && !wrap2) return a1 < b2 && a2 < b1;
+  if (wrap1 && wrap2) return true;
+  if (wrap1) return a1 < b2 || a2 < b1;
+  return a2 < b1 || a1 < b2;
 }
 
 function getConsecutiveDays(employeeId, shifts, currentDate) {

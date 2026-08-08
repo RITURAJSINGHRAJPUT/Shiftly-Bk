@@ -109,6 +109,17 @@ export const CAPABILITIES = {
   LEAVE_AUTO_ASSIGN: {
     group: 'Leave', label: 'Auto-assign cover for emergency leave', minRole: 'HEAD_CHEF',
   },
+
+  TRANSFER_APPROVE: {
+    group: 'Transfers', label: 'Approve a transfer request', minRole: 'HEAD_CHEF',
+  },
+  TRANSFER_REJECT: {
+    group: 'Transfers', label: 'Reject a transfer request', minRole: 'HEAD_CHEF',
+  },
+
+  AUDIT_VIEW: {
+    group: 'System', label: 'View audit logs', minRole: 'ADMIN',
+  },
 };
 
 /**

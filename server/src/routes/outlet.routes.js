@@ -2,6 +2,7 @@ import { Router } from 'express';
 import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { can } from '../lib/capabilities.js';
+import { logAudit } from '../lib/audit.js';
 
 const router = Router();
 
@@ -76,6 +77,8 @@ router.post('/', authenticateToken, can('OUTLET_CREATE'), async (req, res) => {
       },
       include: { brand: { select: { id: true, name: true } } },
     });
+    logAudit({ action: 'OUTLET_CREATE', entity: 'Outlet', entityId: outlet.id, actor: req.user, details: { outletName: name } });
+
     res.status(201).json(outlet);
   } catch (err) {
     if (err.code === 'P2002') {
@@ -126,6 +129,9 @@ router.put('/:id', authenticateToken, can('OUTLET_EDIT'), async (req, res) => {
       data,
       include: { brand: { select: { id: true, name: true } } },
     });
+
+    logAudit({ action: 'OUTLET_EDIT', entity: 'Outlet', entityId: outlet.id, actor: req.user, details: { outletName: outlet.name } });
+
     res.json(outlet);
   } catch (err) {
     // Outlet.name is unique. POST already mapped this to a readable 400; without

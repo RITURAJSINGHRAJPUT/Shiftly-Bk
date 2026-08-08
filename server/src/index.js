@@ -16,6 +16,8 @@ import organizationRoutes from './routes/organization.routes.js';
 import brandRoutes from './routes/brand.routes.js';
 import outletRoutes from './routes/outlet.routes.js';
 import shiftTemplateRoutes from './routes/shiftTemplate.routes.js';
+import transferRoutes from './routes/transfer.routes.js';
+import auditRoutes from './routes/audit.routes.js';
 import { apiLimiter } from './middleware/rateLimit.js';
 
 dotenv.config();
@@ -79,6 +81,8 @@ app.use('/api/organizations', organizationRoutes);
 app.use('/api/brands', brandRoutes);
 app.use('/api/outlets', outletRoutes);
 app.use('/api/shift-templates', shiftTemplateRoutes);
+app.use('/api/transfers', transferRoutes);
+app.use('/api/audit-logs', auditRoutes);
 
 /**
  * Health check — deliberately able to fail.

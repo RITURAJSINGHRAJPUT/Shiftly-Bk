@@ -5,6 +5,7 @@ import { can } from '../lib/capabilities.js';
 import { processLeaveRequest, approveLeave, rejectLeave } from '../engine/leaveManager.js';
 import { requestEmergencyLeave, acceptEmergencyCover, autoAssignEmergency } from '../engine/emergencyLeave.js';
 import { employeeScope } from '../lib/scope.js';
+import { logAudit } from '../lib/audit.js';
 
 const router = Router();
 
@@ -14,6 +15,7 @@ const leaveEmployeeSelect = {
     id: true,
     name: true,
     department: true,
+    skills: true,
     outletId: true,
     outlet: { select: { name: true, brand: { select: { name: true } } } },
   },
@@ -22,11 +24,16 @@ const leaveEmployeeSelect = {
 // GET /api/leaves — list leave requests
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { status, employee, type } = req.query;
+    const { status, employee, type, startDate, endDate } = req.query;
     const where = { ...employeeScope(req) };
 
     if (status) where.status = status;
     if (type) where.type = type;
+
+    if (startDate || endDate) {
+      where.endDate = startDate ? { gte: new Date(startDate) } : undefined;
+      where.startDate = endDate ? { lte: new Date(endDate) } : undefined;
+    }
 
     // Staff can only see their own leaves
     if (req.user.role === 'STAFF') {
@@ -62,6 +69,9 @@ router.post('/', authenticateToken, async (req, res) => {
 router.post('/:id/approve', authenticateToken, can('LEAVE_APPROVE'), async (req, res) => {
   try {
     const result = await approveLeave(prisma, req.params.id, req.user.id);
+
+    logAudit({ action: 'LEAVE_APPROVE', entity: 'Leave', entityId: req.params.id, actor: req.user, details: { employeeName: result.employee?.name } });
+
     res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -72,6 +82,9 @@ router.post('/:id/approve', authenticateToken, can('LEAVE_APPROVE'), async (req,
 router.post('/:id/reject', authenticateToken, can('LEAVE_REJECT'), async (req, res) => {
   try {
     const result = await rejectLeave(prisma, req.params.id, req.user.id, req.body.reason);
+
+    logAudit({ action: 'LEAVE_REJECT', entity: 'Leave', entityId: req.params.id, actor: req.user, details: { employeeName: result.employee?.name, reason: req.body.reason } });
+
     res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });

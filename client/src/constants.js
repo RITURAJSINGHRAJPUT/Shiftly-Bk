@@ -21,18 +21,9 @@ export const ROLES = {
 
 export const DEPARTMENTS = ['KITCHEN', 'SERVICE', 'HOUSEKEEPING'];
 
-/**
- * Kitchen stations. A shift's `section`.
- *
- * These are a kitchen concept, and the rest of the codebase already assumes it:
- * the allocator's skill bonus matches `section` against `employee.skills`, and
- * only kitchen staff are ever given skills — `seedDemoStaff.js` collects an
- * outlet's stations with `{ department: 'KITCHEN', section: { not: null } }`.
- * A station on a service pattern is therefore dead data that can never match.
- */
 export const STATIONS = ['Pizza', 'Pasta', 'Drinks', 'Sushi', 'Wok', 'Side', 'Pass'];
 
-export const departmentHasStations = (department) => department === 'KITCHEN';
+export const departmentHasStations = () => true;
 
 /**
  * Shift rows per station on the sheet.
@@ -63,8 +54,8 @@ export function gridRows(brandStations = []) {
       department: 'KITCHEN',
       section,
     })),
-    { key: 'SERVICE|', label: 'Service', department: 'SERVICE', section: null },
-    { key: 'HOUSEKEEPING|', label: 'House Keeping', department: 'HOUSEKEEPING', section: null },
+    { key: 'SERVICE|Service', label: 'Service', department: 'SERVICE', section: 'Service' },
+    { key: 'HOUSEKEEPING|Housekeeping', label: 'House Keeping', department: 'HOUSEKEEPING', section: 'Housekeeping' },
   ];
 }
 

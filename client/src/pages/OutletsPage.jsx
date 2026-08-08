@@ -167,7 +167,7 @@ export default function OutletsPage() {
         </div>
         {canManage && (
           <div className="flex gap-2">
-            <Link to="/settings" className="btn btn-ghost">
+            <Link to="/organizations" className="btn btn-ghost">
               <Settings size={16} />
               <span>Geofence Settings</span>
             </Link>
@@ -393,12 +393,12 @@ export default function OutletsPage() {
             />
           </div>
 
-          {/* Deliberately no latitude/longitude/radius here — Settings is the one
-              place that writes them, so the geofence has a single owner. */}
+          {/* Deliberately no latitude/longitude/radius here — Organizations is the
+              one place that writes them, so the geofence has a single owner. */}
           {!editing && (
             <p className="text-xs text-muted">
               A new outlet starts with the default geofence. Set its coordinates
-              and radius on the <Link to="/settings">Settings</Link> page.
+              and radius on the <Link to="/organizations">Organizations</Link> page.
             </p>
           )}
 

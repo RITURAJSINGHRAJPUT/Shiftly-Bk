@@ -5,6 +5,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import { can } from '../lib/capabilities.js';
 import { outletScope, outletInclude, GLOBAL_SCOPE_ROLES } from '../lib/scope.js';
 import { generateTemporaryPassword } from '../lib/passwords.js';
+import { logAudit } from '../lib/audit.js';
 
 const router = Router();
 
@@ -165,8 +166,9 @@ router.post('/', authenticateToken, can('EMPLOYEE_CREATE'), async (req, res) => 
     });
 
     const { password: _, ...sanitized } = employee;
-    // The only time this value is ever readable. What is stored is a bcrypt
-    // hash, so nothing can recover it later — a lost one needs a reset.
+
+    logAudit({ action: 'EMPLOYEE_CREATE', entity: 'Employee', entityId: employee.id, actor: req.user, details: { employeeName: name, role: effectiveRole } });
+
     res.status(201).json({ ...sanitized, temporaryPassword });
   } catch (err) {
     if (err.code === 'P2002') {
@@ -217,6 +219,9 @@ router.put('/:id', authenticateToken, can('EMPLOYEE_EDIT'), async (req, res) => 
     });
 
     const { password, ...sanitized } = employee;
+
+    logAudit({ action: 'EMPLOYEE_EDIT', entity: 'Employee', entityId: employee.id, actor: req.user, details: { employeeName: employee.name } });
+
     res.json(sanitized);
   } catch (err) {
     // Both were mapped on POST but not here, so renaming onto a taken email or
@@ -268,6 +273,7 @@ router.post('/:id/reset-password', authenticateToken, can('EMPLOYEE_RESET_PW'), 
 router.delete('/:id', authenticateToken, can('EMPLOYEE_DEACTIVATE'), async (req, res) => {
   try {
     const id = req.params.id;
+    const target = await prisma.employee.findUnique({ where: { id }, select: { name: true } });
     await prisma.$transaction(async (tx) => {
       await tx.notification.deleteMany({ where: { employeeId: id } });
       await tx.attendance.deleteMany({ where: { employeeId: id } });
@@ -275,6 +281,8 @@ router.delete('/:id', authenticateToken, can('EMPLOYEE_DEACTIVATE'), async (req,
       await tx.shift.deleteMany({ where: { employeeId: id } });
       await tx.employee.delete({ where: { id } });
     });
+    logAudit({ action: 'EMPLOYEE_DELETE', entity: 'Employee', entityId: id, actor: req.user, details: { employeeName: target?.name } });
+
     res.json({ message: 'Employee permanently deleted' });
   } catch (err) {
     if (err.code === 'P2025') {
@@ -370,6 +378,9 @@ router.post('/wipe-staff', authenticateToken, can('STAFF_WIPE'), async (req, res
     console.log(
       `[wipe-staff] ${req.user.id} deleted ${result.employees} staff, ${result.shifts} shifts`
     );
+
+    logAudit({ action: 'STAFF_WIPE', entity: 'Employee', actor: req.user, details: { count: result.employees, shifts: result.shifts } });
+
     res.json({ message: `Deleted ${result.employees} staff accounts`, ...result });
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -20,6 +20,8 @@ import SettingsPage from './pages/SettingsPage';
 import OrganizationsPage from './pages/OrganizationsPage';
 import OutletsPage from './pages/OutletsPage';
 import StubPage from './pages/StubPage';
+import TransfersPage from './pages/TransfersPage';
+import AuditLogsPage from './pages/AuditLogsPage';
 import LandingPage from './pages/LandingPage';
 import MobileProfile from './pages/mobile/MobileProfile';
 
@@ -119,20 +121,7 @@ function Layout() {
               />
             }
           />
-          <Route
-            path="/transfers"
-            element={
-              <StubPage
-                title="Transfer Recommendations"
-                description="Move staff between outlets to close coverage gaps"
-                needs={[
-                  'A TransferRequest model with an approval workflow',
-                  'Cross-outlet skill and availability matching',
-                  'Commute or distance constraints per employee',
-                ]}
-              />
-            }
-          />
+          <Route path="/transfers" element={<TransfersPage />} />
           <Route
             path="/analytics"
             element={
@@ -146,19 +135,7 @@ function Layout() {
               />
             }
           />
-          <Route
-            path="/audit-logs"
-            element={
-              <StubPage
-                title="Audit Logs"
-                description="Who changed what, and when"
-                needs={[
-                  'An AuditLog model written to on every mutating request',
-                  'Actor, entity, before/after diff and timestamp capture',
-                ]}
-              />
-            }
-          />
+          <Route path="/audit-logs" element={<AuditLogsPage />} />
           <Route
             path="/user-management"
             element={

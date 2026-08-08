@@ -2,6 +2,7 @@ import { Router } from 'express';
 import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { can } from '../lib/capabilities.js';
+import { logAudit } from '../lib/audit.js';
 
 const router = Router();
 
@@ -37,6 +38,8 @@ router.post('/', authenticateToken, can('BRAND_CREATE'), async (req, res) => {
       data: { name, organizationId },
       include: { organization: { select: { id: true, name: true } } },
     });
+    logAudit({ action: 'BRAND_CREATE', entity: 'Brand', entityId: brand.id, actor: req.user, details: { brandName: name } });
+
     res.status(201).json(brand);
   } catch (err) {
     if (err.code === 'P2002') {
@@ -78,6 +81,9 @@ router.put('/:id', authenticateToken, can('BRAND_EDIT'), async (req, res) => {
       data,
       include: { organization: { select: { id: true, name: true } } },
     });
+
+    logAudit({ action: 'BRAND_EDIT', entity: 'Brand', entityId: brand.id, actor: req.user, details: { brandName: brand.name } });
+
     res.json(brand);
   } catch (err) {
         if (err.code === 'P2002') {

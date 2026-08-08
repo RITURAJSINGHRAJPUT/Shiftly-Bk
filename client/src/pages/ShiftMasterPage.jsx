@@ -654,7 +654,7 @@ export default function ShiftMasterPage() {
                         {t.department}
                       </span>
                     </td>
-                    <td>{t.section || <span className="text-muted">General</span>}</td>
+                    <td>{t.section || <span className="text-muted">—</span>}</td>
                     <td>{t.startTime} – {t.endTime}</td>
                     <td>
                       <span className={t.daysOfWeek?.length === 7 ? 'text-muted' : 'font-semibold text-strong'}>
@@ -740,9 +740,7 @@ export default function ShiftMasterPage() {
                   setForm((p) => ({
                     ...p,
                     department: e.target.value,
-                    // Cleared in the same update, not just disabled: a greyed-out
-                    // select still holding "Wok" would save it.
-                    section: departmentHasStations(e.target.value) ? p.section : '',
+                    section: p.section,
                   }))
                 }
               >
@@ -755,17 +753,13 @@ export default function ShiftMasterPage() {
                 id="pattern-section"
                 className="form-select"
                 value={form.section}
-                disabled={!departmentHasStations(form.department)}
                 onChange={(e) => setForm((p) => ({ ...p, section: e.target.value }))}
               >
-                <option value="">General</option>
+                <option value="">— None —</option>
                 {/* This brand's own stations, so the modal and the sheet above
                     cannot disagree about which rows exist. */}
                 {stationOptions.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
-              {!departmentHasStations(form.department) && (
-                <p className="text-xs text-muted mt-1">Stations apply to kitchen patterns only.</p>
-              )}
             </div>
           </div>
 

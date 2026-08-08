@@ -5,6 +5,7 @@ import { generateToken, authenticateToken, authenticateResettable } from '../mid
 import { outletInclude } from '../lib/scope.js';
 import { passwordProblem } from '../lib/passwords.js';
 import { loginLimiter } from '../middleware/rateLimit.js';
+import { logAudit } from '../lib/audit.js';
 
 const router = Router();
 
@@ -25,11 +26,13 @@ router.post('/login', loginLimiter, async (req, res) => {
     });
 
     if (!employee) {
+      logAudit({ action: 'LOGIN_FAILED', entity: 'Auth', details: { email } });
       return res.status(401).json({ error: INVALID });
     }
 
     const validPassword = await bcrypt.compare(password, employee.password);
     if (!validPassword) {
+      logAudit({ action: 'LOGIN_FAILED', entity: 'Auth', actor: employee, details: { email } });
       return res.status(401).json({ error: INVALID });
     }
 
@@ -42,6 +45,8 @@ router.post('/login', loginLimiter, async (req, res) => {
     }
 
     const token = generateToken(employee, { passwordReset: employee.mustChangePassword });
+
+    logAudit({ action: 'LOGIN', entity: 'Auth', entityId: employee.id, actor: employee });
 
     res.json({
       token,
@@ -100,8 +105,8 @@ router.post('/change-password', loginLimiter, authenticateResettable, async (req
       include: outletInclude,
     });
 
-    // A fresh unrestricted token, so the client is signed in properly the moment
-    // it sets a password rather than having to log in a second time.
+    logAudit({ action: 'PASSWORD_CHANGE', entity: 'Auth', entityId: employee.id, actor: employee });
+
     res.json({ token: generateToken(updated), mustChangePassword: false });
   } catch (err) {
     res.status(500).json({ error: err.message });
