@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import api from '../api/client';
 import Modal from '../components/Modal';
 import { useScope } from '../contexts/ScopeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { GLOBAL_SCOPE_ROLES, STATIONS, departmentHasStations } from '../constants';
-import { Plus, Search, Filter, Edit, Trash2, Store, ShieldCheck, Users, KeyRound, Copy } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Trash2, Store, ShieldCheck, Users, KeyRound, Copy, Check } from 'lucide-react';
 
 export default function EmployeesPage() {
   // Only for the Add/Edit modal's Outlet field — this page has no outlet filter.
@@ -34,6 +34,27 @@ export default function EmployeesPage() {
    * a lost one needs a reset, which is why it is surfaced this deliberately.
    */
   const [issued, setIssued] = useState(null);
+
+  // "Copied" feedback for the one-time-password reveal's Copy button.
+  const [copied, setCopied] = useState(false);
+  const copyTimeoutRef = useRef(null);
+
+  // Reset feedback whenever a new password is issued or the reveal is
+  // dismissed, so re-issuing never shows stale "Copied" state.
+  useEffect(() => {
+    setCopied(false);
+    return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    };
+  }, [issued]);
+
+  const handleCopyPassword = useCallback(() => {
+    if (!issued) return;
+    navigator.clipboard?.writeText(issued.password);
+    setCopied(true);
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    copyTimeoutRef.current = setTimeout(() => setCopied(false), 1800);
+  }, [issued]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -464,11 +485,11 @@ export default function EmployeesPage() {
               <code>{issued.password}</code>
               <button
                 type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={() => navigator.clipboard?.writeText(issued.password)}
+                className={`btn btn-ghost btn-sm${copied ? ' btn-copied' : ''}`}
+                onClick={handleCopyPassword}
               >
-                <Copy size={14} />
-                <span>Copy</span>
+                {copied ? <Check size={14} /> : <Copy size={14} />}
+                <span>{copied ? 'Copied' : 'Copy'}</span>
               </button>
             </div>
 
