@@ -80,7 +80,7 @@ const probe = (port, host = '127.0.0.1', timeout = 700) =>
     s.once('error', () => done(false));
   });
 
-const [pgUp, apiBusy, webBusy] = await Promise.all([probe(5432), probe(3001), probe(5173)]);
+const [pgUp, apiBusy, webBusy] = await Promise.all([probe(5432), probe(3001), probe(57935)]);
 
 if (!pgUp) {
   warn.push(
@@ -95,7 +95,7 @@ if (apiBusy) {
   );
 }
 if (webBusy) {
-  warn.push(`Port 5173 is already in use — Vite will pick the next free port.`);
+  warn.push(`Port 57935 is already in use — Vite will pick the next free port.`);
 }
 
 // --- report -----------------------------------------------------------------
@@ -115,7 +115,7 @@ if (fatal.length) {
 }
 
 if (!warn.length) {
-  console.log(c.green('✓') + ' preflight ok — starting api on :3001 and web on :5173\n');
+  console.log(c.green('✓') + ' preflight ok — starting api on :3001 and web on :57935\n');
 } else {
   console.log('');
 }

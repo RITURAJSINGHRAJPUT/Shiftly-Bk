@@ -41,7 +41,7 @@ Shiftly BK/
 │       ├── routes/       11 routers
 │       ├── engine/       allocator, geo-attendance, leave, emergency leave
 │       └── scripts/      createDb, seedFromCSV, seedShiftTemplates
-├── client/               React 18 · Vite · Recharts           → :5173
+├── client/               React 18 · Vite · Recharts           → :57935
 └── assets/               Shiftly Shift Shift - Sheet1.csv  (seed source)
 ```
 

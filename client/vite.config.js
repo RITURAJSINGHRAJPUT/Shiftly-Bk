@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 5173,
+    port: 57935,
     host: true,
     // The client calls /api relatively so the same code works on any host, which
     // means the dev server has to forward those calls to the API on its own
@@ -30,7 +30,7 @@ export default defineConfig({
   // These repeat rather than share a constant because `preview` does not inherit
   // from `server`; both extend CommonServerOptions independently.
   preview: {
-    port: 4173,
+    port: 57936,
     host: true,
     proxy: {
       '/api': { target: 'http://localhost:3001', changeOrigin: true }

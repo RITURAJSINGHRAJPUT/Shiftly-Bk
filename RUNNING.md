@@ -12,7 +12,7 @@ Create the one account that exists, and note the password it prints:
 npm --prefix server run reset:superadmin
 ```
 
-Then open **http://localhost:5173**, sign in as `superadmin@shiftly.com` with that
+Then open **http://localhost:57935**, sign in as `superadmin@shiftly.com` with that
 password, and choose your own when asked. Everybody else is enrolled from the
 Employees page.
 
@@ -31,7 +31,7 @@ Shiftly BK/
 ├── package.json   root scripts — run everything from here
 ├── scripts/       preflight + port helpers
 ├── server/        Express 5 + Prisma 6 + PostgreSQL   → http://localhost:3001
-├── client/        React 18 + Vite                     → http://localhost:5173
+├── client/        React 18 + Vite                     → http://localhost:57935
 └── assets/        Shiftly Shift Shift - Sheet1.csv    (the seed data source)
 ```
 
@@ -123,9 +123,9 @@ npm run dev
 Output is prefixed per service, and `Ctrl+C` stops both:
 
 ```
-✓ preflight ok — starting api on :3001 and web on :5173
+✓ preflight ok — starting api on :3001 and web on :57935
 [api] 🚀 Bookends Shiftly listening on port 3001
-[web]   ➜  Local:   http://localhost:5173/
+[web]   ➜  Local:   http://localhost:57935/
 [api] POST /login 200 121ms
 ```
 
@@ -134,16 +134,16 @@ The API restarts on save via `node --watch`; the client hot-reloads via Vite.
 If you'd rather run them separately — useful when you want to restart just one —
 `npm run dev:api` and `npm run dev:web` do exactly that.
 
-Then open **http://localhost:5173**.
+Then open **http://localhost:57935**.
 
 | Service | URL |
 |---|---|
-| Web client | http://localhost:5173 |
+| Web client | http://localhost:57935 |
 | API | http://localhost:3001 |
 | API health check | http://localhost:3001/api/health |
 | Prisma Studio (DB browser) | `cd server && npm run db:studio` → http://localhost:5555 |
 
-The API's CORS allow-list is `localhost:5173` and `localhost:3000`
+The API's CORS allow-list is `localhost:57935` and `localhost:3000`
 ([index.js:21](server/src/index.js#L21)). Serving the client from any other
 origin means adding it there.
 
@@ -230,7 +230,7 @@ All from the project root.
 | `npm run db:generate` | Regenerate the Prisma client after a schema edit |
 | `npm run db:studio` | Browse/edit the database in a GUI on :5555 |
 | `npm run check` | Run the preflight checks on their own |
-| `npm run ports:free` | Kill whatever is holding :3001 / :5173 (macOS/Linux) |
+| `npm run ports:free` | Kill whatever is holding :3001 / :57935 (macOS/Linux) |
 
 The per-project scripts still exist if you prefer them — `cd server && npm run dev`
 and so on work exactly as before.

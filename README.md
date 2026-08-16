@@ -18,7 +18,7 @@ Bookends Hospitality
 | | |
 |---|---|
 | **API** | Express 5 · Prisma 6 · PostgreSQL — `:3001` |
-| **Client** | React 18 · Vite · Recharts — `:5173` |
+| **Client** | React 18 · Vite · Recharts — `:57935` |
 | **Auth** | Stateless JWT in `localStorage`, versioned payload |
 | **Styling** | One hand-written stylesheet with a CSS custom-property token layer — no framework |
 
@@ -48,14 +48,14 @@ npm run setup      # create DB → push schema → generate client → seed
 npm run dev        # API + client together, with a preflight check
 ```
 
-Then open **http://localhost:5173** and sign in with one of the
+Then open **http://localhost:57935** and sign in with one of the
 [demo logins](#demo-logins) below.
 
 `npm run dev` runs a preflight first (`scripts/preflight.mjs`) so a misconfigured
 environment fails with a readable message instead of a stack trace. It stops on
 missing `node_modules`, a missing `server/.env` (or one lacking `DATABASE_URL` /
 `JWT_SECRET`), and an ungenerated Prisma client — printing the exact command to
-fix each — and warns if PostgreSQL is unreachable or ports 3001 / 5173 are
+fix each — and warns if PostgreSQL is unreachable or ports 3001 / 57935 are
 already taken.
 
 Full setup, troubleshooting and environment details: **[RUNNING.md](RUNNING.md)**.
@@ -232,7 +232,7 @@ Shiftly BK/
 │       └── scripts/          createDb · seedFromCSV · seedShiftTemplates
 │                             · ensureOutletManagers · seedDemoStaff
 │
-└── client/                                                        → :5173
+└── client/                                                        → :57935
     ├── public/brand/         generated logo + icon set
     └── src/
         ├── App.jsx           ThemeProvider → AuthProvider → Router → Scope → Layout
@@ -262,7 +262,7 @@ All from the project root.
 | `npm run seed:templates` | Re-seed shift patterns |
 | `npm run db:studio` | Browse the database in a GUI on `:5555` |
 | `npm run check` | Run the preflight checks alone |
-| `npm run ports:free` | Kill whatever holds `:3001` / `:5173` |
+| `npm run ports:free` | Kill whatever holds `:3001` / `:57935` |
 
 The seed scripts split deliberately: `npm run seed` is destructive, while
 `managers` and `seed:staff` only ever add what is missing, so they are safe
