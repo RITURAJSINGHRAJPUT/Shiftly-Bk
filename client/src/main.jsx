@@ -11,6 +11,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js');
+    // 'none' so the browser never answers an update check for the worker
+    // script itself from a stale HTTP cache — it always checks the network,
+    // which is what lets a fix like this one actually get picked up promptly.
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
   });
 }

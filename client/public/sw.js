@@ -1,5 +1,6 @@
-// v2: repointed at the generated brand icons.
-const CACHE_NAME = 'shiftly-cache-v2';
+// v3: navigations go network-first, fixing stale index.html after deploy —
+// see fetch handler below.
+const CACHE_NAME = 'shiftly-cache-v3';
 
 // cache.addAll is atomic — one 404 rejects the whole batch and nothing is
 // cached at all. The previous list asked for /src/main.ts (this project has
@@ -15,6 +16,10 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
+  // Take over from any previously-installed worker as soon as this one
+  // finishes installing, instead of sitting "waiting" until every open tab
+  // closes — that delay is what let stale navigations linger after a deploy.
+  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS).catch(() => {});
@@ -27,15 +32,34 @@ self.addEventListener('install', (e) => {
 // on being served alongside the new ones.
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then((names) =>
-      Promise.all(
-        names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n))
+    caches.keys()
+      .then((names) =>
+        Promise.all(
+          names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n))
+        )
       )
-    )
+      // Control already-open tabs immediately rather than only tabs opened
+      // after this activation, so the fix reaches sessions already on the site.
+      .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', (e) => {
+  // Navigations must always hit the network: this is the document that names
+  // the deploy's current hashed asset filenames. A deploy wipes and rebuilds
+  // those hashes, so serving a cached-first index.html 404s on assets a since
+  // -cleaned deploy no longer has — that was the whole blank-screen bug. Only
+  // fall back to the precached shell when the network is genuinely down.
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
+  // Everything else is a hashed, content-addressed asset — its filename
+  // changes whenever its content does, so a cached copy can never go stale
+  // under a different name, and cache-first is both safe and fast here.
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
       if (cachedResponse) return cachedResponse;
