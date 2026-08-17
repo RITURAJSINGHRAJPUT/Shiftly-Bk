@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { outletScope, employeeScope } from '../lib/scope.js';
+import { outletScope, employeeScope, hasGlobalScope, MATCH_NOTHING } from '../lib/scope.js';
 
 const router = Router();
 
@@ -35,6 +35,13 @@ router.get('/stats', authenticateToken, async (req, res) => {
     const shiftWhere = outletScope(req);
     const attWhere = employeeScope(req);
     const leaveWhere = employeeScope(req);
+    const globalScope = hasGlobalScope(req.user);
+    // A locked user is pinned to exactly one outlet, so their brand/outlet
+    // "totals" are just whether that outlet still exists and is active —
+    // not a count across the org they cannot see the rest of.
+    const ownOutletActive = globalScope
+      ? null
+      : prisma.outlet.count({ where: { id: req.user.outletId || MATCH_NOTHING, isActive: true } });
 
     const { start: today, end: tomorrow } = dayBounds();
     const weekStart = new Date(today);
@@ -53,8 +60,8 @@ router.get('/stats', authenticateToken, async (req, res) => {
       weekShifts,
     ] = await Promise.all([
       prisma.employee.count({ where: empWhere }),
-      prisma.brand.count({ where: { isActive: true } }),
-      prisma.outlet.count({ where: { isActive: true } }),
+      globalScope ? prisma.brand.count({ where: { isActive: true } }) : ownOutletActive,
+      globalScope ? prisma.outlet.count({ where: { isActive: true } }) : ownOutletActive,
       prisma.shift.count({ where: { ...shiftWhere, date: { gte: today, lt: tomorrow } } }),
       prisma.attendance.count({
         where: {
@@ -139,15 +146,24 @@ router.get('/brand-performance', authenticateToken, async (req, res) => {
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 7);
 
+    const globalScope = hasGlobalScope(req.user);
+
     const brands = await prisma.brand.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        ...(globalScope ? {} : { outlets: { some: { id: req.user.outletId || MATCH_NOTHING } } }),
+      },
       include: { outlets: { select: { id: true } } },
       orderBy: { name: 'asc' },
     });
 
     const rows = await Promise.all(
       brands.map(async (brand) => {
-        const outletIds = brand.outlets.map((o) => o.id);
+        // A locked user's own row still only counts their own outlet, not
+        // every sibling outlet under the same brand.
+        const outletIds = globalScope
+          ? brand.outlets.map((o) => o.id)
+          : brand.outlets.filter((o) => o.id === req.user.outletId).map((o) => o.id);
         if (outletIds.length === 0) {
           return { brand: brand.name, attendance: 0, scheduled: 0, present: 0 };
         }

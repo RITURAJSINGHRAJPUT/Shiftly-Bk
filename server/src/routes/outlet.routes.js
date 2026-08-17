@@ -3,6 +3,7 @@ import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { can } from '../lib/capabilities.js';
 import { logAudit } from '../lib/audit.js';
+import { hasGlobalScope, MATCH_NOTHING } from '../lib/scope.js';
 
 const router = Router();
 
@@ -13,8 +14,12 @@ const REQUIRED_MANAGER_ROLES = ['MASTER_OF_HOUSE', 'HEAD_CHEF'];
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const where = { isActive: true };
-    if (req.query.brand) where.brandId = req.query.brand;
-    if (req.query.org) where.brand = { organizationId: req.query.org };
+    if (!hasGlobalScope(req.user)) {
+      where.id = req.user.outletId || MATCH_NOTHING;
+    } else {
+      if (req.query.brand) where.brandId = req.query.brand;
+      if (req.query.org) where.brand = { organizationId: req.query.org };
+    }
 
     const outlets = await prisma.outlet.findMany({
       where,

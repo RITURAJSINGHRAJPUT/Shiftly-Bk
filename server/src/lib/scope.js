@@ -24,7 +24,7 @@ export function hasGlobalScope(user) {
  * returns nothing instead. authenticateToken already rejects the tokens that
  * cause this; the sentinel is the second line of defence.
  */
-const MATCH_NOTHING = '__no_outlet__';
+export const MATCH_NOTHING = '__no_outlet__';
 
 /**
  * Scope fragment for models that carry `outletId` directly (Employee, Shift).

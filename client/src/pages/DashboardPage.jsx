@@ -27,6 +27,12 @@ function ManagementDashboard() {
   const { user } = useAuth();
   const { outlets } = useScope();
 
+  // Mirrors Sidebar.jsx's role gating for the same destinations, so Quick
+  // Actions never link to a page the sidebar itself would hide.
+  const canManageEmployees = GLOBAL_SCOPE_ROLES.includes(user?.role);
+  const canManageOutlets = GLOBAL_SCOPE_ROLES.includes(user?.role);
+  const canViewReports = [...GLOBAL_SCOPE_ROLES, 'MASTER_OF_HOUSE'].includes(user?.role);
+
   const [stats, setStats] = useState(null);
   const [trend, setTrend] = useState(null);
   const [brandRows, setBrandRows] = useState([]);
@@ -273,22 +279,28 @@ function ManagementDashboard() {
               <span>Run Auto-Allocation</span>
               <ArrowRight size={16} />
             </Link>
-            <Link to="/employees" className="btn btn-info w-full justify-between">
-              <span>Add Employee</span>
-              <Plus size={16} />
-            </Link>
-            <Link to="/outlets" className="btn btn-accent w-full justify-between">
-              <span>Manage Outlets</span>
-              <Store size={16} />
-            </Link>
+            {canManageEmployees && (
+              <Link to="/employees" className="btn btn-info w-full justify-between">
+                <span>Add Employee</span>
+                <Plus size={16} />
+              </Link>
+            )}
+            {canManageOutlets && (
+              <Link to="/outlets" className="btn btn-accent w-full justify-between">
+                <span>Manage Outlets</span>
+                <Store size={16} />
+              </Link>
+            )}
             <Link to="/attendance" className="btn btn-ghost w-full justify-between">
               <span>Attendance &amp; Geofences</span>
               <MapPin size={16} />
             </Link>
-            <Link to="/reports" className="btn btn-ghost w-full justify-between">
-              <span>View Reports</span>
-              <Upload size={16} />
-            </Link>
+            {canViewReports && (
+              <Link to="/reports" className="btn btn-ghost w-full justify-between">
+                <span>View Reports</span>
+                <Upload size={16} />
+              </Link>
+            )}
           </div>
         </div>
       </div>
