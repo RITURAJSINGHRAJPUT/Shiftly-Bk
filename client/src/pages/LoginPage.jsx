@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import BrandLogo from '../components/BrandLogo';
+import PasswordInput from '../components/PasswordInput';
 import { KeyRound, Mail, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
@@ -73,18 +74,13 @@ export default function LoginPage() {
 
           <div className="form-group">
             <label className="form-label">Password</label>
-            <div style={{ position: 'relative' }}>
-              <KeyRound size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-muted)' }} />
-              <input
-                type="password"
-                className="form-input"
-                style={{ paddingLeft: '40px' }}
-                placeholder="••••••••"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-              />
-            </div>
+            <PasswordInput
+              icon={KeyRound}
+              placeholder="••••••••"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+            />
           </div>
 
           <button type="submit" className="btn btn-primary w-full justify-between" disabled={loading}>

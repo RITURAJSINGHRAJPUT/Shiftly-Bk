@@ -90,7 +90,7 @@ function Layout() {
       {!isMobile && <Sidebar collapsed={collapsed} onToggle={toggleSidebar} />}
 
       <div className={`main-content ${collapsed ? 'collapsed' : ''}`}>
-        <Header collapsed={collapsed} onToggle={toggleSidebar} />
+        <Header collapsed={collapsed} onToggle={toggleSidebar} isMobile={isMobile} />
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/organizations" element={<OrganizationsPage />} />

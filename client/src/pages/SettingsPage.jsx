@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api/client';
 import Modal from '../components/Modal';
+import PasswordInput from '../components/PasswordInput';
 import { useAuth } from '../contexts/AuthContext';
 import { Save, AlertTriangle, Trash2, KeyRound } from 'lucide-react';
 
@@ -93,16 +94,16 @@ export default function SettingsPage() {
         <form onSubmit={submitPassword} className="flex flex-col gap-3" style={{ maxWidth: 420 }}>
           <div className="form-group">
             <label className="form-label" htmlFor="pw-current">Current password</label>
-            <input
-              id="pw-current" type="password" className="form-input"
+            <PasswordInput
+              id="pw-current"
               value={pwCurrent} onChange={(e) => setPwCurrent(e.target.value)}
               autoComplete="current-password" required
             />
           </div>
           <div className="form-group">
             <label className="form-label" htmlFor="pw-new">New password</label>
-            <input
-              id="pw-new" type="password" className="form-input"
+            <PasswordInput
+              id="pw-new"
               value={pwNew} onChange={(e) => setPwNew(e.target.value)}
               autoComplete="new-password" required
             />
@@ -110,8 +111,8 @@ export default function SettingsPage() {
           </div>
           <div className="form-group">
             <label className="form-label" htmlFor="pw-confirm">Confirm new password</label>
-            <input
-              id="pw-confirm" type="password" className="form-input"
+            <PasswordInput
+              id="pw-confirm"
               value={pwConfirm} onChange={(e) => setPwConfirm(e.target.value)}
               autoComplete="new-password" required
             />

@@ -883,6 +883,19 @@ body {
   color: var(--ink-strong);
 }
 
+.header-btn.header-brand {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  justify-content: center;
+}
+
+.header-btn.header-brand .brand-logo,
+.header-btn.header-brand .brand-mark {
+  width: 100%;
+  height: 100%;
+}
+
 .header-btn .badge {
   position: absolute;
   top: 0;
@@ -1319,6 +1332,23 @@ body {
 
 .form-input::placeholder { color: var(--ink-muted); }
 .form-select { cursor: pointer; }
+
+.password-field { position: relative; }
+.password-field-icon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--ink-muted); pointer-events: none;
+}
+.password-field-input { padding-right: 40px; }
+.password-field-input.has-left-icon { padding-left: 40px; }
+.password-field-toggle {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  background: none; border: 0; padding: var(--space-2);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-muted); cursor: pointer; border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+.password-field-toggle:hover { color: var(--ink-strong); background: var(--surface-sunken); }
+.password-field-toggle:focus-visible { outline: none; box-shadow: var(--shadow-ring); }
 
 /* A disabled control still has to be readable — it holds a value the user needs
    to see is inert, not gone. So the inert signal is the sunken fill and the

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../api/client';
+import BrandLogo from './BrandLogo';
 import { Menu, Search, Bell, X, ChevronDown, LogOut, User } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ROLES } from '../constants';
@@ -78,7 +79,7 @@ function UserMenu() {
   );
 }
 
-export default function Header({ collapsed, onToggle }) {
+export default function Header({ collapsed, onToggle, isMobile }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -124,9 +125,15 @@ export default function Header({ collapsed, onToggle }) {
       <header className={`header ${collapsed ? 'collapsed' : ''}`}>
         <div className="header-inner">
           <div className="header-left">
-            <button className="header-btn" onClick={onToggle} aria-label="Toggle sidebar">
-              <Menu size={20} />
-            </button>
+            {isMobile ? (
+              <Link to="/" className="header-btn header-brand" aria-label="Bookends Shiftly home">
+                <BrandLogo variant="mark" alt="" />
+              </Link>
+            ) : (
+              <button className="header-btn" onClick={onToggle} aria-label="Toggle sidebar">
+                <Menu size={20} />
+              </button>
+            )}
           </div>
 
           <div className="header-right">

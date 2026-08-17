@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import BrandLogo from '../components/BrandLogo';
+import PasswordInput from '../components/PasswordInput';
 import { KeyRound, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 
 /** Kept in step with MIN_PASSWORD_LENGTH in server/src/lib/passwords.js. */
@@ -72,10 +73,8 @@ export default function SetPasswordPage() {
         <form onSubmit={submit} className="flex flex-col gap-4">
           <div className="form-group">
             <label className="form-label" htmlFor="current-password">Temporary password</label>
-            <input
+            <PasswordInput
               id="current-password"
-              type="password"
-              className="form-input"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               autoComplete="current-password"
@@ -85,22 +84,14 @@ export default function SetPasswordPage() {
 
           <div className="form-group">
             <label className="form-label" htmlFor="new-password">New password</label>
-            <div style={{ position: 'relative' }}>
-              <KeyRound
-                size={16}
-                style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-muted)' }}
-              />
-              <input
-                id="new-password"
-                type="password"
-                className="form-input"
-                style={{ paddingLeft: 40 }}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                autoComplete="new-password"
-                required
-              />
-            </div>
+            <PasswordInput
+              icon={KeyRound}
+              id="new-password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              autoComplete="new-password"
+              required
+            />
             <p className="text-xs mt-1" style={{ color: tooShort ? 'var(--ink-crit)' : 'var(--ink-muted)' }}>
               At least {MIN_LENGTH} characters. A short phrase you will remember beats a
               short jumble you will not.
@@ -109,10 +100,8 @@ export default function SetPasswordPage() {
 
           <div className="form-group">
             <label className="form-label" htmlFor="confirm-password">Confirm new password</label>
-            <input
+            <PasswordInput
               id="confirm-password"
-              type="password"
-              className="form-input"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               autoComplete="new-password"
