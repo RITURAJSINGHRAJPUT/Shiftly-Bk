@@ -30,6 +30,7 @@ import MobileProfile from './pages/mobile/MobileProfile';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import MobileNav from './components/MobileNav';
+import InstallPrompt from './components/InstallPrompt';
 
 function Layout() {
   const { user, loading, mustChangePassword } = useAuth();
@@ -157,6 +158,7 @@ function Layout() {
       </div>
 
       {isMobile && <MobileNav />}
+      <InstallPrompt />
     </div>
   );
 }
