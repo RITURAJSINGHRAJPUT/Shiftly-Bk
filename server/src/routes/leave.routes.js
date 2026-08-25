@@ -4,10 +4,34 @@ import { authenticateToken } from '../middleware/auth.js';
 import { can } from '../lib/capabilities.js';
 import { processLeaveRequest, approveLeave, rejectLeave } from '../engine/leaveManager.js';
 import { requestEmergencyLeave, acceptEmergencyCover, autoAssignEmergency } from '../engine/emergencyLeave.js';
-import { employeeScope } from '../lib/scope.js';
+import { employeeScope, hasGlobalScope } from '../lib/scope.js';
 import { logAudit } from '../lib/audit.js';
 
 const router = Router();
+
+/** Who, besides HR/ADMIN/SUPER_ADMIN, owns approval for each department. */
+const DEPARTMENT_APPROVERS = {
+  KITCHEN: 'HEAD_CHEF',
+  SERVICE: 'MASTER_OF_HOUSE',
+  HOUSEKEEPING: 'MASTER_OF_HOUSE',
+};
+
+/**
+ * HR/ADMIN/SUPER_ADMIN may act on any leave. A locked manager (HEAD_CHEF,
+ * MASTER_OF_HOUSE) may only act on their own outlet's leaves, and only for
+ * the department they own per DEPARTMENT_APPROVERS. Returns an error string,
+ * or null when the action is allowed.
+ */
+function leaveApprovalDenied(req, leave) {
+  if (hasGlobalScope(req.user)) return null;
+  if (leave.employee.outletId !== req.user.outletId) {
+    return 'You can only act on leave requests for your own outlet';
+  }
+  if (DEPARTMENT_APPROVERS[leave.employee.department] !== req.user.role) {
+    return 'You can only approve leave requests for your own department';
+  }
+  return null;
+}
 
 /** Employee summary shape reused across this router's responses. */
 const leaveEmployeeSelect = {
@@ -68,6 +92,14 @@ router.post('/', authenticateToken, async (req, res) => {
 // POST /api/leaves/:id/approve
 router.post('/:id/approve', authenticateToken, can('LEAVE_APPROVE'), async (req, res) => {
   try {
+    const leave = await prisma.leave.findUnique({
+      where: { id: req.params.id },
+      select: { employee: { select: { outletId: true, department: true } } },
+    });
+    if (!leave) return res.status(404).json({ error: 'Leave not found' });
+    const denied = leaveApprovalDenied(req, leave);
+    if (denied) return res.status(403).json({ error: denied });
+
     const result = await approveLeave(prisma, req.params.id, req.user.id);
 
     logAudit({ action: 'LEAVE_APPROVE', entity: 'Leave', entityId: req.params.id, actor: req.user, details: { employeeName: result.employee?.name } });
@@ -81,6 +113,14 @@ router.post('/:id/approve', authenticateToken, can('LEAVE_APPROVE'), async (req,
 // POST /api/leaves/:id/reject
 router.post('/:id/reject', authenticateToken, can('LEAVE_REJECT'), async (req, res) => {
   try {
+    const leave = await prisma.leave.findUnique({
+      where: { id: req.params.id },
+      select: { employee: { select: { outletId: true, department: true } } },
+    });
+    if (!leave) return res.status(404).json({ error: 'Leave not found' });
+    const denied = leaveApprovalDenied(req, leave);
+    if (denied) return res.status(403).json({ error: denied });
+
     const result = await rejectLeave(prisma, req.params.id, req.user.id, req.body.reason);
 
     logAudit({ action: 'LEAVE_REJECT', entity: 'Leave', entityId: req.params.id, actor: req.user, details: { employeeName: result.employee?.name, reason: req.body.reason } });
@@ -114,6 +154,14 @@ router.post('/emergency/:leaveId/accept', authenticateToken, async (req, res) =>
 // POST /api/leaves/emergency/:leaveId/auto-assign — called by timer/admin
 router.post('/emergency/:leaveId/auto-assign', authenticateToken, can('LEAVE_AUTO_ASSIGN'), async (req, res) => {
   try {
+    const leave = await prisma.leave.findUnique({
+      where: { id: req.params.leaveId },
+      select: { employee: { select: { outletId: true, department: true } } },
+    });
+    if (!leave) return res.status(404).json({ error: 'Leave not found' });
+    const denied = leaveApprovalDenied(req, leave);
+    if (denied) return res.status(403).json({ error: denied });
+
     const result = await autoAssignEmergency(prisma, req.params.leaveId);
     if (!result) return res.status(404).json({ error: 'Already handled or no eligible employees' });
     res.json(result);

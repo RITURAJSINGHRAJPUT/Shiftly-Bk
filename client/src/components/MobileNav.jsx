@@ -4,7 +4,8 @@ import { LayoutDashboard, MapPin, CalendarClock, Inbox, User } from 'lucide-reac
 /** Bottom tab bar, in the mockup's order. */
 const MOBILE_TABS = [
   { path: '/', label: 'Home', icon: LayoutDashboard },
-  { path: '/attendance', label: 'Attendance', icon: MapPin },
+  // Attendance page not in use currently — kept for possible future use.
+  // { path: '/attendance', label: 'Attendance', icon: MapPin },
   { path: '/shifts', label: 'Shifts', icon: CalendarClock },
   { path: '/leaves', label: 'Inbox', icon: Inbox },
   { path: '/profile', label: 'Profile', icon: User },

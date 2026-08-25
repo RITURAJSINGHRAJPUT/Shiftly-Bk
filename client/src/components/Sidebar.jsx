@@ -46,7 +46,8 @@ const NAV_SECTIONS = [
     title: 'People',
     items: [
       { path: '/employees', label: 'Employees', icon: Users, roles: ['SUPER_ADMIN', 'ADMIN', 'HR'] },
-      { path: '/attendance', label: 'Attendance', icon: MapPin, roles: 'all' },
+      // Attendance page not in use currently — kept for possible future use.
+      // { path: '/attendance', label: 'Attendance', icon: MapPin, roles: 'all' },
       { path: '/leaves', label: 'Leaves', icon: TreePalm, roles: 'all' },
     ],
   },

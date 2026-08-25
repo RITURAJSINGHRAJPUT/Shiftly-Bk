@@ -291,10 +291,11 @@ function ManagementDashboard() {
                 <Store size={16} />
               </Link>
             )}
-            <Link to="/attendance" className="btn btn-ghost w-full justify-between">
+            {/* Attendance page not in use currently — kept for possible future use. */}
+            {/* <Link to="/attendance" className="btn btn-ghost w-full justify-between">
               <span>Attendance &amp; Geofences</span>
               <MapPin size={16} />
-            </Link>
+            </Link> */}
             {canViewReports && (
               <Link to="/reports" className="btn btn-ghost w-full justify-between">
                 <span>View Reports</span>
@@ -365,10 +366,11 @@ function StaffDashboard() {
               <p className="text-sm text-secondary">Check back later or contact your manager.</p>
             </>
           )}
-          <Link to="/attendance" className="btn btn-accent w-full justify-center mt-4">
+          {/* Attendance page not in use currently — kept for possible future use. */}
+          {/* <Link to="/attendance" className="btn btn-accent w-full justify-center mt-4">
             <MapPin size={16} />
             <span>{attendanceToday?.checkIn ? 'View Attendance' : 'Check In'}</span>
-          </Link>
+          </Link> */}
         </div>
 
         <div className="grid-2">

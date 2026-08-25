@@ -5,9 +5,17 @@ import Modal from '../components/Modal';
 import CountdownTimer from '../components/CountdownTimer';
 import { format } from 'date-fns';
 import { PlaneTakeoff, Plus, CheckCircle, XCircle, AlertTriangle, Users } from 'lucide-react';
+import { GLOBAL_SCOPE_ROLES } from '../constants';
+
+// Mirrors DEPARTMENT_APPROVERS in server/src/routes/leave.routes.js — a
+// locked manager only acts on their own department's leaves; HR/ADMIN/
+// SUPER_ADMIN act on any of them.
+const DEPARTMENT_APPROVERS = { KITCHEN: 'HEAD_CHEF', SERVICE: 'MASTER_OF_HOUSE', HOUSEKEEPING: 'MASTER_OF_HOUSE' };
 
 export default function LeavesPage() {
   const { user, isManager } = useAuth();
+  const canActOn = (leave) =>
+    GLOBAL_SCOPE_ROLES.includes(user?.role) || DEPARTMENT_APPROVERS[leave.employee.department] === user?.role;
   const [leaves, setLeaves] = useState([]);
   const [pendingEmergencies, setPendingEmergencies] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -217,7 +225,7 @@ export default function LeavesPage() {
                   </td>
                   {isManager && (
                     <td>
-                      {(l.status === 'PENDING' || l.status === 'COVERAGE_PENDING') && (
+                      {(l.status === 'PENDING' || l.status === 'COVERAGE_PENDING') && canActOn(l) && (
                         <div className="flex gap-2">
                           <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--accent-400)' }} onClick={() => handleApprove(l.id)}>
                             <CheckCircle size={14} />

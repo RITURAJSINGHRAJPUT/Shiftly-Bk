@@ -5,3 +5,4 @@ dist/
 *.log
 signing.keystore
 signing-key-info.txt
+md/
