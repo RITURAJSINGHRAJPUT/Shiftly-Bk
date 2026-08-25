@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import BrandLogo from '../components/BrandLogo';
+import BrandLogo, { BRAND_NAME } from '../components/BrandLogo';
 import PasswordInput from '../components/PasswordInput';
 import { KeyRound, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 
@@ -44,10 +44,16 @@ export default function SetPasswordPage() {
 
   return (
     <div className="login-page">
+      <div className="login-lockup">
+        <div className="login-badge">
+          <BrandLogo variant="mark" alt="" />
+        </div>
+        <h1>{BRAND_NAME}</h1>
+      </div>
+
       <div className="login-card">
-        <div className="login-logo">
-          <h1><BrandLogo variant="wordmark" /></h1>
-          <p>Choose your password</p>
+        <div className="login-heading">
+          <h2>Choose Your Password</h2>
         </div>
 
         <div className="card card--alert-warn mb-4">
@@ -116,7 +122,7 @@ export default function SetPasswordPage() {
 
           <button
             type="submit"
-            className="btn btn-primary w-full justify-between"
+            className="btn btn-primary-soft w-full justify-between"
             disabled={saving || tooShort || mismatch || !currentPassword || !newPassword}
           >
             <span>{saving ? 'Saving…' : 'Set password and continue'}</span>

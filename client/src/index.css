@@ -137,6 +137,19 @@
   --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12);
   --shadow-ring: 0 0 0 3px rgba(32, 92, 238, 0.14);
 
+  /* ==================== CLAY — dual-tone soft-extruded shadows ====================
+     A light highlight (top-left) + a soft shadow (bottom-right) read as a puffy,
+     embossed shape without a hard border. -sm is for small/pill controls
+     (buttons, badges, inputs), unsuffixed for cards/panels. -pressed/-inset use
+     the same pair as inset shadows, for the "pressed into the surface" look
+     (active buttons, recessed inputs). --clay-ring layers on top of these for
+     focus — never replaces --shadow-ring, since a soft shadow alone is not an
+     accessible focus indicator. */
+  --clay-shadow: 8px 8px 20px rgba(148, 163, 184, 0.35), -6px -6px 16px rgba(255, 255, 255, 0.8);
+  --clay-shadow-sm: 4px 4px 10px rgba(148, 163, 184, 0.3), -3px -3px 8px rgba(255, 255, 255, 0.75);
+  --clay-shadow-pressed: inset 4px 4px 10px rgba(148, 163, 184, 0.35), inset -4px -4px 10px rgba(255, 255, 255, 0.7);
+  --clay-shadow-inset: inset 3px 3px 7px rgba(148, 163, 184, 0.28), inset -3px -3px 7px rgba(255, 255, 255, 0.65);
+
   /* ==================== LAYOUT ==================== */
   /* Every consumer reads these — .sidebar, .main-content's margin and .header's
      left offset — so the width is changed here and nowhere else. */
@@ -156,11 +169,11 @@
   --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* ==================== RADII ==================== */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+  /* ==================== RADII — claymorphism scale, capsule-first ==================== */
+  --radius-sm: 14px;
+  --radius-md: 20px;
+  --radius-lg: 28px;
+  --radius-xl: 36px;
   --radius-full: 9999px;
 
   /* Per-tile accent, set inline from JSX. Declared so the fallback is real. */
@@ -218,6 +231,14 @@
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
   --shadow-ring: 0 0 0 3px rgba(96, 165, 250, 0.22);
+
+  /* A pure-white highlight would look wrong on a dark surface, so the
+     "highlight" side becomes a faint light-alpha glow instead, and the shadow
+     side deepens to black — same embossed logic, inverted for a dark ground. */
+  --clay-shadow: 8px 8px 20px rgba(0, 0, 0, 0.5), -6px -6px 16px rgba(255, 255, 255, 0.04);
+  --clay-shadow-sm: 4px 4px 10px rgba(0, 0, 0, 0.45), -3px -3px 8px rgba(255, 255, 255, 0.035);
+  --clay-shadow-pressed: inset 4px 4px 10px rgba(0, 0, 0, 0.5), inset -4px -4px 10px rgba(255, 255, 255, 0.03);
+  --clay-shadow-inset: inset 3px 3px 7px rgba(0, 0, 0, 0.42), inset -3px -3px 7px rgba(255, 255, 255, 0.025);
 }
 
 *, *::before, *::after {
@@ -600,7 +621,7 @@ body {
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
   color: var(--sidebar-ink);
   text-decoration: none;
   font-size: var(--text-md);
@@ -617,11 +638,14 @@ body {
   color: var(--sidebar-ink-strong);
 }
 
-/* Solid indigo pill, per the mockup — no gradient, no glow, no left bar. */
+/* Solid indigo pill, per the mockup — no gradient, no glow, no left bar. A
+   soft dark-on-navy shadow (rather than the light-surface clay pair) keeps
+   the embossed read consistent against the sidebar's own dark ground. */
 .nav-item.active {
   background: var(--sidebar-active-bg);
   color: var(--ink-onbrand);
   font-weight: 600;
+  box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.3), -2px -2px 6px rgba(255, 255, 255, 0.08);
 }
 
 .nav-item:focus-visible {
@@ -776,8 +800,8 @@ body {
      when installed and launched from the home screen. */
   height: calc(var(--header-height) + env(safe-area-inset-top));
   padding-top: env(safe-area-inset-top);
-  background: var(--surface-card);
-  border-bottom: 1px solid var(--line-default);
+  background: var(--surface-page);
+  border-bottom: none;
   display: flex;
   align-items: center;
   padding-left: var(--space-6);
@@ -831,14 +855,15 @@ body {
 
 .header-search input {
   background: var(--surface-sunken);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  border: none;
+  border-radius: var(--radius-full);
   padding: var(--space-2) var(--space-4) var(--space-2) var(--space-8);
   color: var(--ink-strong);
   font-size: var(--text-sm);
   width: 240px;
   outline: none;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), width var(--transition-fast);
+  box-shadow: var(--clay-shadow-inset);
+  transition: box-shadow var(--transition-fast), width var(--transition-fast);
   font-family: inherit;
 }
 
@@ -848,8 +873,7 @@ body {
 
 .header-search input:focus {
   background: var(--surface-card);
-  border-color: var(--line-focus);
-  box-shadow: var(--shadow-ring);
+  box-shadow: var(--clay-shadow-inset), var(--shadow-ring);
   width: 320px;
 }
 
@@ -870,22 +894,34 @@ body {
   flex-shrink: 0;
 }
 
+/* Floating circular clay chip — matches the mockup's header buttons (grid
+   icon, brand mark, bell) each reading as its own puffy button rather than
+   flat icons sitting directly on the bar. */
 .header-btn {
-  background: none;
+  background: var(--surface-card);
   border: none;
   color: var(--ink-muted);
   cursor: pointer;
   padding: var(--space-2);
-  border-radius: var(--radius-md);
-  transition: background var(--transition-fast), color var(--transition-fast);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  box-shadow: var(--clay-shadow-sm);
+  transition: box-shadow var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
   position: relative;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 .header-btn:hover {
-  background: var(--surface-sunken);
   color: var(--ink-strong);
+  transform: translateY(-1px);
+}
+
+.header-btn:active {
+  box-shadow: var(--clay-shadow-pressed);
+  transform: none;
 }
 
 .header-btn.header-brand {
@@ -1026,10 +1062,10 @@ body {
 /* ========================== CARDS ========================== */
 .card {
   background: var(--surface-card);
-  border: 1px solid var(--line-default);
-  border-radius: var(--radius-lg);
+  border: none;
+  border-radius: var(--radius-xl);
   padding: var(--space-5);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--clay-shadow);
 }
 
 .card-header {
@@ -1100,16 +1136,15 @@ body {
 
 .stat-card {
   background: var(--surface-card);
-  border: 1px solid var(--line-default);
-  border-radius: var(--radius-lg);
+  border: none;
+  border-radius: var(--radius-xl);
   padding: var(--space-4) var(--space-5);
-  box-shadow: var(--shadow-xs);
-  transition: box-shadow var(--transition-base), border-color var(--transition-base);
+  box-shadow: var(--clay-shadow);
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
 }
 
 .stat-card:hover {
-  box-shadow: var(--shadow-sm);
-  border-color: var(--line-strong);
+  transform: translateY(-2px);
 }
 
 /* Label row: text left, tinted icon square right — the mockup's layout. */
@@ -1128,22 +1163,28 @@ body {
   line-height: 1.4;
 }
 
-.stat-card .stat-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
+.stat-card .stat-icon,
+.icon-bubble {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   background: var(--tint-brand);
   color: var(--primary-600);
+  box-shadow: var(--clay-shadow-sm);
 }
 
-.stat-card[data-tone='good'] .stat-icon { background: var(--tint-good); color: var(--ink-good); }
-.stat-card[data-tone='warn'] .stat-icon { background: var(--tint-warn); color: var(--ink-warn); }
-.stat-card[data-tone='crit'] .stat-icon { background: var(--tint-crit); color: var(--ink-crit); }
-.stat-card[data-tone='info'] .stat-icon { background: var(--tint-info); color: var(--info-500); }
+.stat-card[data-tone='good'] .stat-icon,
+.icon-bubble.tone-good { background: var(--tint-good); color: var(--ink-good); }
+.stat-card[data-tone='warn'] .stat-icon,
+.icon-bubble.tone-warn { background: var(--tint-warn); color: var(--ink-warn); }
+.stat-card[data-tone='crit'] .stat-icon,
+.icon-bubble.tone-crit { background: var(--tint-crit); color: var(--ink-crit); }
+.stat-card[data-tone='info'] .stat-icon,
+.icon-bubble.tone-info { background: var(--tint-info); color: var(--info-500); }
 
 .stat-card .stat-value {
   font-size: var(--text-kpi);
@@ -1172,12 +1213,16 @@ body {
 }
 
 /* ========================== BUTTONS ========================== */
+/* Claymorphism: capsule shape, no border, dual-tone soft shadow standing in
+   for a border. Two emphasis tiers, both puffy — a solid saturated pill for
+   the strongest call to action, and a paler tinted pill (see .btn-*-soft)
+   for actions that still matter but shouldn't visually shout as loud. */
 .btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 18px;
-  border-radius: var(--radius-md);
+  padding: 11px 20px;
+  border-radius: var(--radius-full);
   font-size: 0.85rem;
   font-weight: 600;
   font-family: inherit;
@@ -1186,80 +1231,76 @@ body {
   transition: all var(--transition-fast);
   white-space: nowrap;
   text-decoration: none;
+  box-shadow: var(--clay-shadow-sm);
 }
 
-/* Flat fills, real shadows. The mockup's buttons are solid colour; a 16px
-   coloured blur reads as a smudge on a light surface. */
 .btn-primary {
   background: var(--primary-600);
   color: var(--ink-onbrand);
-  box-shadow: var(--shadow-xs);
 }
 
 .btn-primary:hover {
   background: var(--primary-700);
-  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary-soft {
+  background: var(--tint-brand);
+  color: var(--primary-700);
+}
+
+.btn-primary-soft:hover {
+  background: var(--primary-100);
 }
 
 .btn-accent {
   background: var(--accent-600);
   color: var(--ink-onbrand);
-  box-shadow: var(--shadow-xs);
 }
 
 .btn-accent:hover {
   background: #047857;
-  box-shadow: var(--shadow-sm);
 }
 
 .btn-danger {
   background: var(--error-600);
   color: var(--ink-onbrand);
-  box-shadow: var(--shadow-xs);
 }
 
 .btn-danger:hover {
   background: #be123c;
-  box-shadow: var(--shadow-sm);
 }
 
 .btn-warn {
   background: var(--warn-600);
   color: var(--ink-onbrand);
-  box-shadow: var(--shadow-xs);
 }
 
 .btn-warn:hover {
   background: #b45309;
-  box-shadow: var(--shadow-sm);
 }
 
 .btn-info {
   background: var(--info-500);
   color: var(--ink-onbrand);
-  box-shadow: var(--shadow-xs);
 }
 
 .btn-info:hover {
   background: #0284c7;
-  box-shadow: var(--shadow-sm);
 }
 
 .btn-ghost {
   background: var(--surface-card);
   color: var(--ink-base);
-  border: 1px solid var(--line-default);
 }
 
 .btn-ghost:hover {
   background: var(--surface-sunken);
   color: var(--ink-strong);
-  border-color: var(--line-strong);
 }
 
 .btn:focus-visible {
   outline: none;
-  box-shadow: var(--shadow-ring);
+  box-shadow: var(--clay-shadow-sm), var(--shadow-ring);
 }
 
 .btn:disabled {
@@ -1270,10 +1311,11 @@ body {
 
 .btn:active {
   transform: scale(0.96);
+  box-shadow: var(--clay-shadow-pressed);
 }
 
 .btn-sm {
-  padding: var(--space-1) var(--space-3);
+  padding: 7px 14px;
   font-size: var(--text-sm);
 }
 
@@ -1284,7 +1326,8 @@ body {
 
 .btn-icon {
   padding: var(--space-2);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-full);
+  aspect-ratio: 1;
 }
 
 .btn-copied,
@@ -1317,22 +1360,25 @@ body {
   margin-bottom: 6px;
 }
 
+/* Claymorphism: no visible border — inputs read as pressed into the surface
+   via an inset dual-tone shadow instead, which is also why the fill is the
+   sunken surface token rather than the flat white/input one. */
 .form-input, .form-select, .form-textarea {
   width: 100%;
-  background: var(--surface-input);
-  border: 1px solid var(--line-default);
-  border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-3);
+  background: var(--surface-sunken);
+  border: none;
+  border-radius: var(--radius-full);
+  padding: 11px var(--space-4);
   color: var(--ink-strong);
   font-size: var(--text-md);
   font-family: inherit;
   outline: none;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow: var(--clay-shadow-inset);
+  transition: box-shadow var(--transition-fast);
 }
 
 .form-input:focus, .form-select:focus, .form-textarea:focus {
-  border-color: var(--line-focus);
-  box-shadow: var(--shadow-ring);
+  box-shadow: var(--clay-shadow-inset), var(--shadow-ring);
 }
 
 .form-input::placeholder { color: var(--ink-muted); }
@@ -1349,10 +1395,10 @@ body {
   position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
   background: none; border: 0; padding: var(--space-2);
   display: flex; align-items: center; justify-content: center;
-  color: var(--ink-muted); cursor: pointer; border-radius: var(--radius-sm);
+  color: var(--ink-muted); cursor: pointer; border-radius: var(--radius-full);
   transition: color var(--transition-fast), background var(--transition-fast);
 }
-.password-field-toggle:hover { color: var(--ink-strong); background: var(--surface-sunken); }
+.password-field-toggle:hover { color: var(--ink-strong); background: var(--surface-card-hover); }
 .password-field-toggle:focus-visible { outline: none; box-shadow: var(--shadow-ring); }
 
 /* A disabled control still has to be readable — it holds a value the user needs
@@ -1423,11 +1469,12 @@ tbody tr:last-child td {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 3px var(--space-2);
-  border-radius: var(--radius-sm);
+  padding: 4px var(--space-3);
+  border-radius: var(--radius-full);
   font-size: var(--text-2xs);
   font-weight: 600;
   white-space: nowrap;
+  box-shadow: var(--clay-shadow-sm);
 }
 
 /* Tinted background + darker ink of the same hue, so both themes stay legible.
@@ -1457,12 +1504,13 @@ tbody tr:last-child td {
 
 .modal {
   background: var(--surface-raised);
-  border: 1px solid var(--line-default);
+  border: none;
   border-radius: var(--radius-xl);
   width: 100%;
   max-width: 520px;
   max-height: 85vh;
   overflow-y: auto;
+  box-shadow: var(--clay-shadow);
   animation: slideUp var(--transition-base);
 }
 
@@ -1484,8 +1532,8 @@ tbody tr:last-child td {
   border: none;
   color: var(--ink-muted);
   cursor: pointer;
-  padding: 4px;
-  border-radius: var(--radius-sm);
+  padding: 6px;
+  border-radius: var(--radius-full);
   transition: all var(--transition-fast);
 }
 
@@ -1643,7 +1691,9 @@ tbody tr:last-child td {
   height: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   background: var(--surface-raised);
-  border-top: 1px solid var(--line-subtle);
+  border-top: none;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: 0 -6px 20px rgba(148, 163, 184, 0.25);
   z-index: 100;
   padding-left: 8px;
   padding-right: 8px;
@@ -1656,8 +1706,8 @@ tbody tr:last-child td {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 6px 12px;
-  border-radius: var(--radius-md);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
   color: var(--ink-muted);
   text-decoration: none;
   font-size: 0.65rem;
@@ -1668,10 +1718,15 @@ tbody tr:last-child td {
 
 .mobile-nav-item.active {
   color: var(--primary-600);
+  background: var(--tint-brand);
 }
 
 :root[data-theme='dark'] .mobile-nav-item.active {
   color: var(--primary-400);
+}
+
+:root[data-theme='dark'] .mobile-nav {
+  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.4);
 }
 
 .mobile-nav-item .nav-icon {
@@ -1691,9 +1746,9 @@ tbody tr:last-child td {
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   background: var(--surface-raised);
-  border: 1px solid var(--line-default);
+  border: none;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--clay-shadow);
   color: var(--ink-strong);
   font-size: var(--text-sm);
 }
@@ -1716,6 +1771,7 @@ tbody tr:last-child td {
 .login-page {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: var(--space-6);
@@ -1724,30 +1780,60 @@ tbody tr:last-child td {
 
 .login-card {
   background: var(--surface-card);
-  border: 1px solid var(--line-default);
+  border: none;
   border-radius: var(--radius-xl);
   padding: var(--space-10);
   width: 100%;
   max-width: 420px;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--clay-shadow);
 }
 
-.login-logo {
+/* The mark floats above the card as its own puffy badge, per the mockup —
+   not inline inside the card like the old lockup. */
+.login-lockup {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: var(--space-6);
+  width: 100%;
+  max-width: 420px;
 }
 
-/* The lockup is the heading, centred in a 420px card. */
-.login-logo h1 {
+.login-badge {
+  width: 88px;
+  height: 88px;
+  margin: 0 auto var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--surface-card);
+  box-shadow: var(--clay-shadow);
   display: flex;
+  align-items: center;
   justify-content: center;
+  padding: var(--space-4);
 }
 
-.login-logo h1 .brand-logo {
-  font-size: 22px;
+.login-badge .brand-logo,
+.login-badge .brand-mark {
+  width: 100%;
+  height: 100%;
 }
 
-.login-logo p {
+.login-lockup h1 {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--ink-strong);
+}
+
+.login-heading {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.login-heading h2 {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--ink-strong);
+}
+
+.login-heading p {
   font-size: var(--text-md);
   color: var(--ink-muted);
   margin-top: var(--space-1);

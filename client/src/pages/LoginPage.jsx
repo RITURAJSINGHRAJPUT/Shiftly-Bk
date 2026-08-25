@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import BrandLogo from '../components/BrandLogo';
+import BrandLogo, { BRAND_NAME } from '../components/BrandLogo';
 import PasswordInput from '../components/PasswordInput';
 import { KeyRound, Mail, AlertCircle, ArrowRight } from 'lucide-react';
 
@@ -36,14 +36,18 @@ export default function LoginPage() {
 
   return (
     <div className="login-page">
+      <div className="login-lockup">
+        <div className="login-badge">
+          <BrandLogo variant="mark" alt="" />
+        </div>
+        {/* Live text, not an image with alt, so it stays selectable/translatable. */}
+        <h1>{BRAND_NAME}</h1>
+      </div>
+
       <div className="login-card">
-        <div className="login-logo">
-          {/* The lockup is the heading: the mark plus the name as live text, so
-              the h1 has real text in it rather than an image with alt. */}
-          <h1>
-            <BrandLogo variant="wordmark" />
-          </h1>
-          <p>Workforce Intelligence</p>
+        <div className="login-heading">
+          <h2>Welcome Back</h2>
+          <p>Sign in to manage your shifts</p>
         </div>
 
         {error && (
@@ -83,7 +87,7 @@ export default function LoginPage() {
             />
           </div>
 
-          <button type="submit" className="btn btn-primary w-full justify-between" disabled={loading}>
+          <button type="submit" className="btn btn-primary-soft w-full justify-between" disabled={loading}>
             <span>{loading ? 'Logging in...' : 'Sign In'}</span>
             <ArrowRight size={16} />
           </button>
