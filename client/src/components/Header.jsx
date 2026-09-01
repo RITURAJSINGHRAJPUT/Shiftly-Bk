@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../api/client';
 import BrandLogo from './BrandLogo';
-import { Menu, Search, Bell, X, ChevronDown, LogOut, User } from 'lucide-react';
+import { Menu, Search, Bell, X, LogOut, User } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ROLES } from '../constants';
 
@@ -43,7 +43,6 @@ function UserMenu() {
           <div className="user-name">{user?.name}</div>
           <div className="user-role">{ROLES[user?.role] || user?.role}</div>
         </div>
-        <ChevronDown size={16} className="icon-muted" />
       </button>
 
       {open && (

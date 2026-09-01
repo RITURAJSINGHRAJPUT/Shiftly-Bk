@@ -3,16 +3,15 @@ import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { useScope } from '../contexts/ScopeContext';
 import Modal from '../components/Modal';
+import { DEPARTMENTS } from '../constants';
 import { ArrowLeftRight, Plus, CheckCircle, XCircle, Clock, Ban } from 'lucide-react';
 
 const STATUS_STYLE = {
   PENDING: { cls: 'badge-warn', icon: Clock },
-  APPROVED: { cls: 'badge-good', icon: CheckCircle },
-  REJECTED: { cls: 'badge-crit', icon: XCircle },
+  APPROVED: { cls: 'badge-accent', icon: CheckCircle },
+  REJECTED: { cls: 'badge-error', icon: XCircle },
   CANCELLED: { cls: 'badge-ghost', icon: Ban },
 };
-
-const DEPARTMENTS = ['KITCHEN', 'SERVICE', 'HOUSEKEEPING'];
 
 const ROSTERABLE_ROLES = ['STAFF', 'HEAD_CHEF', 'MASTER_OF_HOUSE'];
 
@@ -230,7 +229,7 @@ export default function TransfersPage() {
                       </td>
                     )}
                     <td>
-                      <span className={`badge ${t.type === 'OUTLET' ? 'badge-info' : 'badge-brand'}`}>
+                      <span className={`badge ${t.type === 'OUTLET' ? 'badge-info' : 'badge-primary'}`}>
                         {t.type}
                       </span>
                     </td>

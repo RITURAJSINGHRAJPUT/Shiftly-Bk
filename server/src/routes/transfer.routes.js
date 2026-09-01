@@ -8,6 +8,21 @@ import { logAudit } from '../lib/audit.js';
 
 const router = Router();
 
+/**
+ * HR/ADMIN/SUPER_ADMIN may act on any transfer. A locked manager may only act
+ * on a transfer touching their own outlet — either side of it, since both the
+ * losing and gaining outlet have a legitimate interest in the move. Mirrors
+ * leaveApprovalDenied() in leave.routes.js.
+ */
+function transferApprovalDenied(req, transfer) {
+  if (hasGlobalScope(req.user)) return null;
+  const oid = req.user.outletId;
+  if (transfer.fromOutletId !== oid && transfer.targetOutletId !== oid) {
+    return 'You can only act on transfer requests touching your own outlet';
+  }
+  return null;
+}
+
 const transferInclude = {
   employee: {
     select: {
@@ -76,6 +91,14 @@ router.post('/', authenticateToken, async (req, res) => {
 
 router.post('/:id/approve', authenticateToken, can('TRANSFER_APPROVE'), async (req, res) => {
   try {
+    const transfer = await prisma.transferRequest.findUnique({
+      where: { id: req.params.id },
+      select: { fromOutletId: true, targetOutletId: true },
+    });
+    if (!transfer) return res.status(404).json({ error: 'Transfer request not found' });
+    const denied = transferApprovalDenied(req, transfer);
+    if (denied) return res.status(403).json({ error: denied });
+
     const result = await approveTransfer(prisma, req.params.id, req.user.id);
 
     logAudit({ action: 'TRANSFER_APPROVE', entity: 'TransferRequest', entityId: req.params.id, actor: req.user, details: { employeeName: result.employee?.name, type: result.type } });
@@ -88,6 +111,14 @@ router.post('/:id/approve', authenticateToken, can('TRANSFER_APPROVE'), async (r
 
 router.post('/:id/reject', authenticateToken, can('TRANSFER_REJECT'), async (req, res) => {
   try {
+    const transfer = await prisma.transferRequest.findUnique({
+      where: { id: req.params.id },
+      select: { fromOutletId: true, targetOutletId: true },
+    });
+    if (!transfer) return res.status(404).json({ error: 'Transfer request not found' });
+    const denied = transferApprovalDenied(req, transfer);
+    if (denied) return res.status(403).json({ error: denied });
+
     const result = await rejectTransfer(prisma, req.params.id, req.user.id, req.body.reason);
 
     logAudit({ action: 'TRANSFER_REJECT', entity: 'TransferRequest', entityId: req.params.id, actor: req.user, details: { employeeName: result.employee?.name, reason: req.body.reason } });

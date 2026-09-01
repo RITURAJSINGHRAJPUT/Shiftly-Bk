@@ -268,22 +268,23 @@ router.post('/:id/reset-password', authenticateToken, can('EMPLOYEE_RESET_PW'), 
 
 // DELETE /api/employees/:id (soft delete)
 //
-// Deactivation is now a real lockout: the login handler refuses an inactive
-// account, which it did not before.
+// Deactivation is a real lockout: the login handler refuses an inactive
+// account. Not a hard delete — that would permanently erase the employee's
+// shift/attendance/leave history (retroactively changing dashboard numbers
+// for weeks that already happened) and would need a foreign-key cascade
+// through TransferRequest as well. Bulk removal at that scope already exists,
+// gated at SUPER_ADMIN with a typed confirmation (see wipe-staff below); this
+// single-employee action stays reversible and ADMIN-level.
 router.delete('/:id', authenticateToken, can('EMPLOYEE_DEACTIVATE'), async (req, res) => {
   try {
     const id = req.params.id;
-    const target = await prisma.employee.findUnique({ where: { id }, select: { name: true } });
-    await prisma.$transaction(async (tx) => {
-      await tx.notification.deleteMany({ where: { employeeId: id } });
-      await tx.attendance.deleteMany({ where: { employeeId: id } });
-      await tx.leave.deleteMany({ where: { employeeId: id } });
-      await tx.shift.deleteMany({ where: { employeeId: id } });
-      await tx.employee.delete({ where: { id } });
+    const employee = await prisma.employee.update({
+      where: { id },
+      data: { isActive: false },
     });
-    logAudit({ action: 'EMPLOYEE_DELETE', entity: 'Employee', entityId: id, actor: req.user, details: { employeeName: target?.name } });
+    logAudit({ action: 'EMPLOYEE_DEACTIVATE', entity: 'Employee', entityId: id, actor: req.user, details: { employeeName: employee.name } });
 
-    res.json({ message: 'Employee permanently deleted' });
+    res.json({ message: 'Employee deactivated' });
   } catch (err) {
     if (err.code === 'P2025') {
       return res.status(404).json({ error: 'Employee not found' });
@@ -364,6 +365,11 @@ router.post('/wipe-staff', authenticateToken, can('STAFF_WIPE'), async (req, res
       const attendance = await tx.attendance.deleteMany({ where: { employeeId } });
       const leaves = await tx.leave.deleteMany({ where: { employeeId } });
       const shifts = await tx.shift.deleteMany({ where: { employeeId } });
+      // TransferRequest.employee is a required relation with no onDelete
+      // clause, so it defaults to Restrict — any staff member who ever
+      // submitted a transfer request would otherwise abort this whole
+      // transaction with a foreign-key violation.
+      await tx.transferRequest.deleteMany({ where: { employeeId } });
       const employees = await tx.employee.deleteMany({ where: { id: employeeId } });
 
       return {

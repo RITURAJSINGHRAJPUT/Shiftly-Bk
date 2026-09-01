@@ -169,7 +169,7 @@ export default function LeavesPage() {
                         Volunteer Cover
                       </button>
                     )}
-                    {isManager && (
+                    {isManager && canActOn(el) && (
                       <button className="btn btn-ghost btn-sm" onClick={() => handleAutoAssign(el.id)}>
                         Auto Assign Now
                       </button>

@@ -58,6 +58,23 @@ export async function processLeaveRequest(prisma, employeeId, leaveData) {
     if (colleagueOnLeave) autoApprove = false;
   }
 
+  // Auto-approval creates the leave directly, bypassing approveLeave() and
+  // the shift-reallocation/replacement search it runs. If the employee is
+  // already rostered that day, skipping straight to APPROVED would leave the
+  // shift assigned to someone now on leave, with no replacement found and no
+  // one notified. Fall back to PENDING so a manager reviews it through the
+  // normal approve flow instead, which does run reallocation.
+  if (autoApprove) {
+    const scheduledShift = await prisma.shift.findFirst({
+      where: {
+        employeeId,
+        status: 'ASSIGNED',
+        date: { gte: start, lte: end },
+      },
+    });
+    if (scheduledShift) autoApprove = false;
+  }
+
   const leave = await prisma.leave.create({
     data: {
       employeeId,
@@ -135,7 +152,11 @@ export async function approveLeave(prisma, leaveId, approvedBy) {
     },
   });
 
-  return { leave: updatedLeave, reallocations };
+  // `employee` at the top level (not just nested under `leave`) so callers —
+  // namely the route's audit-log call, which reads `result.employee?.name` —
+  // get it without needing a second fetch; `updatedLeave` itself has no
+  // `include` and would otherwise carry no employee data.
+  return { leave: updatedLeave, employee: leave.employee, reallocations };
 }
 
 /**
@@ -218,6 +239,7 @@ export async function rejectLeave(prisma, leaveId, approvedBy, reason) {
       status: 'REJECTED',
       approvedBy,
     },
+    include: { employee: true },
   });
 
   await prisma.notification.create({
@@ -229,5 +251,7 @@ export async function rejectLeave(prisma, leaveId, approvedBy, reason) {
     },
   });
 
-  return leave;
+  // `employee` at the top level too, matching approveLeave()'s shape — the
+  // route's audit-log call reads `result.employee?.name`.
+  return { leave, employee: leave.employee };
 }

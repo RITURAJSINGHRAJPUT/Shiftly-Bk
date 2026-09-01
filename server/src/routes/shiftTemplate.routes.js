@@ -62,6 +62,21 @@ function readTemplateBody(body, { partial = false, currentDepartment = null } = 
   // Empty string means "general" — an explicit null, not an accident.
   if (section !== undefined) data.section = section ? String(section).trim() : null;
 
+  // Sections (stations) are a KITCHEN-only concept — Service/Housekeeping
+  // don't run stations. Judge against the *effective* department: whichever
+  // this request sets, or the row's existing one on a partial update that
+  // doesn't touch department.
+  const effectiveDepartment = data.department !== undefined ? data.department : currentDepartment;
+  if (effectiveDepartment && effectiveDepartment !== 'KITCHEN') {
+    if (data.section) {
+      return { error: 'section only applies to KITCHEN patterns' };
+    }
+    // Department just changed away from KITCHEN in this request — drop any
+    // station left over from when it was one, even though this request
+    // didn't explicitly touch section.
+    if (data.department !== undefined) data.section = null;
+  }
+
   const time = /^([01]\d|2[0-3]):[0-5]\d$/;
   for (const [key, value] of [['startTime', startTime], ['endTime', endTime]]) {
     if (value !== undefined) {

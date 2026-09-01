@@ -99,10 +99,11 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
   // Local-day bounds matter here as much as anywhere: with UTC parsing the
   // first day's existing shifts fell outside the range, so the allocator could
   // not see them and would happily double-book those people.
+  const dateRangeBounds = localDateRange(startDate, endDate);
   const existingShifts = await prisma.shift.findMany({
     where: {
       outletId,
-      date: localDateRange(startDate, endDate),
+      date: dateRangeBounds,
     },
   });
 
@@ -111,7 +112,6 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
   });
 
   // Clear previous auto-allocated data so re-runs are idempotent.
-  const dateRangeBounds = localDateRange(startDate, endDate);
   const employeeIds = employees.map(e => e.id);
 
   await prisma.shift.deleteMany({
@@ -121,8 +121,8 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
   await prisma.leave.deleteMany({
     where: {
       reason: 'Weekly off (auto-assigned)',
-      startDate: dateRangeBounds.gte ? { gte: dateRangeBounds.gte } : undefined,
-      endDate: dateRangeBounds.lte ? { lte: dateRangeBounds.lte } : undefined,
+      startDate: { gte: dateRangeBounds.gte },
+      endDate: { lt: dateRangeBounds.lt },
       employeeId: { in: employeeIds },
     },
   });
@@ -130,8 +130,8 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
   for (const emp of employees) {
     emp.leaves = (emp.leaves || []).filter(l =>
       l.reason !== 'Weekly off (auto-assigned)' ||
-      new Date(l.startDate) < (dateRangeBounds.gte || 0) ||
-      new Date(l.endDate) > (dateRangeBounds.lte || Infinity)
+      new Date(l.startDate) < dateRangeBounds.gte ||
+      new Date(l.endDate) >= dateRangeBounds.lt
     );
   }
 

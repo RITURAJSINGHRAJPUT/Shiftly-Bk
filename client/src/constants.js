@@ -23,7 +23,7 @@ export const DEPARTMENTS = ['KITCHEN', 'SERVICE', 'HOUSEKEEPING'];
 
 export const STATIONS = ['Pizza', 'Pasta', 'Drinks', 'Sushi', 'Wok', 'Side', 'Pass'];
 
-export const departmentHasStations = () => true;
+export const departmentHasStations = (department) => department === 'KITCHEN';
 
 /**
  * Shift rows per station on the sheet.

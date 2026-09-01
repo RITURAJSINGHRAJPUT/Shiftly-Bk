@@ -1334,7 +1334,6 @@ body {
 .btn-copied:hover {
   background: var(--tint-good);
   color: var(--ink-good);
-  border-color: var(--accent-500);
 }
 
 @keyframes btnCopiedPop {

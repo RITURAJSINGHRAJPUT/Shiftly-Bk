@@ -133,12 +133,12 @@ export default function EmployeesPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to permanently delete this employee? This cannot be undone.')) return;
+    if (!window.confirm('Deactivate this employee? They will no longer be able to sign in, but their shift, attendance and leave history is kept.')) return;
     try {
       await api.delete(`/employees/${id}`);
       loadData();
     } catch (err) {
-      alert(err.message || 'Failed to delete');
+      alert(err.message || 'Failed to deactivate');
     }
   };
 

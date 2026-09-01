@@ -2,6 +2,7 @@ import { Router } from 'express';
 import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { can } from '../lib/capabilities.js';
+import { hasGlobalScope, MATCH_NOTHING } from '../lib/scope.js';
 import { logAudit } from '../lib/audit.js';
 
 const router = Router();
@@ -10,7 +11,11 @@ const router = Router();
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const where = { isActive: true };
-    if (req.query.org) where.organizationId = req.query.org;
+    if (!hasGlobalScope(req.user)) {
+      where.outlets = { some: { id: req.user.outletId || MATCH_NOTHING } };
+    } else if (req.query.org) {
+      where.organizationId = req.query.org;
+    }
 
     const brands = await prisma.brand.findMany({
       where,
