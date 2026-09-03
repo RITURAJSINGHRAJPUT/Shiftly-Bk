@@ -43,9 +43,24 @@ services:
       - key: DATABASE_URL
         sync: false
 
+      # Keys for the public staff API, comma separated. Secret, so set in the
+      # dashboard. Unset means GET /api/public/staff answers 503 rather than
+      # opening up — an unconfigured deploy never publishes the roster.
+      - key: PUBLIC_API_KEYS
+        sync: false
+
+      # Origins allowed to call that API from a browser, comma separated and
+      # matched exactly (apex and www are different origins). Unset means no
+      # other website's JavaScript can read it.
+      - key: PUBLIC_API_ORIGINS
+        sync: false
+
 # RATE_LIMIT_DISABLED is deliberately absent. It exists for local testing, where
 # the suites sign in dozens of times per run; on a deployed instance the login
 # limiter must be live.
 #
 # CORS_ORIGIN is also absent: the client is served from this same service, so
-# every request is same-origin and there is nothing to permit.
+# every request is same-origin and there is nothing to permit. It stays absent
+# even now that the public API is browser-callable — that endpoint carries its
+# own CORS, scoped to its router, so opening the app-wide one would needlessly
+# expose every JWT-guarded endpoint to cross-origin reads as well.

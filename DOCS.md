@@ -3,7 +3,8 @@
 CRM and shift management for multi-outlet hospitality. Express + Prisma +
 PostgreSQL API, React PWA client.
 
-For install and run instructions see **[RUNNING.md](RUNNING.md)**.
+For install and run instructions see **[RUNNING.md](RUNNING.md)**. For the
+complete endpoint-by-endpoint API reference see **[API.md](API.md)**.
 
 ---
 
@@ -171,8 +172,13 @@ leave old tokens resolving to `undefined`, which as noted above means *no filter
 
 ## API reference
 
-All routes require `Authorization: Bearer <token>` except `POST /api/auth/login`
-and `GET /api/health`.
+> **Every endpoint, in full — parameters, bodies, responses and guards — is in
+> [API.md](API.md).** What follows is the summary; where the two disagree,
+> API.md is the one checked against the routers.
+
+All routes require `Authorization: Bearer <token>` except `POST /api/auth/login`,
+`GET /api/health`, and the key-gated public API — see
+**[PUBLIC_API.md](PUBLIC_API.md)**.
 
 ### Auth
 | Method | Path | Notes |
@@ -204,6 +210,17 @@ defeat attendance validation.
 | `GET` | `/api/employees/stats/overview` | — |
 
 Passwords are never returned; every handler strips the field.
+
+### Public integration API
+| Method | Path | Guard |
+|---|---|---|
+| `GET` | `/api/public/staff?org=&brand=&outlet=&department=&role=&includeInactive=` | `X-API-Key` |
+
+Staff grouped by outlet, for consumers outside Shiftly. No JWT — the key comes
+from `PUBLIC_API_KEYS`, and with that unset the endpoint answers 503 rather than
+opening up. Fields are an allowlist: no email, phone, or geofence, and
+`SUPER_ADMIN` / `ADMIN` / `HR` accounts are excluded by role. Full reference in
+**[PUBLIC_API.md](PUBLIC_API.md)**.
 
 ### Shifts and patterns
 | Method | Path | Guard |

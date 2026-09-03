@@ -18,12 +18,29 @@ import outletRoutes from './routes/outlet.routes.js';
 import shiftTemplateRoutes from './routes/shiftTemplate.routes.js';
 import transferRoutes from './routes/transfer.routes.js';
 import auditRoutes from './routes/audit.routes.js';
+import publicRoutes from './routes/public.routes.js';
 import { apiLimiter } from './middleware/rateLimit.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+/**
+ * One proxy hop — Render's.
+ *
+ * Render terminates TLS at a load balancer, so without this every request looks
+ * like it came from that balancer and req.ip is the same address for the whole
+ * internet. Every rate limiter here is keyed on the address, so they would all
+ * degrade into one shared bucket: one noisy caller could lock everyone out of
+ * login, and the per-visitor budget on the public API would not exist.
+ *
+ * `1`, not `true`. Trusting the whole chain lets a caller prepend their own
+ * X-Forwarded-For and mint a fresh bucket per request, which is worse than no
+ * limiter at all because it looks like one is working. One hop is exactly what
+ * sits in front of this app; locally there is no proxy and this is inert.
+ */
+app.set('trust proxy', 1);
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /**
@@ -59,7 +76,11 @@ app.use((req, res, next) => {
   res.on('finish', () => {
     const duration = Date.now() - start;
     if (req.path !== '/api/notifications/count') {
-      console.log(`${req.method} ${req.path} ${res.statusCode} ${duration}ms`);
+      // Public API calls carry no user, so the key fingerprint set by
+      // requireApiKey is the only way to tell one integrator from another
+      // after the fact. It is a hash prefix, never the key.
+      const caller = req.apiKeyLabel ? ` key:${req.apiKeyLabel}` : '';
+      console.log(`${req.method} ${req.path} ${res.statusCode} ${duration}ms${caller}`);
     }
   });
   next();
@@ -83,6 +104,10 @@ app.use('/api/outlets', outletRoutes);
 app.use('/api/shift-templates', shiftTemplateRoutes);
 app.use('/api/transfers', transferRoutes);
 app.use('/api/audit-logs', auditRoutes);
+
+// The one namespace that is not JWT gated. Its own key check and its own rate
+// limit live on the router itself; apiLimiter above still applies as a backstop.
+app.use('/api/public', publicRoutes);
 
 /**
  * Health check — deliberately able to fail.

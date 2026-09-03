@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 
 /**
  * Rate limits.
@@ -36,6 +36,36 @@ export const loginLimiter = rateLimit({
 export const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   limit: 600,
+  skip: () => disabled(),
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Slow down and try again shortly.' },
+});
+
+/**
+ * The public integration API.
+ *
+ * Keyed on the API key *and* the caller's address, not either alone.
+ *
+ * Key alone was wrong once this became a browser API: every visitor to the
+ * consumer's website sends the same key, so they would all draw down one 60/min
+ * budget and a moderately busy page would rate-limit its own readers. Address
+ * alone would let one consumer's traffic count against another's when both sit
+ * behind the same NAT. The pair gives each visitor of each consumer their own
+ * budget.
+ *
+ * `ipKeyGenerator` takes the address *string* — passing (req, res) returns the
+ * literal "[object Object]" for every caller, which silently collapses all of
+ * them into a single bucket. It masks IPv6 down to its subnet, because a v6
+ * caller can otherwise rotate through a /64 for free.
+ *
+ * Depends on `app.set('trust proxy', …)` in index.js: behind Render's proxy
+ * req.ip is the proxy without it, which would undo the whole point.
+ */
+export const publicApiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 60,
+  keyGenerator: (req) => `${req.get('x-api-key')?.trim() || 'anon'}:${ipKeyGenerator(req.ip)}`,
   skip: () => disabled(),
   standardHeaders: 'draft-7',
   legacyHeaders: false,
