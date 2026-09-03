@@ -4,6 +4,12 @@ A read-only integration surface for systems outside Shiftly — a partner
 dashboard, a BI job, a careers page. One endpoint today: the staff roster,
 grouped by outlet.
 
+**Base URL:** `https://shiftly-bk.onrender.com`
+
+A browsable version of this reference, written for whoever is integrating on the
+other end, is published at
+<https://claude.ai/code/artifact/1692506a-a2ac-4450-9a9a-61461a0b9516>.
+
 It is the only part of the API that is not behind a login. A shared API key
 stands in for the user.
 
@@ -28,6 +34,25 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
 without a key: an unconfigured deployment fails closed rather than publishing
 the roster to the internet.
 
+### Allowing a browser to call it
+
+Browser JavaScript on another site is blocked by CORS until its origin is listed
+in `PUBLIC_API_ORIGINS`:
+
+```
+PUBLIC_API_ORIGINS=https://example.com,https://www.example.com
+```
+
+Matched exactly, so the apex and `www` forms are separate entries. Unset means no
+other site's JavaScript can read the API; server-to-server callers are unaffected
+either way, since CORS is enforced by browsers only.
+
+Both variables are set in the Render dashboard, not in `render.yaml` — the
+blueprint lists them as `sync: false` so it records that they exist without
+carrying their values.
+
+### Keys
+
 Give each consumer its own key. Revoking one is then a matter of removing it
 from the list and restarting, without disturbing anyone else. Server logs
 record a six-character fingerprint of the key used, never the key itself, so
@@ -38,7 +63,7 @@ requests can be attributed after the fact.
 ## `GET /api/public/staff`
 
 ```bash
-curl -s -H 'X-API-Key: YOUR_KEY' https://your-host/api/public/staff
+curl -s -H 'X-API-Key: YOUR_KEY' https://shiftly-bk.onrender.com/api/public/staff
 ```
 
 The key goes in `X-API-Key`. `Authorization: Bearer YOUR_KEY` is accepted too,
@@ -155,6 +180,17 @@ Deliberately absent:
   from `server/src/lib/capabilities.js`, whose guards are role-based and need a
   logged-in user; a key has no role. The gate here is `requireApiKey` in
   `server/src/middleware/apiKey.js`.
-- Browsers on another origin are blocked by CORS unless that origin is listed
-  in `CORS_ORIGIN`. The intended use is server to server.
+- CORS for this API is scoped to its own router (`server/src/middleware/publicCors.js`)
+  and driven by `PUBLIC_API_ORIGINS`. The app-wide `CORS_ORIGIN` stays unset:
+  opening that to serve one endpoint would expose every JWT-guarded route to
+  cross-origin reads as well.
+- A key embedded in browser JavaScript is readable by anyone who views source. It
+  is not a secret there — it is revocable, it identifies the consumer in logs, and
+  it keeps casual traffic off the endpoint. The data being non-PII is what makes
+  that acceptable.
+- The rate limit is 60/min per **visitor**, not per key: one key is shared by every
+  visitor to the consumer's site, so a key-only budget would rate-limit its own
+  readers. Responses carry `Cache-Control: public, max-age=300`.
+- Render's free instance sleeps after ~15 minutes idle; the first call after that
+  takes ~50s. Consumers need a generous timeout.
 - Every other endpoint in the system is documented in **[API.md](API.md)**.
