@@ -277,7 +277,7 @@ against live data.
 | **[RUNNING.md](RUNNING.md)** | Prerequisites, first-time setup, day-to-day running, every demo credential, brand assets, troubleshooting |
 | **[DOCS.md](DOCS.md)** | Architecture, full data model, scoping rules, the engines, client structure, design system, conventions and traps |
 | **[API.md](api/API.md)** | Complete API reference — every endpoint, its guard, parameters, body and response |
-| **[PUBLIC_API.md](api/PUBLIC_API.md)** | The key-gated integration API for consumers outside Shiftly |
+| **[PUBLIC_API.md](api/PUBLIC_API.md)** | The key-gated integration API for consumers outside Shiftly, and the two published pages to hand an integrator |
 | **[ACCESS.md](ACCESS.md)** | Who can do what, by role. Generated from `server/src/lib/capabilities.js` |
 | `implementation_plan.md` | The original build plan. Historical — trust the two above where they disagree |
 

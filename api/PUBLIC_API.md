@@ -6,9 +6,15 @@ grouped by outlet.
 
 **Base URL:** `https://shiftly-bk.onrender.com`
 
-A browsable version of this reference, written for whoever is integrating on the
-other end, is published at
-<https://claude.ai/code/artifact/1692506a-a2ac-4450-9a9a-61461a0b9516>.
+Two browsable pages are published for whoever is integrating on the other end:
+
+- **[Step-by-step guide](https://claude.ai/code/artifact/720061da-49f4-4e3d-b315-2bb21ea81cb7)**
+  — a walkthrough from one `curl` call to a working staff list on their page. Send
+  this one first.
+- **[API reference](https://claude.ai/code/artifact/1692506a-a2ac-4450-9a9a-61461a0b9516)**
+  — every parameter, field and status code, to come back to.
+
+Neither page contains a key.
 
 It is the only part of the API that is not behind a login. A shared API key
 stands in for the user.
