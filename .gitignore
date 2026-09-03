@@ -6,3 +6,9 @@ dist/
 signing.keystore
 signing-key-info.txt
 md/
+
+# Holds live API keys for the public staff endpoint. This repository is public,
+# so a key committed here would be readable by anyone within seconds and would
+# stay in the history after any later deletion. The API reference lives here too
+# and is kept local for the same reason.
+api/

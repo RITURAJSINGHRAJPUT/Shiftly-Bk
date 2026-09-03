@@ -3,8 +3,9 @@
 CRM and shift management for multi-outlet hospitality. Express + Prisma +
 PostgreSQL API, React PWA client.
 
-For install and run instructions see **[RUNNING.md](RUNNING.md)**. For the
-complete endpoint-by-endpoint API reference see **[API.md](api/API.md)**.
+For install and run instructions see **[RUNNING.md](RUNNING.md)**. The
+exhaustive endpoint-by-endpoint reference lives in `api/`, which is kept out of
+version control — see [API reference](#api-reference) below for the summary.
 
 ---
 
@@ -172,13 +173,15 @@ leave old tokens resolving to `undefined`, which as noted above means *no filter
 
 ## API reference
 
-> **Every endpoint, in full — parameters, bodies, responses and guards — is in
-> [API.md](api/API.md).** What follows is the summary; where the two disagree,
-> API.md is the one checked against the routers.
+> **The exhaustive version — every parameter, body, response and guard — is
+> `api/API.md`, which is not in this repository.** `api/` is gitignored because
+> it also holds live API keys and this repo is public; ask a maintainer for a
+> copy. What follows is the summary. Where the two disagree, trust `api/API.md`:
+> it was checked line by line against the routers.
 
 All routes require `Authorization: Bearer <token>` except `POST /api/auth/login`,
-`GET /api/health`, and the key-gated public API — see
-**[PUBLIC_API.md](api/PUBLIC_API.md)**.
+`GET /api/health`, and the key-gated public API — summarised under
+[Public integration API](#public-integration-api) below.
 
 ### Auth
 | Method | Path | Notes |
@@ -219,8 +222,9 @@ Passwords are never returned; every handler strips the field.
 Staff grouped by outlet, for consumers outside Shiftly. No JWT — the key comes
 from `PUBLIC_API_KEYS`, and with that unset the endpoint answers 503 rather than
 opening up. Fields are an allowlist: no email, phone, or geofence, and
-`SUPER_ADMIN` / `ADMIN` / `HR` accounts are excluded by role. Full reference in
-**[PUBLIC_API.md](api/PUBLIC_API.md)**.
+`SUPER_ADMIN` / `ADMIN` / `HR` accounts are excluded by role. The full
+reference, along with key issuing and origin allowlisting, is `api/PUBLIC_API.md`
+— outside version control, since `api/` also holds live keys.
 
 ### Shifts and patterns
 | Method | Path | Guard |
