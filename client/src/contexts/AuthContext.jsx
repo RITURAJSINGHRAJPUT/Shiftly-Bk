@@ -64,7 +64,7 @@ export function AuthProvider({ children }) {
   };
 
   const isAdmin = user && ['SUPER_ADMIN', 'ADMIN', 'HR'].includes(user.role);
-  const isManager = user && ['SUPER_ADMIN', 'ADMIN', 'HR', 'MASTER_OF_HOUSE', 'HEAD_CHEF'].includes(user.role);
+  const isManager = user && ['SUPER_ADMIN', 'ADMIN', 'HR', 'OUTLET_MANAGER', 'MASTER_OF_HOUSE', 'HEAD_CHEF'].includes(user.role);
 
   return (
     <AuthContext.Provider

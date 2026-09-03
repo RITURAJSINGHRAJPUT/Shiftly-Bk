@@ -2,7 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { can } from '../lib/capabilities.js';
+import { can, canOrOutletManager } from '../lib/capabilities.js';
 import { outletScope, outletInclude, GLOBAL_SCOPE_ROLES } from '../lib/scope.js';
 import { generateTemporaryPassword } from '../lib/passwords.js';
 import { logAudit } from '../lib/audit.js';
@@ -32,9 +32,16 @@ function readAssignment(role, { outletId, department, skills }, existing = {}) {
   }
 
   const nextOutlet = outletId !== undefined ? outletId : existing.outletId;
-  const nextDepartment = department !== undefined ? department : existing.department;
-
   if (!nextOutlet) return { error: 'outletId is required for this role' };
+
+  // An Outlet Manager oversees the whole restaurant, not one department —
+  // no department or stations to assign, unlike Head Chef/Master of
+  // House/Staff, who each work one.
+  if (role === 'OUTLET_MANAGER') {
+    return { data: { outletId: nextOutlet, department: null, skills: [] } };
+  }
+
+  const nextDepartment = department !== undefined ? department : existing.department;
   if (!nextDepartment) return { error: 'department is required for this role' };
 
   return {
@@ -44,6 +51,24 @@ function readAssignment(role, { outletId, department, skills }, existing = {}) {
       skills: readStations(skills !== undefined ? skills : existing.skills, nextDepartment),
     },
   };
+}
+
+/**
+ * HR/ADMIN/SUPER_ADMIN may assign any role to any outlet. An OUTLET_MANAGER
+ * may only manage staff at their own outlet, and only into an outlet-level
+ * role — not a global role or another Outlet Manager, mirroring the
+ * HR-cannot-assign-management-roles rule below. Returns an error string, or
+ * null when the write is allowed.
+ */
+function outletManagerAssignmentDenied(req, { outletId, role }) {
+  if (req.user.role !== 'OUTLET_MANAGER') return null;
+  if (outletId !== req.user.outletId) {
+    return 'You can only manage employees at your own outlet';
+  }
+  if (GLOBAL_SCOPE_ROLES.includes(role) || role === 'OUTLET_MANAGER') {
+    return 'You cannot assign that role';
+  }
+  return null;
 }
 
 // GET /api/employees — list all employees (with filters)
@@ -148,6 +173,9 @@ router.post('/', authenticateToken, can('EMPLOYEE_CREATE'), async (req, res) => 
     const { data: assignment, error } = readAssignment(effectiveRole, { outletId, department, skills });
     if (error) return res.status(400).json({ error });
 
+    const denied = outletManagerAssignmentDenied(req, { outletId: assignment.outletId, role: effectiveRole });
+    if (denied) return res.status(403).json({ error: denied });
+
     // Generated here, never supplied. The old `password || 'shiftly123'` meant
     // every account in the system shared one password that nobody could change.
     const temporaryPassword = generateTemporaryPassword();
@@ -210,6 +238,11 @@ router.put('/:id', authenticateToken, can('EMPLOYEE_EDIT'), async (req, res) => 
       effectiveRole, { outletId, department, skills }, existing
     );
     if (error) return res.status(400).json({ error });
+
+    const denied = outletManagerAssignmentDenied(req, { outletId: assignment.outletId, role: effectiveRole })
+      || outletManagerAssignmentDenied(req, { outletId: existing.outletId, role: existing.role });
+    if (denied) return res.status(403).json({ error: denied });
+
     Object.assign(data, assignment);
 
     const employee = await prisma.employee.update({
@@ -243,13 +276,16 @@ router.put('/:id', authenticateToken, can('EMPLOYEE_EDIT'), async (req, res) => 
  * everyday case of somebody locked out. The value is returned exactly once —
  * what is stored is a hash, so there is no way to look it up again.
  */
-router.post('/:id/reset-password', authenticateToken, can('EMPLOYEE_RESET_PW'), async (req, res) => {
+router.post('/:id/reset-password', authenticateToken, canOrOutletManager('EMPLOYEE_RESET_PW'), async (req, res) => {
   try {
     const employee = await prisma.employee.findUnique({
       where: { id: req.params.id },
-      select: { id: true, name: true, email: true },
+      select: { id: true, name: true, email: true, role: true, outletId: true },
     });
     if (!employee) return res.status(404).json({ error: 'Employee not found' });
+
+    const denied = outletManagerAssignmentDenied(req, { outletId: employee.outletId, role: employee.role });
+    if (denied) return res.status(403).json({ error: denied });
 
     const temporaryPassword = generateTemporaryPassword();
     await prisma.employee.update({
@@ -275,9 +311,18 @@ router.post('/:id/reset-password', authenticateToken, can('EMPLOYEE_RESET_PW'), 
 // through TransferRequest as well. Bulk removal at that scope already exists,
 // gated at SUPER_ADMIN with a typed confirmation (see wipe-staff below); this
 // single-employee action stays reversible and ADMIN-level.
-router.delete('/:id', authenticateToken, can('EMPLOYEE_DEACTIVATE'), async (req, res) => {
+router.delete('/:id', authenticateToken, canOrOutletManager('EMPLOYEE_DEACTIVATE'), async (req, res) => {
   try {
     const id = req.params.id;
+
+    const target = await prisma.employee.findUnique({
+      where: { id },
+      select: { role: true, outletId: true },
+    });
+    if (!target) return res.status(404).json({ error: 'Employee not found' });
+    const denied = outletManagerAssignmentDenied(req, { outletId: target.outletId, role: target.role });
+    if (denied) return res.status(403).json({ error: denied });
+
     const employee = await prisma.employee.update({
       where: { id },
       data: { isActive: false },

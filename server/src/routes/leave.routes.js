@@ -17,16 +17,18 @@ const DEPARTMENT_APPROVERS = {
 };
 
 /**
- * HR/ADMIN/SUPER_ADMIN may act on any leave. A locked manager (HEAD_CHEF,
- * MASTER_OF_HOUSE) may only act on their own outlet's leaves, and only for
- * the department they own per DEPARTMENT_APPROVERS. Returns an error string,
- * or null when the action is allowed.
+ * HR/ADMIN/SUPER_ADMIN may act on any leave. An OUTLET_MANAGER may act on any
+ * department's leave, but only at their own outlet. A department manager
+ * (HEAD_CHEF, MASTER_OF_HOUSE) may only act on their own outlet's leaves, and
+ * only for the department they own per DEPARTMENT_APPROVERS. Returns an error
+ * string, or null when the action is allowed.
  */
 function leaveApprovalDenied(req, leave) {
   if (hasGlobalScope(req.user)) return null;
   if (leave.employee.outletId !== req.user.outletId) {
     return 'You can only act on leave requests for your own outlet';
   }
+  if (req.user.role === 'OUTLET_MANAGER') return null;
   if (DEPARTMENT_APPROVERS[leave.employee.department] !== req.user.role) {
     return 'You can only approve leave requests for your own department';
   }

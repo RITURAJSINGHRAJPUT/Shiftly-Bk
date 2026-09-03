@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { can } from '../lib/capabilities.js';
+import { can, canOrOutletManager } from '../lib/capabilities.js';
 import { autoAllocateShifts } from '../engine/shiftAllocator.js';
-import { outletScope } from '../lib/scope.js';
+import { outletScope, hasGlobalScope } from '../lib/scope.js';
 import { localDateRange, startOfLocalDay, localDateKey } from '../lib/dates.js';
 import { logAudit } from '../lib/audit.js';
 
@@ -13,6 +13,24 @@ const router = Router();
 const outletSelect = {
   select: { id: true, name: true, brand: { select: { id: true, name: true } } },
 };
+
+/**
+ * A locked role (Head Chef, Master of House, Outlet Manager) may only touch
+ * shifts at their own outlet. Global roles pass unconditionally. Returns an
+ * error string, or null when the write is allowed.
+ *
+ * None of create/edit/delete/auto-allocate checked this before — outletId
+ * came straight from the request body with no verification it matched the
+ * caller's own outlet, so any locked role could already act on another
+ * outlet's shifts by supplying its id.
+ */
+function outletShiftDenied(req, outletId) {
+  if (hasGlobalScope(req.user)) return null;
+  if (!outletId || outletId !== req.user.outletId) {
+    return 'You can only manage shifts for your own outlet';
+  }
+  return null;
+}
 
 // GET /api/shifts — list shifts with filters
 router.get('/', authenticateToken, async (req, res) => {
@@ -50,6 +68,9 @@ router.get('/', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, can('SHIFT_CREATE'), async (req, res) => {
   try {
     const { date, startTime, endTime, section, employeeId, outletId } = req.body;
+    const targetOutletId = outletId || req.user.outletId;
+    const denied = outletShiftDenied(req, targetOutletId);
+    if (denied) return res.status(403).json({ error: denied });
 
     // A shift carries no department of its own — it inherits the one the person
     // works in. Stations are a kitchen concept (only kitchen staff hold the
@@ -78,7 +99,7 @@ router.post('/', authenticateToken, can('SHIFT_CREATE'), async (req, res) => {
         endTime,
         section,
         employeeId,
-        outletId: outletId || req.user.outletId,
+        outletId: targetOutletId,
       },
       include: {
         employee: { select: { id: true, name: true } },
@@ -109,6 +130,9 @@ router.post('/auto-allocate', authenticateToken, can('SHIFT_ALLOCATE'), async (r
   try {
     const { outletId, startDate, endDate } = req.body;
     const targetOutletId = outletId || req.user.outletId;
+    const denied = outletShiftDenied(req, targetOutletId);
+    if (denied) return res.status(403).json({ error: denied });
+
     const result = await autoAllocateShifts(prisma, targetOutletId, startDate, endDate);
 
     logAudit({ action: 'SHIFT_ALLOCATE', entity: 'Shift', actor: req.user, details: { outletId: targetOutletId, count: result.count, startDate, endDate } });
@@ -122,6 +146,11 @@ router.post('/auto-allocate', authenticateToken, can('SHIFT_ALLOCATE'), async (r
 // PUT /api/shifts/:id
 router.put('/:id', authenticateToken, can('SHIFT_EDIT'), async (req, res) => {
   try {
+    const existing = await prisma.shift.findUnique({ where: { id: req.params.id }, select: { outletId: true } });
+    if (!existing) return res.status(404).json({ error: 'Shift not found' });
+    const denied = outletShiftDenied(req, existing.outletId);
+    if (denied) return res.status(403).json({ error: denied });
+
     const { date, startTime, endTime, section, employeeId, status } = req.body;
     const data = {};
     if (date) data.date = startOfLocalDay(date);
@@ -147,8 +176,13 @@ router.put('/:id', authenticateToken, can('SHIFT_EDIT'), async (req, res) => {
 });
 
 // DELETE /api/shifts/:id
-router.delete('/:id', authenticateToken, can('SHIFT_DELETE'), async (req, res) => {
+router.delete('/:id', authenticateToken, canOrOutletManager('SHIFT_DELETE'), async (req, res) => {
   try {
+    const existing = await prisma.shift.findUnique({ where: { id: req.params.id }, select: { outletId: true } });
+    if (!existing) return res.status(404).json({ error: 'Shift not found' });
+    const denied = outletShiftDenied(req, existing.outletId);
+    if (denied) return res.status(403).json({ error: denied });
+
     await prisma.shift.delete({ where: { id: req.params.id } });
 
     logAudit({ action: 'SHIFT_DELETE', entity: 'Shift', entityId: req.params.id, actor: req.user });

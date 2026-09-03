@@ -10,6 +10,7 @@ each action names the lowest rank that may perform it. Most access first:
 - **Super Admin** (6)
 - **Admin** (5)
 - **HR** (4)
+- **Outlet Manager** (4)
 - **Master of House** (3)
 - **Head Chef** (2)
 - **Staff** (1)
@@ -21,7 +22,7 @@ Anyone signed in can read, but not the same amount.
 | | Sees |
 |---|---|
 | Super Admin, Admin, HR | Every restaurant |
-| Master of House, Head Chef, Staff | Only their own restaurant |
+| Outlet Manager, Master of House, Head Chef, Staff | Only their own restaurant |
 
 That narrowing is applied server-side from the signed-in account, not from a
 query parameter, so it cannot be widened by asking differently.
@@ -30,70 +31,83 @@ query parameter, so it cannot be widened by asking differently.
 
 ### Organisation
 
-| Action | Super Admin | Admin | HR | Master of House | Head Chef | Staff |
-|---|---|---|---|---|---|---|
-| Create an organisation | ✅ | ✅ | — | — | — | — |
-| Rename the organisation | ✅ | ✅ | — | — | — | — |
-| Create a brand | ✅ | ✅ | — | — | — | — |
-| Edit a brand, including its station list | ✅ | ✅ | — | — | — | — |
-| Create a restaurant | ✅ | ✅ | — | — | — | — |
-| Edit a restaurant, including its geofence | ✅ | ✅ | — | — | — | — |
+| Action | Super Admin | Admin | HR | Outlet Manager | Master of House | Head Chef | Staff |
+|---|---|---|---|---|---|---|---|
+| Create an organisation | ✅ | ✅ | — | — | — | — | — |
+| Rename the organisation | ✅ | ✅ | — | — | — | — | — |
+| Create a brand | ✅ | ✅ | — | — | — | — | — |
+| Edit a brand, including its station list | ✅ | ✅ | — | — | — | — | — |
+| Create a restaurant | ✅ | ✅ | — | — | — | — | — |
+| Edit a restaurant, including its geofence | ✅ | ✅ | — | — | — | — | — |
 
 > **Create an organisation** — Every brand belongs to one, so an empty database cannot be set up without this.
 
 > **Edit a brand, including its station list** — Station lists drive the Shift Master sheet for every outlet in the brand.
 
-> **Edit a restaurant, including its geofence** — Moving the geofence defeats attendance validation, so this is not a manager-level action.
+> **Edit a restaurant, including its geofence** — Moving the geofence defeats attendance validation, so this is not a manager-level action. Exception: an Outlet Manager may edit their own outlet — see canOrOutletManager() in this file.
 
 ### People
 
-| Action | Super Admin | Admin | HR | Master of House | Head Chef | Staff |
-|---|---|---|---|---|---|---|
-| Enrol an employee | ✅ | ✅ | ✅ | — | — | — |
-| Edit an employee | ✅ | ✅ | ✅ | — | — | — |
-| Issue a new one-time password | ✅ | ✅ | — | — | — | — |
-| Deactivate an employee | ✅ | ✅ | — | — | — | — |
-| See what a staff wipe would delete | ✅ | — | — | — | — | — |
-| Delete every staff account and their history | ✅ | — | — | — | — | — |
+| Action | Super Admin | Admin | HR | Outlet Manager | Master of House | Head Chef | Staff |
+|---|---|---|---|---|---|---|---|
+| Enrol an employee | ✅ | ✅ | ✅ | ✅ | — | — | — |
+| Edit an employee | ✅ | ✅ | ✅ | ✅ | — | — | — |
+| Issue a new one-time password | ✅ | ✅ | — | — | — | — | — |
+| Deactivate an employee | ✅ | ✅ | — | — | — | — | — |
+| See what a staff wipe would delete | ✅ | — | — | — | — | — | — |
+| Delete every staff account and their history | ✅ | — | — | — | — | — | — |
 
-> **Issue a new one-time password** — Higher than enrolment: this takes over an existing account rather than creating a new one.
+> **Issue a new one-time password** — Higher than enrolment: this takes over an existing account rather than creating a new one. Exception: an Outlet Manager may reset a password for staff at their own outlet.
 
-> **Deactivate an employee** — Deactivation is a real lockout — the login handler refuses an inactive account.
+> **Deactivate an employee** — Deactivation is a real lockout — the login handler refuses an inactive account. Exception: an Outlet Manager may deactivate staff at their own outlet.
 
 > **Delete every staff account and their history** — Irreversible, and behind a typed confirmation as well as this role.
 
 ### Shifts
 
-| Action | Super Admin | Admin | HR | Master of House | Head Chef | Staff |
-|---|---|---|---|---|---|---|
-| Add a shift | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| Edit a shift | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| Run auto-allocation for a week | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| Delete a shift | ✅ | ✅ | — | — | — | — |
+| Action | Super Admin | Admin | HR | Outlet Manager | Master of House | Head Chef | Staff |
+|---|---|---|---|---|---|---|---|
+| Add a shift | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Edit a shift | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Run auto-allocation for a week | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Delete a shift | ✅ | ✅ | — | — | — | — | — |
 
-> **Delete a shift** — Higher than creating one: a deleted shift leaves no record that it existed.
+> **Delete a shift** — Higher than creating one: a deleted shift leaves no record that it existed. Exception: an Outlet Manager may delete a shift at their own outlet.
 
 ### Shift patterns
 
-| Action | Super Admin | Admin | HR | Master of House | Head Chef | Staff |
-|---|---|---|---|---|---|---|
-| Add a shift pattern | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| Add one pattern across several restaurants | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| Save the weekly shift sheet | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| Edit a shift pattern | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| Delete a shift pattern | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| Clear a restaurant's patterns | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| See what clearing would delete | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Action | Super Admin | Admin | HR | Outlet Manager | Master of House | Head Chef | Staff |
+|---|---|---|---|---|---|---|---|
+| Add a shift pattern | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Add one pattern across several restaurants | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Save the weekly shift sheet | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Edit a shift pattern | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Delete a shift pattern | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Clear a restaurant's patterns | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| See what clearing would delete | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
 
 > **Add one pattern across several restaurants** — Each restaurant is checked separately, so a head chef can only reach their own.
 
 ### Leave
 
-| Action | Super Admin | Admin | HR | Master of House | Head Chef | Staff |
-|---|---|---|---|---|---|---|
-| Approve a leave request | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| Reject a leave request | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| Auto-assign cover for emergency leave | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Action | Super Admin | Admin | HR | Outlet Manager | Master of House | Head Chef | Staff |
+|---|---|---|---|---|---|---|---|
+| Approve a leave request | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Reject a leave request | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Auto-assign cover for emergency leave | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+
+### Transfers
+
+| Action | Super Admin | Admin | HR | Outlet Manager | Master of House | Head Chef | Staff |
+|---|---|---|---|---|---|---|---|
+| Approve a transfer request | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Reject a transfer request | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+
+### System
+
+| Action | Super Admin | Admin | HR | Outlet Manager | Master of House | Head Chef | Staff |
+|---|---|---|---|---|---|---|---|
+| View audit logs | ✅ | ✅ | — | — | — | — | — |
 
 ## How accounts are issued
 

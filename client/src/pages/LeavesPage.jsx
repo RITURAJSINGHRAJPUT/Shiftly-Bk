@@ -15,7 +15,9 @@ const DEPARTMENT_APPROVERS = { KITCHEN: 'HEAD_CHEF', SERVICE: 'MASTER_OF_HOUSE',
 export default function LeavesPage() {
   const { user, isManager } = useAuth();
   const canActOn = (leave) =>
-    GLOBAL_SCOPE_ROLES.includes(user?.role) || DEPARTMENT_APPROVERS[leave.employee.department] === user?.role;
+    GLOBAL_SCOPE_ROLES.includes(user?.role) ||
+    user?.role === 'OUTLET_MANAGER' ||
+    DEPARTMENT_APPROVERS[leave.employee.department] === user?.role;
   const [leaves, setLeaves] = useState([]);
   const [pendingEmergencies, setPendingEmergencies] = useState([]);
   const [loading, setLoading] = useState(true);

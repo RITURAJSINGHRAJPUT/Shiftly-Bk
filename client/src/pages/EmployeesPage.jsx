@@ -6,12 +6,29 @@ import { useAuth } from '../contexts/AuthContext';
 import { GLOBAL_SCOPE_ROLES, STATIONS, departmentHasStations } from '../constants';
 import { Plus, Search, Filter, Edit, Trash2, Store, ShieldCheck, Users, KeyRound, Copy, Check } from 'lucide-react';
 
+/**
+ * Role options for the Add/Edit modal, split by which "side" of the
+ * management/outlet line they sit on. OUTLET_ROLES_RESTRICTED excludes
+ * OUTLET_MANAGER itself — an Outlet Manager can staff their own outlet but
+ * not create a peer, the same way HR cannot assign management roles.
+ */
+const OUTLET_ROLES = [
+  ['OUTLET_MANAGER', 'Outlet Manager'], ['MASTER_OF_HOUSE', 'Master of House'],
+  ['HEAD_CHEF', 'Head Chef'], ['STAFF', 'Staff Member'],
+];
+const OUTLET_ROLES_RESTRICTED = [
+  ['MASTER_OF_HOUSE', 'Master of House'], ['HEAD_CHEF', 'Head Chef'], ['STAFF', 'Staff Member'],
+];
+const MANAGEMENT_ROLES = [['SUPER_ADMIN', 'Super Admin'], ['ADMIN', 'Admin'], ['HR', 'HR']];
+
 export default function EmployeesPage() {
   // Only for the Add/Edit modal's Outlet field — this page has no outlet filter.
   // The list is scoped server-side from the caller's role.
   const { outlets } = useScope();
   const { user } = useAuth();
-  const isHR = user?.role === 'HR';
+  // HR and Outlet Manager both administer outlet-level accounts only — neither
+  // can see/assign SUPER_ADMIN/ADMIN/HR/OUTLET_MANAGER accounts.
+  const isOutletScopedAdmin = ['HR', 'OUTLET_MANAGER'].includes(user?.role);
 
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -209,7 +226,7 @@ export default function EmployeesPage() {
     }
 
     const rows = [
-      ...(!isHR ? [{ id: '__management__', name: 'Management', brand: null, isManagement: true, people: management }] : []),
+      ...(!isOutletScopedAdmin ? [{ id: '__management__', name: 'Management', brand: null, isManagement: true, people: management }] : []),
       ...outlets.map(o => ({
         id: o.id,
         name: o.name,
@@ -220,7 +237,7 @@ export default function EmployeesPage() {
     // Only if the API ever returns someone outside the visible outlet list.
     if (orphans.length) rows.push({ id: '__other__', name: 'Other', brand: null, people: orphans });
     return rows;
-  }, [outlets, filtered, isHR]);
+  }, [outlets, filtered, isOutletScopedAdmin]);
 
   const isFiltering = searchTerm.trim() !== '' || filterDept !== '';
 
@@ -551,6 +568,9 @@ export default function EmployeesPage() {
               onChange={e => {
                 const role = e.target.value;
                 const toManagement = GLOBAL_SCOPE_ROLES.includes(role);
+                // An Outlet Manager needs an outlet but no single department —
+                // they oversee the whole restaurant, not one section of it.
+                const toOutletManager = role === 'OUTLET_MANAGER';
                 setFormData(prev => ({
                   ...prev,
                   role,
@@ -558,23 +578,21 @@ export default function EmployeesPage() {
                   // the restaurant they no longer belong to; demoting them has to
                   // land somewhere, so it falls back to the group in view.
                   outletId: toManagement ? '' : (prev.outletId || selectedGroupId || outlets[0]?.id || ''),
-                  department: toManagement ? '' : (prev.department || 'KITCHEN'),
-                  skills: toManagement ? [] : prev.skills,
+                  department: (toManagement || toOutletManager) ? '' : (prev.department || 'KITCHEN'),
+                  skills: (toManagement || toOutletManager) ? [] : prev.skills,
                 }));
               }}
             >
-              {(isHR
-                ? [['MASTER_OF_HOUSE', 'Master of House'], ['HEAD_CHEF', 'Head Chef'], ['STAFF', 'Staff Member']]
+              {(isOutletScopedAdmin
+                ? OUTLET_ROLES_RESTRICTED
                 : managementForm
-                  ? [['SUPER_ADMIN', 'Super Admin'], ['ADMIN', 'Admin'], ['HR', 'HR']]
-                  : [['MASTER_OF_HOUSE', 'Master of House'], ['HEAD_CHEF', 'Head Chef'], ['STAFF', 'Staff Member']]
+                  ? MANAGEMENT_ROLES
+                  : OUTLET_ROLES
               ).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-              {!isHR && (
+              {!isOutletScopedAdmin && (
               <optgroup label={managementForm ? 'Move to an outlet' : 'Move to management'}>
-                {(managementForm
-                  ? [['MASTER_OF_HOUSE', 'Master of House'], ['HEAD_CHEF', 'Head Chef'], ['STAFF', 'Staff Member']]
-                  : [['SUPER_ADMIN', 'Super Admin'], ['ADMIN', 'Admin'], ['HR', 'HR']]
-                ).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                {(managementForm ? OUTLET_ROLES : MANAGEMENT_ROLES)
+                  .map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </optgroup>
               )}
             </select>
@@ -587,6 +605,7 @@ export default function EmployeesPage() {
             </p>
           ) : (
           <div className="form-row">
+            {formData.role !== 'OUTLET_MANAGER' && (
             <div className="form-group">
               <label className="form-label">Department</label>
               <select
@@ -605,6 +624,7 @@ export default function EmployeesPage() {
                 <option value="HOUSEKEEPING">Housekeeping</option>
               </select>
             </div>
+            )}
             <div className="form-group">
               <label className="form-label">Outlet</label>
               <select
@@ -620,9 +640,16 @@ export default function EmployeesPage() {
           </div>
           )}
 
+          {!managementForm && formData.role === 'OUTLET_MANAGER' && (
+            <p className="text-xs text-muted">
+              Oversees the whole restaurant — no single department, and no
+              stations of their own.
+            </p>
+          )}
+
           {/* Kitchen only, like the pattern and shift forms: Service and House
               Keeping have no station to work. */}
-          {!managementForm && departmentHasStations(formData.department) && (
+          {!managementForm && formData.role !== 'OUTLET_MANAGER' && departmentHasStations(formData.department) && (
             <fieldset className="form-group" style={{ border: 0, padding: 0, margin: 0 }}>
               <legend className="form-label" style={{ padding: 0 }}>Stations they work</legend>
               <div className="outlet-picker">

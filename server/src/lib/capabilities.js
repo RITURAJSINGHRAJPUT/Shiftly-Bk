@@ -38,7 +38,8 @@ export const CAPABILITIES = {
   },
   OUTLET_EDIT: {
     group: 'Organisation', label: 'Edit a restaurant, including its geofence', minRole: 'ADMIN',
-    note: 'Moving the geofence defeats attendance validation, so this is not a manager-level action.',
+    note: 'Moving the geofence defeats attendance validation, so this is not a manager-level action. ' +
+      'Exception: an Outlet Manager may edit their own outlet — see canOrOutletManager() in this file.',
   },
 
   EMPLOYEE_CREATE: {
@@ -49,11 +50,13 @@ export const CAPABILITIES = {
   },
   EMPLOYEE_RESET_PW: {
     group: 'People', label: 'Issue a new one-time password', minRole: 'ADMIN',
-    note: 'Higher than enrolment: this takes over an existing account rather than creating a new one.',
+    note: 'Higher than enrolment: this takes over an existing account rather than creating a new one. ' +
+      'Exception: an Outlet Manager may reset a password for staff at their own outlet.',
   },
   EMPLOYEE_DEACTIVATE: {
     group: 'People', label: 'Deactivate an employee', minRole: 'ADMIN',
-    note: 'Deactivation is a real lockout — the login handler refuses an inactive account.',
+    note: 'Deactivation is a real lockout — the login handler refuses an inactive account. ' +
+      'Exception: an Outlet Manager may deactivate staff at their own outlet.',
   },
   STAFF_WIPE_PREVIEW: {
     group: 'People', label: 'See what a staff wipe would delete', minRole: 'SUPER_ADMIN',
@@ -74,7 +77,8 @@ export const CAPABILITIES = {
   },
   SHIFT_DELETE: {
     group: 'Shifts', label: 'Delete a shift', minRole: 'ADMIN',
-    note: 'Higher than creating one: a deleted shift leaves no record that it existed.',
+    note: 'Higher than creating one: a deleted shift leaves no record that it existed. ' +
+      'Exception: an Outlet Manager may delete a shift at their own outlet.',
   },
 
   PATTERN_CREATE: {
@@ -135,4 +139,29 @@ export function can(key) {
   // produce a route with no guard at all, which fails open.
   if (!capability) throw new Error(`Unknown capability "${key}"`);
   return requireMinRole(capability.minRole);
+}
+
+/**
+ * Same gate as can(), but also lets an OUTLET_MANAGER through regardless of
+ * the capability's floor.
+ *
+ * For the handful of capabilities pinned above OUTLET_MANAGER's own rank
+ * (EMPLOYEE_RESET_PW, EMPLOYEE_DEACTIVATE, OUTLET_EDIT, SHIFT_DELETE — all
+ * ADMIN-floor), lowering the floor itself would hand HR the same rights,
+ * since HR ties OUTLET_MANAGER's rank. Bypassing the floor for this one role
+ * instead leaves HR's permissions exactly as they are.
+ *
+ * This only gets an OUTLET_MANAGER past the door — every route using this
+ * still has to verify the acted-on resource belongs to their own outlet, the
+ * same way outletWriteDenied()/leaveApprovalDenied() already do for other
+ * capabilities.
+ */
+export function canOrOutletManager(key) {
+  const capability = CAPABILITIES[key];
+  if (!capability) throw new Error(`Unknown capability "${key}"`);
+  return (req, res, next) => {
+    if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
+    if (req.user.role === 'OUTLET_MANAGER') return next();
+    return requireMinRole(capability.minRole)(req, res, next);
+  };
 }

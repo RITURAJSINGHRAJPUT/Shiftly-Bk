@@ -29,9 +29,9 @@ function ManagementDashboard() {
 
   // Mirrors Sidebar.jsx's role gating for the same destinations, so Quick
   // Actions never link to a page the sidebar itself would hide.
-  const canManageEmployees = GLOBAL_SCOPE_ROLES.includes(user?.role);
-  const canManageOutlets = GLOBAL_SCOPE_ROLES.includes(user?.role);
-  const canViewReports = [...GLOBAL_SCOPE_ROLES, 'MASTER_OF_HOUSE'].includes(user?.role);
+  const canManageEmployees = [...GLOBAL_SCOPE_ROLES, 'OUTLET_MANAGER'].includes(user?.role);
+  const canManageOutlets = [...GLOBAL_SCOPE_ROLES, 'OUTLET_MANAGER'].includes(user?.role);
+  const canViewReports = [...GLOBAL_SCOPE_ROLES, 'OUTLET_MANAGER', 'MASTER_OF_HOUSE'].includes(user?.role);
 
   const [stats, setStats] = useState(null);
   const [trend, setTrend] = useState(null);

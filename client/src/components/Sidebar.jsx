@@ -39,13 +39,13 @@ const NAV_SECTIONS = [
       // Brands and outlets are one page: the outlet directory was already
       // grouped by brand, so a separate brand list was a flatter view of the
       // same tree. Brand writes stay ADMIN-only inside the page.
-      { path: '/outlets', label: 'Brands & Outlets', icon: Store, roles: ['SUPER_ADMIN', 'ADMIN', 'HR'] },
+      { path: '/outlets', label: 'Brands & Outlets', icon: Store, roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'OUTLET_MANAGER'] },
     ],
   },
   {
     title: 'People',
     items: [
-      { path: '/employees', label: 'Employees', icon: Users, roles: ['SUPER_ADMIN', 'ADMIN', 'HR'] },
+      { path: '/employees', label: 'Employees', icon: Users, roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'OUTLET_MANAGER'] },
       // Attendance page not in use currently — kept for possible future use.
       // { path: '/attendance', label: 'Attendance', icon: MapPin, roles: 'all' },
       { path: '/leaves', label: 'Leaves', icon: TreePalm, roles: 'all' },
@@ -58,7 +58,7 @@ const NAV_SECTIONS = [
       // Everyone except STAFF, mirroring the API's requireMinRole('HEAD_CHEF') —
       // the sidebar should never offer a page whose every write returns 403.
       { path: '/shift-master', label: 'Shift Master', icon: Layers,
-        roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'MASTER_OF_HOUSE', 'HEAD_CHEF'] },
+        roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'OUTLET_MANAGER', 'MASTER_OF_HOUSE', 'HEAD_CHEF'] },
       // Short labels: these rows also carry a "Soon" badge, which leaves roughly
       // 80px for text. The full names live on the destination pages in App.jsx.
       { path: '/workforce-planner', label: 'AI Planner', icon: BrainCircuit, roles: ['SUPER_ADMIN', 'ADMIN', 'HR'], stub: true },
@@ -68,7 +68,7 @@ const NAV_SECTIONS = [
   {
     title: 'Insights',
     items: [
-      { path: '/reports', label: 'Reports', icon: BarChart3, roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'MASTER_OF_HOUSE'] },
+      { path: '/reports', label: 'Reports', icon: BarChart3, roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'OUTLET_MANAGER', 'MASTER_OF_HOUSE'] },
       { path: '/analytics', label: 'Analytics', icon: LineChart, roles: ['SUPER_ADMIN', 'ADMIN', 'HR'], stub: true },
     ],
   },

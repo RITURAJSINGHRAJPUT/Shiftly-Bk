@@ -45,8 +45,12 @@ export default function OutletsPage() {
   const [savingBrand, setSavingBrand] = useState(false);
   const [brandError, setBrandError] = useState('');
 
-  // Both creating an outlet and moving a geofence are ADMIN-guarded server-side.
+  // Creating an outlet or a brand, and editing a brand, stay ADMIN-guarded
+  // server-side — those are org-wide structural actions.
   const canManage = ['SUPER_ADMIN', 'ADMIN'].includes(user?.role);
+  // An Outlet Manager may edit their own outlet's record, geofence included —
+  // the list they see is already scoped server-side to just that one outlet.
+  const canEditOwnOutlet = canManage || user?.role === 'OUTLET_MANAGER';
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -115,6 +119,9 @@ export default function OutletsPage() {
       name: outlet.name,
       brandId: outlet.brand?.id || '',
       address: outlet.address || '',
+      latitude: outlet.latitude ?? '',
+      longitude: outlet.longitude ?? '',
+      radius: outlet.radius ?? '',
     });
     setFormError('');
     setIsModalOpen(true);
@@ -253,7 +260,7 @@ export default function OutletsPage() {
                       {outlet.address || 'No address on file'}
                     </div>
                   </div>
-                  {canManage && (
+                  {canEditOwnOutlet && (
                     <button
                       className="btn btn-ghost btn-icon btn-sm"
                       style={{ marginLeft: 'auto' }}
@@ -393,13 +400,53 @@ export default function OutletsPage() {
             />
           </div>
 
-          {/* Deliberately no latitude/longitude/radius here — Organizations is the
-              one place that writes them, so the geofence has a single owner. */}
+          {/* A new outlet starts with the default geofence — nothing to place
+              it against yet. Once it exists, its own manager (Admin, or an
+              Outlet Manager for their own restaurant) can set it here. */}
           {!editing && (
             <p className="text-xs text-muted">
               A new outlet starts with the default geofence. Set its coordinates
-              and radius on the <Link to="/organizations">Organizations</Link> page.
+              and radius after creating it{canManage ? (
+                <> , or on the <Link to="/organizations">Organizations</Link> page</>
+              ) : null}.
             </p>
+          )}
+
+          {editing && canEditOwnOutlet && (
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label" htmlFor="outlet-lat">Latitude</label>
+                <input
+                  id="outlet-lat"
+                  type="number"
+                  step="any"
+                  className="form-input"
+                  value={form.latitude}
+                  onChange={(e) => setForm((f) => ({ ...f, latitude: e.target.value }))}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="outlet-lng">Longitude</label>
+                <input
+                  id="outlet-lng"
+                  type="number"
+                  step="any"
+                  className="form-input"
+                  value={form.longitude}
+                  onChange={(e) => setForm((f) => ({ ...f, longitude: e.target.value }))}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label" htmlFor="outlet-radius">Geofence radius (m)</label>
+                <input
+                  id="outlet-radius"
+                  type="number"
+                  className="form-input"
+                  value={form.radius}
+                  onChange={(e) => setForm((f) => ({ ...f, radius: e.target.value }))}
+                />
+              </div>
+            </div>
           )}
 
           {formError && (

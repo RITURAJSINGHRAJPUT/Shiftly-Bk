@@ -72,37 +72,45 @@ export default function MobileProfile() {
                   {user?.outlet?.brand?.name || '—'}
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-secondary" style={{ paddingLeft: 22 }}>Department</span>
-                <span className="font-semibold text-strong" style={{ marginLeft: 'auto' }}>
-                  {user?.department || '—'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="card mb-4">
-            <div className="card-header">
-              <div className="flex items-center gap-2">
-                <Award size={17} className="icon-brand" />
-                <h3 className="card-title">Stations</h3>
-              </div>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {user?.skills?.map((skill) => (
-                <span
-                  key={skill}
-                  className="badge badge-ghost text-xs"
-                  style={{ textTransform: 'capitalize' }}
-                >
-                  {skill}
-                </span>
-              ))}
-              {(!user?.skills || user.skills.length === 0) && (
-                <span className="text-xs text-muted">No stations recorded</span>
+              {/* An Outlet Manager oversees the whole restaurant rather than
+                  working one department, so there is nothing to show here —
+                  same reasoning as the Access card above, just scoped to one
+                  outlet instead of the whole org. */}
+              {user?.department && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-secondary" style={{ paddingLeft: 22 }}>Department</span>
+                  <span className="font-semibold text-strong" style={{ marginLeft: 'auto' }}>
+                    {user.department}
+                  </span>
+                </div>
               )}
             </div>
           </div>
+
+          {user?.role !== 'OUTLET_MANAGER' && (
+            <div className="card mb-4">
+              <div className="card-header">
+                <div className="flex items-center gap-2">
+                  <Award size={17} className="icon-brand" />
+                  <h3 className="card-title">Stations</h3>
+                </div>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {user?.skills?.map((skill) => (
+                  <span
+                    key={skill}
+                    className="badge badge-ghost text-xs"
+                    style={{ textTransform: 'capitalize' }}
+                  >
+                    {skill}
+                  </span>
+                ))}
+                {(!user?.skills || user.skills.length === 0) && (
+                  <span className="text-xs text-muted">No stations recorded</span>
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
 
