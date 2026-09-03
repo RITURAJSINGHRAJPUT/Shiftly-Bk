@@ -43,13 +43,44 @@ in `PUBLIC_API_ORIGINS`:
 PUBLIC_API_ORIGINS=https://example.com,https://www.example.com
 ```
 
-Matched exactly, so the apex and `www` forms are separate entries. Unset means no
-other site's JavaScript can read the API; server-to-server callers are unaffected
-either way, since CORS is enforced by browsers only.
+Unset means no other site's JavaScript can read the API. Server-to-server callers
+are unaffected either way, since CORS is enforced by browsers, not by us.
 
-Both variables are set in the Render dashboard, not in `render.yaml` — the
-blueprint lists them as `sync: false` so it records that they exist without
-carrying their values.
+Both variables are set in the Render dashboard on the **`shiftly-bk`** service,
+not in `render.yaml` — the blueprint lists them as `sync: false` so it records
+that they exist without carrying their values.
+
+#### What format to send the origin in
+
+An origin is **scheme + host + optional port, and nothing else**. Send it exactly
+in that form:
+
+| | Value | |
+|---|---|---|
+| ✅ | `https://example.com` | Correct |
+| ✅ | `https://www.example.com` | A *different* origin from the apex — send both if the site answers on both |
+| ✅ | `https://shop.example.com` | Each subdomain is its own origin |
+| ✅ | `http://localhost:3000` | Fine while developing; take it out afterwards |
+| ❌ | `example.com` | The scheme is part of the origin and is required |
+| ❌ | `https://example.com/` | A trailing slash is not part of an origin |
+| ❌ | `https://example.com/staff` | Never include a path |
+| ❌ | `*.example.com` | No wildcards — list subdomains individually |
+
+Several go in one variable, comma-separated:
+
+```
+PUBLIC_API_ORIGINS=https://example.com,https://www.example.com
+```
+
+The comparison is exact, with surrounding whitespace and a trailing slash
+forgiven. Everything else must match character for character — `http` and
+`https` are different origins, and so are the apex and `www` forms. This is
+worth getting right first time: when it is wrong the browser reports a generic
+CORS failure that says nothing about *which* part did not match.
+
+If you are unsure what the origin is, open the site that will make the call and
+run `location.origin` in the browser console. Whatever it prints is the exact
+string to send.
 
 ### Keys
 
@@ -176,7 +207,7 @@ Deliberately absent:
 
 ## Notes
 
-- This endpoint has no entry in [ACCESS.md](ACCESS.md). That file is generated
+- This endpoint has no entry in [ACCESS.md](../ACCESS.md). That file is generated
   from `server/src/lib/capabilities.js`, whose guards are role-based and need a
   logged-in user; a key has no role. The gate here is `requireApiKey` in
   `server/src/middleware/apiKey.js`.

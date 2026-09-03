@@ -4,8 +4,8 @@ Every endpoint in Bookends Shiftly — 65 across 15 routers. Express 5 + Prisma 
 PostgreSQL, mounted under `/api`.
 
 For the public integration API in detail, see **[PUBLIC_API.md](PUBLIC_API.md)**.
-For who may do what, see **[ACCESS.md](ACCESS.md)** (generated from
-`server/src/lib/capabilities.js`). For architecture, see **[DOCS.md](DOCS.md)**.
+For who may do what, see **[ACCESS.md](../ACCESS.md)** (generated from
+`server/src/lib/capabilities.js`). For architecture, see **[DOCS.md](../DOCS.md)**.
 
 ---
 
