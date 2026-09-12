@@ -187,8 +187,8 @@ export default function AuditLogsPage() {
       )}
 
       <div className="card">
-        <div style={{ overflowX: 'auto' }}>
-          <table className="data-table">
+        <div className="mobile-cards" style={{ overflowX: 'auto' }}>
+          <table>
             <thead>
               <tr>
                 <th>Time</th>
@@ -214,20 +214,20 @@ export default function AuditLogsPage() {
                     onClick={() => setSelected(log)}
                     className="hoverable-row"
                   >
-                    <td className="text-xs text-muted" style={{ whiteSpace: 'nowrap' }}>
+                    <td className="text-xs text-muted" style={{ whiteSpace: 'nowrap' }} data-label="Time">
                       {format(new Date(log.createdAt), 'dd MMM yy, HH:mm')}
                     </td>
-                    <td>
+                    <td data-label="Action">
                       <span className={`badge badge-${ACTION_COLORS[log.action] || 'ghost'}`}>
                         {log.action.replace(/_/g, ' ')}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Actor">
                       <div className="text-sm font-semibold text-strong">{log.actorName || '—'}</div>
                       <div className="text-2xs text-muted">{log.actorRole || ''}</div>
                     </td>
-                    <td className="text-sm">{log.entity || '—'}</td>
-                    <td className="text-sm text-muted">{summarise(log)}</td>
+                    <td className="text-sm" data-label="Entity">{log.entity || '—'}</td>
+                    <td className="text-sm text-muted" data-label="Summary">{summarise(log)}</td>
                   </tr>
                 ))
               )}

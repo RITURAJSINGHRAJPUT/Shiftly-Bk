@@ -198,8 +198,8 @@ export default function TransfersPage() {
           </div>
         </div>
       ) : (
-        <div className="card" style={{ overflow: 'auto' }}>
-          <table className="data-table">
+        <div className="table-container mobile-cards">
+          <table>
             <thead>
               <tr>
                 {isManager && <th>Employee</th>}
@@ -221,34 +221,34 @@ export default function TransfersPage() {
                 return (
                   <tr key={t.id}>
                     {isManager && (
-                      <td>
+                      <td data-label="Employee">
                         <div className="font-semibold">{t.employee?.name}</div>
                         <div className="text-xs text-muted">
                           {t.employee?.department} · {t.employee?.outlet?.name}
                         </div>
                       </td>
                     )}
-                    <td>
+                    <td data-label="Type">
                       <span className={`badge ${t.type === 'OUTLET' ? 'badge-info' : 'badge-primary'}`}>
                         {t.type}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="From">
                       <div>{t.type === 'OUTLET' ? (t.employee?.outlet?.name || '—') : stationsDisplay(t.fromSkills)}</div>
                       {t.type === 'OUTLET' && t.fromDepartment && (
                         <div className="text-xs text-muted">{t.fromDepartment}</div>
                       )}
                     </td>
-                    <td>
+                    <td data-label="To">
                       <div>{t.type === 'OUTLET' ? (t.targetOutlet?.name || '—') : stationsDisplay(t.targetSkills)}</div>
                       {t.type === 'OUTLET' && t.targetDepartment && (
                         <div className="text-xs text-muted">{t.targetDepartment}</div>
                       )}
                     </td>
-                    <td>
+                    <td data-label="Reason">
                       <span className="text-sm">{t.reason || '—'}</span>
                     </td>
-                    <td>
+                    <td data-label="Status">
                       <span className={`badge ${st.cls}`}>
                         <Icon size={12} />
                         {t.status}
@@ -257,22 +257,22 @@ export default function TransfersPage() {
                         <div className="text-xs text-muted mt-1">{t.rejectionReason}</div>
                       )}
                     </td>
-                    <td className="text-sm text-muted">
+                    <td className="text-sm text-muted" data-label="Date">
                       {new Date(t.createdAt).toLocaleDateString()}
                     </td>
-                    <td>
+                    <td data-label="Actions">
                       <div className="flex gap-1">
                         {t.status === 'PENDING' && isManager && !isOwn && (
                           <>
                             <button
-                              className="btn btn-sm btn-good"
+                              className="btn btn-sm btn-accent"
                               onClick={() => handleApprove(t.id)}
                               title="Approve"
                             >
                               <CheckCircle size={14} />
                             </button>
                             <button
-                              className="btn btn-sm btn-crit"
+                              className="btn btn-sm btn-danger"
                               onClick={() => { setRejectId(t.id); setRejectReason(''); }}
                               title="Reject"
                             >
@@ -444,7 +444,7 @@ export default function TransfersPage() {
           </div>
           <div className="flex gap-2" style={{ marginLeft: 'auto' }}>
             <button type="button" className="btn btn-ghost" onClick={() => setRejectId(null)}>Cancel</button>
-            <button type="submit" className="btn btn-crit">Reject</button>
+            <button type="submit" className="btn btn-danger">Reject</button>
           </div>
         </form>
       </Modal>

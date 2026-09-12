@@ -13,14 +13,14 @@ import DepartmentStaffingChart from '../components/charts/DepartmentStaffingChar
 import Modal from '../components/Modal';
 import {
   Users, Tags, Store, TrendingUp, CalendarDays, AlertTriangle,
-  ArrowRight, MapPin, RefreshCw, Clock, Plus, Upload,
+  ArrowRight, MapPin, RefreshCw, Clock, Plus, Upload, ChevronRight,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
 const TREND_RANGES = [
-  { value: 7, label: '7 Days' },
-  { value: 14, label: '14 Days' },
-  { value: 30, label: '30 Days' },
+  { value: 7, label: '7 Days', shortLabel: '7D' },
+  { value: 14, label: '14 Days', shortLabel: '14D' },
+  { value: 30, label: '30 Days', shortLabel: '30D' },
 ];
 
 function ManagementDashboard() {
@@ -169,27 +169,38 @@ function ManagementDashboard() {
       </div>
 
       {outlets.length > 0 && (
-        <div className="flex flex-wrap gap-3 mb-4">
-          {outlets.map((outlet) => {
-            const count = todayShifts.filter((s) => s.outletId === outlet.id).length;
-            return (
-              <div
-                key={outlet.id}
-                className="card"
-                style={{ cursor: 'pointer', flex: '1 1 200px', maxWidth: '300px' }}
-                onClick={() => setSelectedOutlet(outlet.id)}
-              >
-                <div className="card-header">
-                  <Store size={17} className="icon-brand" />
-                  <h3 className="card-title" style={{ flex: 1 }}>{outlet.name}</h3>
-                  <span className="badge badge-primary">{count}</span>
-                </div>
-                <div className="text-2xs text-muted" style={{ padding: '0 var(--card-pad) var(--card-pad)' }}>
-                  {outlet.brand?.name || '—'}
-                </div>
-              </div>
-            );
-          })}
+        <div className="card mb-4 outlet-panel">
+          <div className="card-header">
+            <h3 className="card-title">Outlets</h3>
+            <Link to="/outlets" className="card-header-link">
+              <span>View All</span>
+              <ChevronRight size={14} />
+            </Link>
+          </div>
+
+          {/* A strip that scrolls sideways rather than a grid that grows
+              downwards: one card per outlet cost ~175px of scroll each on a
+              phone, and the list only gets longer as restaurants are added. */}
+          <div className="outlet-strip">
+            {outlets.map((outlet) => {
+              const count = todayShifts.filter((s) => s.outletId === outlet.id).length;
+              return (
+                <button
+                  key={outlet.id}
+                  type="button"
+                  className="outlet-tile"
+                  onClick={() => setSelectedOutlet(outlet.id)}
+                >
+                  <div className="outlet-tile-top">
+                    <Store size={17} className="icon-brand" />
+                    <span className="badge badge-primary">{count}</span>
+                  </div>
+                  <div className="outlet-tile-name">{outlet.name}</div>
+                  <div className="outlet-tile-brand">{outlet.brand?.name || '—'}</div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -257,7 +268,8 @@ function ManagementDashboard() {
         </ChartCard>
       </div>
 
-      <div className="grid-2">
+      {/* Stays two-up on a phone — see .dash-split. */}
+      <div className="grid-2 dash-split">
         <ChartCard
           title="Department Staffing"
           subtitle={
@@ -274,7 +286,7 @@ function ManagementDashboard() {
           <div className="card-header">
             <h3 className="card-title">Quick Actions</h3>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="quick-actions">
             <Link to="/shifts" className="btn btn-primary w-full justify-between">
               <span>Run Auto-Allocation</span>
               <ArrowRight size={16} />

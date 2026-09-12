@@ -1,7 +1,11 @@
 /**
  * Segmented period picker — "7 Days", "This Week", "By Attendance".
  *
- * options: [{ value, label }]
+ * options: [{ value, label, shortLabel? }]
+ *
+ * `shortLabel` is swapped in on narrow screens by CSS rather than by a
+ * media-query hook, so the control can shrink without the page re-rendering
+ * on resize. Options without one just show the same label at both sizes.
  */
 export default function Segmented({ options, value, onChange, ariaLabel }) {
   return (
@@ -14,7 +18,10 @@ export default function Segmented({ options, value, onChange, ariaLabel }) {
           aria-pressed={opt.value === value}
           onClick={() => onChange(opt.value)}
         >
-          {opt.label}
+          <span className="segmented-label">{opt.label}</span>
+          {opt.shortLabel && (
+            <span className="segmented-label-short" aria-hidden="true">{opt.shortLabel}</span>
+          )}
         </button>
       ))}
     </div>

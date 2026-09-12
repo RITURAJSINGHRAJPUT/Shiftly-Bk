@@ -36,6 +36,33 @@ export function isWithinGeofence(userLat, userLng, outlet) {
 }
 
 /**
+ * Whether a check-in counts as late (more than 15 min after the employee's
+ * assigned shift start that day), or CHECKED_OUT if a check-out time is
+ * already known — matching processCheckOut() below, which always resolves to
+ * CHECKED_OUT regardless of the morning's lateness. Shared by the live
+ * self-check-in flow and the external attendance import, so "late" is
+ * defined once.
+ */
+export async function determineAttendanceStatus(prisma, employeeId, date, checkInTime, hasCheckOut = false) {
+  if (hasCheckOut) return 'CHECKED_OUT';
+
+  const dayShift = await prisma.shift.findFirst({
+    where: { employeeId, date, status: 'ASSIGNED' },
+  });
+
+  if (dayShift) {
+    const [sh, sm] = dayShift.startTime.split(':').map(Number);
+    const shiftStart = new Date(date);
+    shiftStart.setHours(sh, sm, 0, 0);
+    if (checkInTime > new Date(shiftStart.getTime() + 15 * 60 * 1000)) {
+      return 'LATE';
+    }
+  }
+
+  return 'CHECKED_IN';
+}
+
+/**
  * Process check-in with geolocation validation
  */
 export async function processCheckIn(prisma, employeeId, latitude, longitude) {
@@ -65,25 +92,7 @@ export async function processCheckIn(prisma, employeeId, latitude, longitude) {
   }
 
   const now = new Date();
-
-  // Determine if late (more than 15 min after shift start)
-  const todayShift = await prisma.shift.findFirst({
-    where: {
-      employeeId,
-      date: today,
-      status: 'ASSIGNED',
-    },
-  });
-
-  let status = 'CHECKED_IN';
-  if (todayShift) {
-    const [sh, sm] = todayShift.startTime.split(':').map(Number);
-    const shiftStart = new Date(today);
-    shiftStart.setHours(sh, sm, 0, 0);
-    if (now > new Date(shiftStart.getTime() + 15 * 60 * 1000)) {
-      status = 'LATE';
-    }
-  }
+  const status = await determineAttendanceStatus(prisma, employeeId, today, now);
 
   const attendance = await prisma.attendance.upsert({
     where: {

@@ -42,7 +42,7 @@ export default function EmployeesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [formData, setFormData] = useState({
-    name: '', email: '', phone: '', role: 'STAFF', department: 'KITCHEN', outletId: '', skills: []
+    name: '', email: '', phone: '', role: 'STAFF', department: 'KITCHEN', outletId: '', skills: [], employeeCode: ''
   });
   /**
    * The one-time password just issued, shown once and then gone.
@@ -94,9 +94,9 @@ export default function EmployeesPage() {
     setEditingEmployee(null);
     setFormData(
       addMode === 'management'
-        ? { name: '', email: '', phone: '', role: 'HR', department: '', outletId: '', skills: [] }
+        ? { name: '', email: '', phone: '', role: 'HR', department: '', outletId: '', skills: [], employeeCode: '' }
         // The card already chose the outlet, so the form does not ask again.
-        : { name: '', email: '', phone: '', role: 'STAFF', department: 'KITCHEN', outletId: selectedGroupId, skills: [] }
+        : { name: '', email: '', phone: '', role: 'STAFF', department: 'KITCHEN', outletId: selectedGroupId, skills: [], employeeCode: '' }
     );
     setIssued(null);
     setIsModalOpen(true);
@@ -112,7 +112,8 @@ export default function EmployeesPage() {
       // Null for management accounts, and the selects need a string.
       department: emp.department || '',
       outletId: emp.outletId || '',
-      skills: emp.skills || []
+      skills: emp.skills || [],
+      employeeCode: emp.employeeCode || ''
     });
     setIsModalOpen(true);
   };
@@ -558,6 +559,20 @@ export default function EmployeesPage() {
                 onChange={e => setFormData(prev => ({ ...prev, phone: e.target.value }))}
               />
             </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Employee Code (optional)</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="e.g. DP443"
+              value={formData.employeeCode}
+              onChange={e => setFormData(prev => ({ ...prev, employeeCode: e.target.value }))}
+            />
+            <p className="text-xs text-muted mt-1">
+              Links this person to their id in an external attendance system, if any.
+            </p>
           </div>
 
           <div className="form-group">

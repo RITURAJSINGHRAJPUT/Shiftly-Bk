@@ -27,7 +27,7 @@ export default function DepartmentStaffingChart({ byDepartment = [], total = 0 }
   }));
 
   return (
-    <div className="grid-2" style={{ height: '100%', alignItems: 'center' }}>
+    <div className="staffing-layout">
       <div className="donut-wrap">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>

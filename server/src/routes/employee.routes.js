@@ -154,7 +154,7 @@ function readStations(skills, department) {
 // POST /api/employees — create employee
 router.post('/', authenticateToken, can('EMPLOYEE_CREATE'), async (req, res) => {
   try {
-    const { name, email, phone, role, department, outletId, skills } = req.body;
+    const { name, email, phone, role, department, outletId, skills, employeeCode } = req.body;
 
     if (!name) return res.status(400).json({ error: 'name is required' });
     if (!email) {
@@ -186,6 +186,9 @@ router.post('/', authenticateToken, can('EMPLOYEE_CREATE'), async (req, res) => 
         email,
         phone,
         role: effectiveRole,
+        // Empty string, not null, would still collide with the next empty
+        // string under the @unique constraint — only null is exempt from it.
+        employeeCode: employeeCode?.trim() || null,
         ...assignment,
         password: await bcrypt.hash(temporaryPassword, 10),
         mustChangePassword: true,
@@ -200,7 +203,8 @@ router.post('/', authenticateToken, can('EMPLOYEE_CREATE'), async (req, res) => 
     res.status(201).json({ ...sanitized, temporaryPassword });
   } catch (err) {
     if (err.code === 'P2002') {
-      return res.status(400).json({ error: 'Email already exists' });
+      const field = err.meta?.target?.[0] || 'value';
+      return res.status(400).json({ error: `That ${field} is already in use by another employee` });
     }
     res.status(500).json({ error: err.message });
   }
@@ -209,7 +213,7 @@ router.post('/', authenticateToken, can('EMPLOYEE_CREATE'), async (req, res) => 
 // PUT /api/employees/:id
 router.put('/:id', authenticateToken, can('EMPLOYEE_EDIT'), async (req, res) => {
   try {
-    const { name, email, phone, role, department, outletId, skills, isActive } = req.body;
+    const { name, email, phone, role, department, outletId, skills, isActive, employeeCode } = req.body;
 
     const existing = await prisma.employee.findUnique({
       where: { id: req.params.id },
@@ -223,6 +227,9 @@ router.put('/:id', authenticateToken, can('EMPLOYEE_EDIT'), async (req, res) => 
     if (phone !== undefined) data.phone = phone;
     if (role !== undefined) data.role = role;
     if (isActive !== undefined) data.isActive = isActive;
+    // Empty string, not null, would still collide with the next empty string
+    // under the @unique constraint — only null is exempt from it.
+    if (employeeCode !== undefined) data.employeeCode = employeeCode?.trim() || null;
 
     // Judged against the *effective* role, because this handler is partial: a
     // request that changes only the role still has to move the assignment with
@@ -260,7 +267,8 @@ router.put('/:id', authenticateToken, can('EMPLOYEE_EDIT'), async (req, res) => 
     // Both were mapped on POST but not here, so renaming onto a taken email or
     // editing a row deleted underneath you surfaced as a bare 500.
     if (err.code === 'P2002') {
-      return res.status(400).json({ error: 'Email already exists' });
+      const field = err.meta?.target?.[0] || 'value';
+      return res.status(400).json({ error: `That ${field} is already in use by another employee` });
     }
     if (err.code === 'P2025') {
       return res.status(404).json({ error: 'Employee not found' });

@@ -1,9 +1,12 @@
 import { Router } from 'express';
 import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { requireApiKey } from '../middleware/apiKey.js';
 import { processCheckIn, processCheckOut } from '../engine/geoAttendance.js';
+import { importPunches } from '../engine/attendanceImport.js';
 import { employeeScope, hasGlobalScope } from '../lib/scope.js';
 import { localDateRange } from '../lib/dates.js';
+import { logAudit } from '../lib/audit.js';
 
 const router = Router();
 
@@ -139,6 +142,39 @@ router.get('/stats', authenticateToken, async (req, res) => {
       present: checkedIn + late,
       notCheckedIn: Math.max(0, total - checkedIn - late - absent),
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/attendance/import
+ *
+ * Bridges an external attendance system (KGAPI's raw biometric/mobile-app
+ * punch log) into Shiftly's own Attendance table. No JWT — this is called by
+ * an unattended script, not a signed-in user — gated instead by its own API
+ * key, kept separate from the public read API's key so a leaked read-only
+ * key can never be used to write attendance data.
+ *
+ * Body is the raw punch array as KGAPI returns it under `GetAttandance`, e.g.
+ * `[{ emp_name, edatetime, evtsourcedet, userid }, ...]`.
+ */
+router.post('/import', requireApiKey('ATTENDANCE_IMPORT_KEYS'), async (req, res) => {
+  try {
+    const punches = req.body;
+    if (!Array.isArray(punches)) {
+      return res.status(400).json({ error: 'Body must be an array of punch events' });
+    }
+
+    const summary = await importPunches(prisma, punches);
+
+    logAudit({
+      action: 'ATTENDANCE_IMPORT',
+      entity: 'Attendance',
+      details: { source: 'KGAPI', ...summary },
+    });
+
+    res.json(summary);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

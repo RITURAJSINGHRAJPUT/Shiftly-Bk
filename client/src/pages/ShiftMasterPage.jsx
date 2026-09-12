@@ -484,7 +484,7 @@ export default function ShiftMasterPage() {
             {dirty && <span className="badge badge-warn">Unsaved</span>}
           </div>
           {isManager && (
-            <div className="flex items-center gap-2">
+            <div className="sheet-toolbar">
               {isAdmin && (
                 <button className="btn btn-ghost btn-sm" onClick={() => {
                   setStationDraft((outlet?.brand?.stations ?? []).join('\n'));

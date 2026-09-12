@@ -50,7 +50,7 @@ router.use((req, res, next) => {
   next();
 });
 
-router.use(publicApiLimiter, requireApiKey);
+router.use(publicApiLimiter, requireApiKey());
 
 /**
  * Administration is not published.

@@ -1,8 +1,10 @@
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import Switch from '../../components/Switch';
-import { LogOut, ShieldAlert, Award, Moon, MapPin, Building2 } from 'lucide-react';
+import { LogOut, ShieldAlert, Award, Moon, MapPin, Building2, ChevronRight } from 'lucide-react';
 import { ROLES, GLOBAL_SCOPE_ROLES } from '../../constants';
+import { visibleSections } from '../../navigation';
 
 export default function MobileProfile() {
   const { user, logout } = useAuth();
@@ -10,6 +12,13 @@ export default function MobileProfile() {
 
   const initials =
     user?.name?.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase() || '?';
+
+  /* The sidebar is not rendered below the mobile breakpoint, so without this
+     the bottom bar's four tabs were the only reachable routes on a phone —
+     Employees, Outlets, Reports and Settings could not be opened at all.
+     Same source as the sidebar, so a role sees here exactly what it would
+     see there, and a page added to one reaches the other. */
+  const sections = visibleSections(user?.role);
 
   return (
     <div className="page-content animate-in">
@@ -31,6 +40,24 @@ export default function MobileProfile() {
         <p className="text-sm text-muted">{user?.email}</p>
         <div className="badge badge-primary mt-2">{ROLES[user?.role] || user?.role}</div>
       </div>
+
+      {sections.map((section) => (
+        <div className="card mb-4" key={section.title}>
+          <div className="card-header">
+            <h3 className="card-title">{section.title}</h3>
+          </div>
+          <div className="menu-list">
+            {section.items.map((item) => (
+              <Link key={item.path} to={item.path} className="menu-row">
+                <item.icon size={18} className="icon-brand" />
+                <span className="menu-row-label">{item.label}</span>
+                {item.stub && <span className="badge badge-ghost">Soon</span>}
+                <ChevronRight size={16} className="icon-muted" />
+              </Link>
+            ))}
+          </div>
+        </div>
+      ))}
 
       {/* Organisation-wide roles belong to no restaurant, work no department and
           hold no stations. These cards used to render three em-dashes and an

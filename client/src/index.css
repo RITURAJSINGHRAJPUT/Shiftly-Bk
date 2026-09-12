@@ -157,6 +157,10 @@
   --sidebar-collapsed: 72px;
   --header-height: 64px;
   --mobile-nav-height: 64px;
+  /* One knob for card padding, stepped down on mobile. Two call sites in the
+     JSX already read this token and had been resolving to zero, since it was
+     never actually declared. */
+  --card-pad: var(--space-5);
   /* Content fills the space next to the sidebar rather than being capped and
      centred. A 1440px cap left ~110px of dead margin on each side at 1920px.
      Set a length here (e.g. 1600px) to reintroduce a ceiling on ultrawide
@@ -1064,7 +1068,7 @@ body {
   background: var(--surface-card);
   border: none;
   border-radius: var(--radius-xl);
-  padding: var(--space-5);
+  padding: var(--card-pad);
   box-shadow: var(--clay-shadow);
 }
 
@@ -1134,26 +1138,120 @@ body {
   margin-bottom: var(--space-6);
 }
 
-.stat-card {
+/* The dashboard's outlet strip: scrolls sideways instead of stacking, so the
+   section stays one screen tall however many restaurants there are. Same
+   native-scroll approach as .outlet-tabs on Shift Planning. */
+.outlet-strip {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  /* Room for the tiles' own shadow, which a tight overflow box would clip. */
+  padding: var(--space-1) var(--space-1) var(--space-3);
+  margin: calc(var(--space-1) * -1);
+}
+
+.outlet-tile {
+  flex: 0 0 auto;
+  width: 150px;
+  scroll-snap-align: start;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
   background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  box-shadow: var(--clay-shadow-sm);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+@media (hover: hover) {
+  .outlet-tile:hover { transform: translateY(-2px); }
+}
+
+.outlet-tile:active { box-shadow: var(--clay-shadow-pressed); }
+
+.outlet-tile:focus-visible {
+  outline: none;
+  box-shadow: var(--clay-shadow-sm), var(--shadow-ring);
+}
+
+.outlet-tile-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.outlet-tile-name {
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--ink-strong);
+  line-height: 1.3;
+  /* Long restaurant names must not make one tile taller than its neighbours. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outlet-tile-brand {
+  font-size: var(--text-2xs);
+  color: var(--ink-muted);
+}
+
+/* "View All" in a card header. */
+.card-header-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--primary-600);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.card-header-link:hover { text-decoration: underline; }
+
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Icon chip left, text stacked beside it. The tone tints the whole tile
+   rather than only the chip: at two-up on a phone the tint is what tells the
+   four apart at a glance, where a 40px square could not. */
+.stat-card {
+  background: var(--tint-brand);
   border: none;
   border-radius: var(--radius-xl);
   padding: var(--space-4) var(--space-5);
   box-shadow: var(--clay-shadow);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
   transition: box-shadow var(--transition-base), transform var(--transition-base);
 }
 
-.stat-card:hover {
-  transform: translateY(-2px);
+.stat-card[data-tone='good'] { background: var(--tint-good); }
+.stat-card[data-tone='warn'] { background: var(--tint-warn); }
+.stat-card[data-tone='crit'] { background: var(--tint-crit); }
+.stat-card[data-tone='info'] { background: var(--tint-info); }
+
+/* Only where a pointer can actually hover — on a touch screen this sticks
+   after the tap and leaves the tile lifted. */
+@media (hover: hover) {
+  .stat-card:hover {
+    transform: translateY(-2px);
+  }
 }
 
-/* Label row: text left, tinted icon square right — the mockup's layout. */
-.stat-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-3);
-  margin-bottom: var(--space-3);
+.stat-body {
+  min-width: 0;
+  flex: 1;
 }
 
 .stat-card .stat-label {
@@ -1172,18 +1270,24 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: var(--tint-brand);
   color: var(--primary-600);
   box-shadow: var(--clay-shadow-sm);
 }
 
-.stat-card[data-tone='good'] .stat-icon,
+/* The chip sits on a tile that is already tinted, so it takes the plain
+   surface instead — tint on tint reads as a smudge. Elsewhere .icon-bubble
+   sits on a white card and keeps the tint itself. */
+.stat-card .stat-icon { background: var(--surface-card); }
+.icon-bubble { background: var(--tint-brand); }
+
+.stat-card[data-tone='good'] .stat-icon { color: var(--ink-good); }
+.stat-card[data-tone='warn'] .stat-icon { color: var(--ink-warn); }
+.stat-card[data-tone='crit'] .stat-icon { color: var(--ink-crit); }
+.stat-card[data-tone='info'] .stat-icon { color: var(--info-500); }
+
 .icon-bubble.tone-good { background: var(--tint-good); color: var(--ink-good); }
-.stat-card[data-tone='warn'] .stat-icon,
 .icon-bubble.tone-warn { background: var(--tint-warn); color: var(--ink-warn); }
-.stat-card[data-tone='crit'] .stat-icon,
 .icon-bubble.tone-crit { background: var(--tint-crit); color: var(--ink-crit); }
-.stat-card[data-tone='info'] .stat-icon,
 .icon-bubble.tone-info { background: var(--tint-info); color: var(--info-500); }
 
 .stat-card .stat-value {
@@ -2019,6 +2123,9 @@ tbody tr:last-child td {
      to zero, and without min-width:0 it fights a flex parent for width. */
   min-width: 0;
   width: 100%;
+  /* Set per card by ChartCard; a variable rather than an inline height so a
+     media query can still cap it. */
+  height: var(--chart-h, 260px);
 }
 
 .recharts-wrapper {
@@ -2051,6 +2158,9 @@ tbody tr:last-child td {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  /* Explicit, so the label and the value never sit flush against each other
+     however tight the donut gets. */
+  gap: 2px;
   pointer-events: none;
 }
 
@@ -2064,6 +2174,19 @@ tbody tr:last-child td {
   font-weight: 700;
   color: var(--ink-strong);
   line-height: 1.1;
+}
+
+/* Donut beside its legend. Its own class rather than the page-level .grid-2
+   utility it used to borrow: .grid-2 collapses to one column at 768px, which
+   is right for a page section but turned this chart's row into an auto-sized
+   track — .donut-wrap's height:100% then had nothing to resolve against, and
+   the centre label ended up crushed on top of its own value. */
+.staffing-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  align-items: center;
+  height: 100%;
 }
 
 .donut-wrap {
@@ -2162,6 +2285,9 @@ tbody tr:last-child td {
   font-family: inherit;
   white-space: nowrap;
 }
+
+/* The short form only exists below the breakpoint — see the mobile block. */
+.segmented-label-short { display: none; }
 
 .segmented-btn.active {
   background: var(--surface-card);
@@ -2322,6 +2448,10 @@ tbody tr:last-child td {
 
 /* --- grid --- */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+/* A grid item is min-width:auto by default, so anything with a wide
+   min-content — a nowrap .btn label, a fixed-width chart — widens its own
+   track and pushes the page sideways instead of shrinking. */
+.grid-2 > *, .grid-3 > * { min-width: 0; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
 
 /* --- divided list ---
@@ -2332,6 +2462,39 @@ tbody tr:last-child td {
 .divided-list > * { padding-block: var(--space-3); border-bottom: 1px solid var(--line-subtle); }
 .divided-list > *:first-child { padding-top: 0; }
 .divided-list > *:last-child { padding-bottom: 0; border-bottom: 0; }
+
+/* Navigation rows on the phone's profile page — the sidebar's job, done as a
+   tappable list. Full-bleed into the card's padding so the pressed state reads
+   as a row rather than as a floating strip. */
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  margin: calc(var(--card-pad) * -1);
+  margin-top: 0;
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--card-pad);
+  color: var(--ink-base);
+  text-decoration: none;
+  border-top: 1px solid var(--line-subtle);
+  /* 44px minimum target, whatever the label's line-height works out to. */
+  min-height: 44px;
+}
+
+.menu-row:first-child { border-top: 0; }
+.menu-row:active { background: var(--surface-sunken); }
+
+.menu-row-label {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--ink-strong);
+}
 
 /* --- motion --- */
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -3101,16 +3264,279 @@ tbody tr:last-child td {
   .page-title { font-size: var(--text-xl); }
   .table-container { font-size: var(--text-sm); }
   thead th, tbody td { padding: var(--space-2) var(--space-3); }
+
+  /* ---- Tables as cards ----
+     A seven-column table on a 375px screen scrolls sideways and reads as a
+     smear of clipped text, so below this breakpoint each row becomes a
+     stacked card of label/value pairs instead. The label comes from the
+     cell's own data-label, which has to match its column heading.
+
+     Opt-in via .mobile-cards rather than applying to every table, because a
+     table whose cells carry no data-label would lose its headings entirely
+     and render as an unlabelled pile. Keyed on .mobile-cards alone, not on
+     .table-container, so a table that already sits inside a .card can take
+     the behaviour without a second border drawn around it. */
+  .mobile-cards table,
+  .mobile-cards thead,
+  .mobile-cards tbody,
+  .mobile-cards th,
+  .mobile-cards td,
+  .mobile-cards tr {
+    display: block;
+  }
+
+  /* Hidden from the eye, not from a screen reader — the headings are still
+     the row's structure even when the visible labels come from data-label. */
+  .mobile-cards thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .mobile-cards tbody tr {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--line-subtle);
+  }
+
+  .mobile-cards tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  /* Only labelled cells become label/value rows. A colSpan cell carrying a
+     "Loading…"/"None found" message has no label and stays a plain block, so
+     it keeps its own centring instead of being shoved to one side.
+
+     The label sits in a reserved gutter rather than being a flex sibling of
+     the content. As a flex row the cell flattened whatever was inside it:
+     an employee's name and department stopped stacking and were flung to
+     opposite ends of the row, as were a status badge and its "Auto" tag.
+     Absolutely positioning the label leaves the cell a plain block, so its
+     contents keep the layout they were written with. */
+  .mobile-cards td[data-label] {
+    display: block;
+    position: relative;
+    padding: var(--space-2) 0 var(--space-2) 38%;
+    border: none;
+    min-height: 1.5rem;
+  }
+
+  .mobile-cards td[data-label]::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 0;
+    top: var(--space-2);
+    width: 34%;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+  }
+
+  /* A cell with nothing in it is noise once it is its own line. */
+  .mobile-cards td[data-label]:empty {
+    display: none;
+  }
+
+  /* In card mode the rows stack, so there is nothing to scroll sideways to —
+     and a long unbroken value should wrap rather than widen the row and take
+     the page with it. */
+  .mobile-cards { overflow-x: hidden; }
+  .mobile-cards td[data-label] { overflow-wrap: anywhere; }
+
+  /* ---- Leave log: a card, not six label/value lines ----
+     Six stacked pairs came to ~290px a row, so twenty leave records were
+     roughly 5,800px of scroll. The same cells laid out as a card — who and
+     their status on top, dates and type beneath, reason and cover under
+     that — is about 115px, and reads as one thing rather than a form.
+
+     Keyed on column position so the markup stays a plain table (and the
+     desktop view untouched); :has() keeps it off a colspan'd empty-state
+     row, which has no labelled cells to place. */
+  .leave-cards tbody tr:has(td[data-label]) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "emp    status"
+      "dates  type"
+      "reason reason"
+      "cover  actions";
+    column-gap: var(--space-3);
+    row-gap: var(--space-2);
+    align-items: center;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .leave-cards td[data-label] {
+    padding: 0;
+    min-height: 0;
+  }
+
+  /* The card's shape says what each line is, so the captions go. */
+  .leave-cards td[data-label]::before { display: none; }
+
+  .leave-cards td:nth-child(1) { grid-area: emp; }
+  .leave-cards td:nth-child(2) { grid-area: type; justify-self: stretch; }
+  .leave-cards td:nth-child(3) { grid-area: dates; }
+  .leave-cards td:nth-child(4) { grid-area: reason; }
+  .leave-cards td:nth-child(5) { grid-area: cover; }
+  /* APPROVED and its "Auto" tag stack rather than sitting side by side, so
+     they read as one right-hand column with the type badge below them
+     instead of a badge cluster competing with the name. */
+  .leave-cards td:nth-child(6) {
+    grid-area: status;
+    justify-self: stretch;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    /* Matches the grid's row-gap, so the run of three pills is evenly spaced
+       even though the third one lives in the next grid row. */
+    gap: var(--space-2);
+  }
+
+  /* All one width — pills sized to their own text made a ragged edge down the
+     column. The track is auto-sized, so it takes the width of the longest
+     label ("COVERAGE PENDING") rather than a magic number that would clip it. */
+  .leave-cards td:nth-child(2) .badge,
+  .leave-cards td:nth-child(6) .badge {
+    width: 100%;
+    justify-content: center;
+    /* The tag carries an ml-1 for the side-by-side desktop row. */
+    margin-left: 0;
+  }
+  .leave-cards td:nth-child(7) { grid-area: actions; justify-self: end; }
+
+  .leave-cards td:nth-child(3),
+  .leave-cards td:nth-child(4) {
+    font-size: var(--text-xs);
+    color: var(--ink-muted);
+  }
+
+  .leave-cards td:nth-child(5) {
+    font-size: var(--text-2xs);
+    color: var(--ink-muted);
+  }
+
+  /* "None" on its own means nothing — this is the one caption worth keeping,
+     inline with its value rather than on a line of its own. */
+  .leave-cards td:nth-child(5)::before {
+    content: attr(data-label) ': ';
+    display: inline;
+    position: static;
+    width: auto;
+    font-size: inherit;
+    letter-spacing: 0;
+    text-transform: none;
+    font-weight: 400;
+  }
   .notification-panel { width: 100%; }
   .user-chip .user-name, .user-chip .user-role { display: none; }
 
+  /* Wrap, not stack. Forcing a column put a small icon, a short title and a
+     badge on three separate rows and cost ~64px on every card on every page;
+     wrapping breaks only the headers that genuinely do not fit. */
   .card-header {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-wrap: wrap;
   }
 
+  /* ---- Dashboard density ----
+     Two-up tiles need the chrome back: the phone tile was 143px tall to show
+     a 28px number. Stepping the token moves every card and both JSX call
+     sites together. */
+  :root { --card-pad: var(--space-4); }
+
+  .card { border-radius: var(--radius-lg); }
+
+  .stat-card {
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+    gap: var(--space-2);
+  }
+
+  .stat-card .stat-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .stat-card .stat-value { font-size: 1.375rem; }
+
+  .stat-card .stat-change { margin-top: var(--space-1); }
+
+  /* The Total Brands tile joins every brand name with commas — left to wrap
+     it makes its tile taller than the one beside it and the grid goes
+     ragged. */
+  .stat-card .stat-change-note {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Cap a tall chart, leave a deliberately short one alone. */
+  .chart-card-body { height: min(var(--chart-h, 260px), 200px); }
+
+  /* "7D" rather than "7 Days" — the full set is ~190px and pushed itself
+     onto its own row inside the chart header. */
+  .segmented-btn:has(.segmented-label-short) .segmented-label { display: none; }
+  .segmented-label-short { display: inline; }
+
+  /* Page actions drop below the title and take the row for themselves, two
+     across. A ~50% basis rather than `flex: 1` so a header with three buttons
+     (Outlets, Shifts) pairs them up and lets the third take its own line,
+     instead of squeezing all three into ~110px each. */
   .page-header .flex {
+    width: 100%;
     flex-wrap: wrap;
+  }
+
+  .page-header .flex > .btn {
+    flex: 1 1 calc(50% - var(--space-2));
+    min-width: 0;
+    justify-content: center;
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+
+  /* .card-header stacks the title and the toolbar, but the toolbar's own
+     buttons still need somewhere to go — let them share the full width in
+     pairs rather than compress. */
+  .sheet-toolbar { width: 100%; }
+  .sheet-toolbar .btn { flex: 1 1 auto; justify-content: center; }
+
+  /* Staffing and Quick Actions stay side by side rather than collapsing —
+     between them they were ~660px of stacked scroll for two small cards.
+     Only down to 600px, though: below that a column is ~133px of content,
+     and a 120px donut or a "Run Auto-Allocation" pill simply does not fit.
+     Under 600px they stack, and Quick Actions goes two-up instead (below),
+     which costs about the same height as the side-by-side row would have. */
+  .dash-split {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+  }
+
+  /* Donut beside its legend, sized to fit the capped body. Stacking them put
+     a 200px donut plus a legend inside a 260px box, which overflowed. */
+  .staffing-layout {
+    grid-template-columns: auto 1fr;
+    gap: var(--space-2);
+    height: 100%;
+  }
+
+  .staffing-layout .donut-wrap {
+    width: 120px;
+    height: 120px;
+  }
+
+  .chart-legend-row { font-size: var(--text-2xs); }
+
+  /* Half-width column, so the label and its trailing icon need the room. */
+  .quick-actions .btn {
+    padding: 9px var(--space-3);
+    font-size: var(--text-xs);
+    gap: var(--space-2);
   }
 
   /* ---- landing ---- */
@@ -3131,11 +3557,50 @@ tbody tr:last-child td {
   .landing-scale-items { gap: var(--space-4); }
 }
 
+/* Narrow phones. The Staffing / Quick Actions row above is two-up down to
+   600px; below that a column is only ~133px of content — too little for a
+   120px donut or a "Run Auto-Allocation" pill, which would widen its own
+   grid track and scroll the whole page sideways. So they stack here, and
+   Quick Actions pairs up its buttons instead: roughly the same total height
+   as the side-by-side row, and it actually fits. */
+@media (max-width: 600px) {
+  .dash-split { grid-template-columns: 1fr; }
+
+  .quick-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+  }
+
+  /* .btn is nowrap by design; in a half-width cell the longer labels have to
+     be allowed a second line rather than widen the track. */
+  .quick-actions .btn {
+    min-width: 0;
+    white-space: normal;
+    text-align: left;
+    line-height: 1.25;
+    border-radius: var(--radius-lg);
+  }
+
+  .quick-actions .btn > span { min-width: 0; }
+}
+
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: 1fr; }
   .login-card { padding: var(--space-6); }
   .page-header { flex-direction: column; align-items: flex-start; }
-  .page-header .btn { width: 100%; justify-content: center; }
+  /* A lone action still takes the full width; paired ones share the row —
+     see .page-header .flex above. */
+  .page-header > .btn { width: 100%; justify-content: center; }
+
+  /* The label gutter costs more than it is worth once the value has barely
+     half a phone width left to sit in — stack the two instead. Not for the
+     leave log, which is laid out as a card and has no gutter to reclaim. */
+  .mobile-cards:not(.leave-cards) td[data-label] {
+    padding-left: 0;
+    padding-top: calc(var(--space-4) + var(--space-1));
+  }
+  .mobile-cards:not(.leave-cards) td[data-label]::before { width: auto; }
 
   /* ---- landing ---- */
   .landing-grid,
@@ -3164,11 +3629,10 @@ tbody tr:last-child td {
 
    Plain .stats-grid keeps auto-fit for Reports (4 tiles), Organizations and
    Outlets, whose counts vary. */
-.stats-grid--kpi { grid-template-columns: 1fr; }
+/* Two even from the narrowest phone: only 1/2/3/6 divide six tiles without
+   leaving a hole, and one-up spent 964px of scroll on the KPI row alone. */
+.stats-grid--kpi { grid-template-columns: repeat(2, 1fr); }
 
-@media (min-width: 600px) {
-  .stats-grid--kpi { grid-template-columns: repeat(2, 1fr); }
-}
 @media (min-width: 1000px) {
   .stats-grid--kpi { grid-template-columns: repeat(3, 1fr); }
 }
@@ -3275,6 +3739,18 @@ tbody tr:last-child td {
    Station rows down the side, Mon–Sun across, two shifts per station. Wide by
    nature, so the station column pins while the days scroll under it — losing
    track of which row you are typing into is the whole failure mode here. */
+
+/* The sheet's own toolbar. Its own class rather than the bare flex utilities,
+   because three buttons whose labels never wrap ("Apply to all <brand>" grows
+   with the brand name) had no relief valve on a phone and crammed into an
+   unreadable cluster. */
+.sheet-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
 .shift-grid {
   width: 100%;
   border-collapse: collapse;

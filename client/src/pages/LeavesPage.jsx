@@ -187,7 +187,7 @@ export default function LeavesPage() {
       {loading ? (
         <div className="text-center py-8">Loading leaves log...</div>
       ) : (
-        <div className="table-container">
+        <div className="table-container mobile-cards leave-cards">
           <table>
             <thead>
               <tr>
@@ -203,21 +203,21 @@ export default function LeavesPage() {
             <tbody>
               {leaves.map(l => (
                 <tr key={l.id}>
-                  <td>
+                  <td data-label="Employee">
                     <div className="font-semibold text-primary" style={{ color: 'var(--ink-strong)' }}>{l.employee.name}</div>
                     <div className="text-xs text-muted">{l.employee.department}</div>
                   </td>
-                  <td>
+                  <td data-label="Leave Type">
                     <span className={`badge ${l.isEmergency ? 'badge-error' : 'badge-primary'}`}>
                       {l.type} {l.isEmergency && '(EMERGENCY)'}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Duration">
                     {format(new Date(l.startDate), 'MMM d, yyyy')} - {format(new Date(l.endDate), 'MMM d, yyyy')}
                   </td>
-                  <td>{l.reason || '-'}</td>
-                  <td>{l.coveredById ? 'Assigned' : 'None'}</td>
-                  <td>
+                  <td data-label="Reason">{l.reason || '-'}</td>
+                  <td data-label="Covered By">{l.coveredById ? 'Assigned' : 'None'}</td>
+                  <td data-label="Status">
                     <span className={`badge ${l.status === 'APPROVED' ? 'badge-accent' : l.status === 'PENDING' || l.status === 'COVERAGE_PENDING' ? 'badge-warn' : 'badge-error'}`}>
                       {l.status.replace(/_/g, ' ')}
                     </span>
@@ -226,7 +226,7 @@ export default function LeavesPage() {
                     )}
                   </td>
                   {isManager && (
-                    <td>
+                    <td data-label="Actions">
                       {(l.status === 'PENDING' || l.status === 'COVERAGE_PENDING') && canActOn(l) && (
                         <div className="flex gap-2">
                           <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--accent-400)' }} onClick={() => handleApprove(l.id)}>

@@ -1,20 +1,24 @@
 import crypto from 'crypto';
 
 /**
- * Shared-secret gate for the public integration API.
+ * Shared-secret gate for machine-to-machine endpoints with no logged-in user.
  *
  * Everything else in this app is behind a JWT that pins the caller to a role
- * and an outlet. The public routes have no user at all, so they need their own
- * key — a value handed to an integrator, not minted by logging in.
+ * and an outlet. Routes with no user at all need their own key instead — a
+ * value handed to an integrator, not minted by logging in.
  *
- * Keys live in PUBLIC_API_KEYS, comma separated. Read per request rather than
- * at import for the same reason rateLimit.js does: this module is evaluated
- * while index.js is still resolving its import graph, which is before
- * dotenv.config() runs, so reading eagerly would make the switch depend on
- * import order.
+ * Keys live in an env var, comma separated (default PUBLIC_API_KEYS, for the
+ * original caller). A second caller (e.g. the attendance import) passes its
+ * own env var name so a leaked read-only key can't also be used to write
+ * data — each integration gets its own credential, not a shared one.
+ *
+ * Read per request rather than at import for the same reason rateLimit.js
+ * does: this module is evaluated while index.js is still resolving its import
+ * graph, which is before dotenv.config() runs, so reading eagerly would make
+ * the switch depend on import order.
  */
-function configuredKeys() {
-  return (process.env.PUBLIC_API_KEYS || '')
+function configuredKeys(envVar) {
+  return (process.env[envVar] || '')
     .split(',')
     .map((k) => k.trim())
     .filter(Boolean);
@@ -38,29 +42,31 @@ function fingerprint(key) {
   return crypto.createHash('sha256').update(key).digest('hex').slice(0, 6);
 }
 
-export function requireApiKey(req, res, next) {
-  const keys = configuredKeys();
+export function requireApiKey(envVar = 'PUBLIC_API_KEYS') {
+  return (req, res, next) => {
+    const keys = configuredKeys(envVar);
 
-  // Fails closed. An unset variable means the endpoint is not open for
-  // business — never that it is open to everyone.
-  if (keys.length === 0) {
-    return res.status(503).json({ error: 'Public API is not configured.' });
-  }
+    // Fails closed. An unset variable means the endpoint is not open for
+    // business — never that it is open to everyone.
+    if (keys.length === 0) {
+      return res.status(503).json({ error: 'This API is not configured.' });
+    }
 
-  // X-API-Key is the documented header; the bearer fallback is for clients that
-  // only know how to send an Authorization header.
-  const header = req.get('x-api-key');
-  const bearer = (req.get('authorization') || '').startsWith('Bearer ')
-    ? req.get('authorization').slice(7).trim()
-    : null;
-  const supplied = header?.trim() || bearer;
+    // X-API-Key is the documented header; the bearer fallback is for clients
+    // that only know how to send an Authorization header.
+    const header = req.get('x-api-key');
+    const bearer = (req.get('authorization') || '').startsWith('Bearer ')
+      ? req.get('authorization').slice(7).trim()
+      : null;
+    const supplied = header?.trim() || bearer;
 
-  if (!supplied || !keys.some((k) => matches(supplied, k))) {
-    // Deliberately identical for missing and wrong, and never echoes the value
-    // back — a reflected key ends up in logs and error trackers.
-    return res.status(401).json({ error: 'Invalid or missing API key.' });
-  }
+    if (!supplied || !keys.some((k) => matches(supplied, k))) {
+      // Deliberately identical for missing and wrong, and never echoes the
+      // value back — a reflected key ends up in logs and error trackers.
+      return res.status(401).json({ error: 'Invalid or missing API key.' });
+    }
 
-  req.apiKeyLabel = fingerprint(supplied);
-  next();
+    req.apiKeyLabel = fingerprint(supplied);
+    next();
+  };
 }
