@@ -8,7 +8,7 @@ import Modal from '../components/Modal';
 import { format, startOfWeek, endOfWeek, addDays, isSameDay, isToday, parseISO } from 'date-fns';
 import {
   Calendar, CalendarDays, Plus, RefreshCw, CheckCircle2, AlertTriangle,
-  Layers, Store, ChevronLeft, ChevronRight,
+  Layers, Store, ChevronLeft, ChevronRight, Eraser, Trash2,
 } from 'lucide-react';
 
 
@@ -51,6 +51,19 @@ export default function ShiftsPage() {
   const [isShiftModalOpen, setShiftModalOpen] = useState(false);
   const [shiftForm, setShiftForm] = useState(null);
 
+  const [resetPreview, setResetPreview] = useState(null);
+  const [isResetModalOpen, setResetModalOpen] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState(null);
+  const [resetResult, setResetResult] = useState(null);
+
+  /**
+   * Not `isManager`, which also covers HR, Master of House and Head Chef — all
+   * of whom would see a button that 403s, since SHIFT_RESET is ADMIN-floor with
+   * an Outlet Manager exception. The server enforces this independently; this
+   * only decides what is worth showing.
+   */
+  const canReset = ['SUPER_ADMIN', 'ADMIN', 'OUTLET_MANAGER'].includes(user?.role);
 
   const outlet = outlets.find((o) => o.id === selectedOutletId) || null;
 
@@ -121,12 +134,34 @@ export default function ShiftsPage() {
     }
   }, [selectedOutletId, selectedDay]);
 
+  /**
+   * What a reset would destroy, for the confirmation.
+   *
+   * Gated on canReset rather than only hiding the button, or every head chef
+   * and staff member would fire a 403 on each restaurant switch. Failures are
+   * swallowed to null: the preview is advisory, and a page that cannot count
+   * the roster should hide the button rather than break.
+   */
+  const loadResetPreview = useCallback(async () => {
+    if (!canReset || !selectedOutletId) { setResetPreview(null); return; }
+    try {
+      setResetPreview(await api.get(`/shifts/stats/reset-preview?outlet=${selectedOutletId}`));
+    } catch (err) {
+      console.error(err);
+      setResetPreview(null);
+    }
+  }, [canReset, selectedOutletId]);
+
   useEffect(() => { loadOutletData(); }, [loadOutletData]);
   useEffect(() => { loadWeek(); }, [loadWeek]);
   useEffect(() => { loadDay(); }, [loadDay]);
+  useEffect(() => { loadResetPreview(); }, [loadResetPreview]);
 
-  // Switching restaurant invalidates the previous allocation result.
-  useEffect(() => { setAllocationSummary(null); }, [selectedOutletId]);
+  // Switching restaurant invalidates both previous results.
+  useEffect(() => {
+    setAllocationSummary(null);
+    setResetResult(null);
+  }, [selectedOutletId]);
 
   const activeTemplates = useMemo(() => templates.filter((t) => t.isActive), [templates]);
 
@@ -204,12 +239,44 @@ export default function ShiftsPage() {
         endDate: end,
       });
       setAllocationSummary(res);
+      setResetResult(null);
       loadWeek();
       loadDay();
+      // The roster just changed, so the reset count on screen is now wrong.
+      loadResetPreview();
     } catch (err) {
       alert(err.message || 'Auto-allocation failed');
     } finally {
       setAllocating(false);
+    }
+  };
+
+  const openResetModal = () => {
+    setResetError(null);
+    // Re-read rather than trusting whatever was fetched on the last restaurant
+    // switch: the number in a confirmation should be as fresh as it can be.
+    loadResetPreview();
+    setResetModalOpen(true);
+  };
+
+  const handleReset = async () => {
+    setResetting(true);
+    setResetError(null);
+    try {
+      const res = await api.post('/shifts/reset', { outletId: selectedOutletId });
+      setResetModalOpen(false);
+      // From the server's response, never the preview — the two can disagree if
+      // anything changed while the dialog was open.
+      setResetResult(res);
+      // "Created 42 of 42 slots" above an empty grid contradicts itself.
+      setAllocationSummary(null);
+      loadWeek();
+      loadDay();
+      loadResetPreview();
+    } catch (err) {
+      setResetError(err.message || 'Reset failed');
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -235,6 +302,7 @@ export default function ShiftsPage() {
       setShiftModalOpen(false);
       loadWeek();
       loadDay();
+      loadResetPreview();
     } catch (err) {
       alert(err.message || 'Failed to create shift');
     }
@@ -283,6 +351,17 @@ export default function ShiftsPage() {
               <Plus size={16} />
               <span>Add Shift</span>
             </button>
+            {/* Hidden when there is nothing to delete, the same way Shift
+                Master hides its Clear all. btn-ghost with a red icon rather
+                than btn-danger: on a phone these buttons go two-up, and a
+                full-width red one directly under Add Shift invites the
+                mis-tap it is meant to prevent. */}
+            {canReset && resetPreview?.total > 0 && (
+              <button className="btn btn-ghost icon-crit" onClick={openResetModal}>
+                <Eraser size={16} />
+                <span>Reset Shifts</span>
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -324,6 +403,27 @@ export default function ShiftsPage() {
               <strong>{outlet?.name}</strong> has no shift patterns, so auto-allocation
               has nothing to fill. Define them in Shift Master.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Counts come from the reset response, not from resetPreview — the
+          preview is what we *expected* to delete, this is what went. */}
+      {resetResult && (
+        <div className="card mb-4 card--alert-warn">
+          <div className="flex items-start gap-3">
+            <Trash2 size={20} className="icon-crit" />
+            <div style={{ minWidth: 0 }}>
+              <h3 className="font-bold text-sm" style={{ color: 'var(--ink-warn)' }}>
+                Cleared {resetResult.shifts} shift{resetResult.shifts === 1 ? '' : 's'} at {resetResult.outletName}
+              </h3>
+              <p className="text-xs text-secondary">
+                {resetResult.autoLeaves} auto-assigned weekly off
+                {resetResult.autoLeaves === 1 ? '' : 's'} and {resetResult.notifications} shift
+                notification{resetResult.notifications === 1 ? '' : 's'} went with them.
+                Run Auto-Allocate Week to rebuild the roster.
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -739,6 +839,92 @@ export default function ShiftsPage() {
             </div>
           </form>
         )}
+      </Modal>
+
+      <Modal
+        isOpen={isResetModalOpen}
+        onClose={() => setResetModalOpen(false)}
+        title={`Reset shifts · ${outlet?.name || ''}`}
+      >
+        <p className="text-sm text-secondary">
+          This deletes the whole roster at this restaurant — every shift, for all
+          time, whatever its status. Shift patterns are kept, so Auto-Allocate
+          Week can rebuild it.
+        </p>
+
+        <div className="divided-list mt-4">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-secondary">Shifts</span>
+            <span className="font-semibold text-strong" style={{ marginLeft: 'auto' }}>
+              {resetPreview?.total ?? '—'}
+            </span>
+          </div>
+          {/* The confirmation has to name these too: they are approved leave that
+              staff can see on the Leave Schedule card below, so deleting them
+              silently under a button labelled "shifts" would not be truthful. */}
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-secondary">Auto-assigned weekly offs</span>
+            <span className="font-semibold text-strong" style={{ marginLeft: 'auto' }}>
+              {resetPreview?.autoLeaves ?? '—'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-secondary">Shift notifications</span>
+            <span className="font-semibold text-strong" style={{ marginLeft: 'auto' }}>
+              {resetPreview?.notifications ?? '—'}
+            </span>
+          </div>
+          {resetPreview?.earliest && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-secondary">Covering</span>
+              <span className="font-semibold text-strong" style={{ marginLeft: 'auto' }}>
+                {format(parseISO(resetPreview.earliest), 'd MMM yyyy')}
+                {' – '}
+                {format(parseISO(resetPreview.latest), 'd MMM yyyy')}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Re-allocation restores assigned shifts but never history, and the
+            dashboard counts completed shifts for its attendance trend. */}
+        {resetPreview?.completed > 0 && (
+          <div className="card card--alert-warn mt-4">
+            <div className="flex items-start gap-2">
+              <AlertTriangle size={16} className="icon-warn" />
+              <p className="text-xs" style={{ color: 'var(--ink-warn)' }}>
+                {resetPreview.completed} of these are completed or missed shifts.
+                Auto-allocation cannot bring those back, and the dashboard counts
+                them for its attendance history — its trend for this restaurant
+                will show gaps.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {resetError && <p className="text-xs mt-3" style={{ color: 'var(--ink-crit)' }}>{resetError}</p>}
+
+        <div className="modal-footer" style={{ padding: 0, marginTop: 'var(--space-4)' }}>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => setResetModalOpen(false)}
+            disabled={resetting}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger"
+            onClick={handleReset}
+            disabled={resetting || !resetPreview?.total}
+          >
+            <Trash2 size={16} />
+            <span>
+              {resetting ? 'Resetting…' : `Delete ${resetPreview?.total ?? 0} shifts`}
+            </span>
+          </button>
+        </div>
       </Modal>
 
     </div>

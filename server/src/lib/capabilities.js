@@ -1,4 +1,4 @@
-import { requireMinRole } from '../middleware/auth.js';
+import { requireMinRole, ROLE_HIERARCHY } from '../middleware/auth.js';
 
 /**
  * Every guarded action, declared once.
@@ -80,6 +80,18 @@ export const CAPABILITIES = {
     note: 'Higher than creating one: a deleted shift leaves no record that it existed. ' +
       'Exception: an Outlet Manager may delete a shift at their own outlet.',
   },
+  SHIFT_RESET_PREVIEW: {
+    group: 'Shifts', label: 'See what resetting a restaurant would delete', minRole: 'ADMIN',
+  },
+  SHIFT_RESET: {
+    group: 'Shifts', label: "Delete every shift at one restaurant", minRole: 'ADMIN',
+    note: 'The whole roster at once, for all time and every status — including ' +
+      'completed shifts, which the dashboard counts for its attendance history. ' +
+      'Same floor as deleting a single shift, since this is strictly more ' +
+      'destructive. Exception: an Outlet Manager may reset their own restaurant. ' +
+      'Also required to tick "delete shifts too" when clearing shift patterns, ' +
+      'which reaches the same outcome.',
+  },
 
   PATTERN_CREATE: {
     group: 'Shift patterns', label: 'Add a shift pattern', minRole: 'HEAD_CHEF',
@@ -146,8 +158,9 @@ export function can(key) {
  * the capability's floor.
  *
  * For the handful of capabilities pinned above OUTLET_MANAGER's own rank
- * (EMPLOYEE_RESET_PW, EMPLOYEE_DEACTIVATE, OUTLET_EDIT, SHIFT_DELETE — all
- * ADMIN-floor), lowering the floor itself would hand HR the same rights,
+ * (EMPLOYEE_RESET_PW, EMPLOYEE_DEACTIVATE, OUTLET_EDIT, SHIFT_DELETE,
+ * SHIFT_RESET, SHIFT_RESET_PREVIEW — all ADMIN-floor), lowering the floor
+ * itself would hand HR the same rights,
  * since HR ties OUTLET_MANAGER's rank. Bypassing the floor for this one role
  * instead leaves HR's permissions exactly as they are.
  *
@@ -157,11 +170,33 @@ export function can(key) {
  * capabilities.
  */
 export function canOrOutletManager(key) {
+  // Resolved here rather than per-request so an unknown key still throws at
+  // import time, the same as can().
   const capability = CAPABILITIES[key];
   if (!capability) throw new Error(`Unknown capability "${key}"`);
   return (req, res, next) => {
     if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
-    if (req.user.role === 'OUTLET_MANAGER') return next();
-    return requireMinRole(capability.minRole)(req, res, next);
+    if (holdsCapability(req.user, key)) return next();
+    return res.status(403).json({ error: 'Insufficient permissions' });
   };
+}
+
+/**
+ * The same rule as canOrOutletManager(), as a plain predicate.
+ *
+ * For the one case a route-level guard cannot express: POST
+ * /api/shift-templates/clear is a HEAD_CHEF route, but its `includeShifts`
+ * field deletes the whole roster and so has to answer to SHIFT_RESET. Checking
+ * that inside the handler is the only option, and it must not become a second
+ * copy of the rule.
+ *
+ * Like the middleware, this only says the role may attempt the action — the
+ * caller still has to verify the resource belongs to their own outlet.
+ */
+export function holdsCapability(user, key) {
+  const capability = CAPABILITIES[key];
+  if (!capability) throw new Error(`Unknown capability "${key}"`);
+  if (!user) return false;
+  if (user.role === 'OUTLET_MANAGER') return true;
+  return (ROLE_HIERARCHY[user.role] || 0) >= (ROLE_HIERARCHY[capability.minRole] || 0);
 }

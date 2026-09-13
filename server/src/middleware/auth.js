@@ -25,7 +25,8 @@ if (!JWT_SECRET) {
 // (scope.js), so outletScope()/employeeScope() still pin it to one outlet —
 // rank decides *what* a role may attempt, GLOBAL_SCOPE_ROLES decides *how much
 // of the org* it can attempt it on. Capabilities gated above this level
-// (EMPLOYEE_RESET_PW, EMPLOYEE_DEACTIVATE, OUTLET_EDIT, SHIFT_DELETE) grant
+// (EMPLOYEE_RESET_PW, EMPLOYEE_DEACTIVATE, OUTLET_EDIT, SHIFT_DELETE,
+// SHIFT_RESET, SHIFT_RESET_PREVIEW) grant
 // OUTLET_MANAGER an explicit bypass via canOrOutletManager() in
 // capabilities.js instead of lowering their floor, so HR's own permissions
 // are untouched.

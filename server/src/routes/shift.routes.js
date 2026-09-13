@@ -2,7 +2,7 @@ import { Router } from 'express';
 import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { can, canOrOutletManager } from '../lib/capabilities.js';
-import { autoAllocateShifts } from '../engine/shiftAllocator.js';
+import { autoAllocateShifts, AUTO_OFF_REASON, outletResetOps } from '../engine/shiftAllocator.js';
 import { outletScope, hasGlobalScope } from '../lib/scope.js';
 import { localDateRange, startOfLocalDay, localDateKey } from '../lib/dates.js';
 import { logAudit } from '../lib/audit.js';
@@ -138,6 +138,111 @@ router.post('/auto-allocate', authenticateToken, can('SHIFT_ALLOCATE'), async (r
     logAudit({ action: 'SHIFT_ALLOCATE', entity: 'Shift', actor: req.user, details: { outletId: targetOutletId, count: result.count, startDate, endDate } });
 
     res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * Resolve the outlet a reset is aimed at, or an error to send back.
+ *
+ * Deliberately does NOT fall back to `req.user.outletId` the way the create and
+ * allocate handlers above do. outletShiftDenied() waves a global role through
+ * unconditionally — including when outletId is undefined — and Prisma drops
+ * undefined keys, so `deleteMany({ where: { outletId: undefined } })` is
+ * `DELETE FROM "Shift"`. An ADMIN belongs to no outlet, so the fallback yields
+ * undefined and a bare {} body would wipe every outlet in the organisation.
+ * The other handlers survive the same hole only because they hand the value to
+ * a create/findUnique that fails loudly.
+ *
+ * The existence check matters for the same reason: deleteMany on an id that
+ * does not exist returns { count: 0 } and would report success.
+ */
+async function resolveResetTarget(req) {
+  const outletId = req.query.outlet || req.body?.outletId;
+  if (!outletId) return { status: 400, error: 'outletId is required' };
+
+  const denied = outletShiftDenied(req, outletId);
+  if (denied) return { status: 403, error: denied };
+
+  const outlet = await prisma.outlet.findUnique({
+    where: { id: outletId },
+    select: { id: true, name: true },
+  });
+  if (!outlet) return { status: 404, error: 'Outlet not found' };
+
+  return { outlet };
+}
+
+// GET /api/shifts/stats/reset-preview?outlet=<id>
+// Two segments, like /employees/stats/wipe-preview, so a future GET /:id on
+// this router cannot capture it.
+router.get('/stats/reset-preview', authenticateToken, canOrOutletManager('SHIFT_RESET_PREVIEW'), async (req, res) => {
+  try {
+    const target = await resolveResetTarget(req);
+    if (target.error) return res.status(target.status).json({ error: target.error });
+    const outletId = target.outlet.id;
+
+    const [byStatus, span, autoLeaves, notifications] = await Promise.all([
+      prisma.shift.groupBy({ by: ['status'], where: { outletId }, _count: { _all: true } }),
+      prisma.shift.aggregate({ where: { outletId }, _min: { date: true }, _max: { date: true } }),
+      prisma.leave.count({ where: { reason: AUTO_OFF_REASON, employee: { outletId } } }),
+      prisma.notification.count({ where: { type: 'SHIFT_ASSIGNED', employee: { outletId } } }),
+    ]);
+
+    const counts = Object.fromEntries(byStatus.map(r => [r.status, r._count._all]));
+    const total = byStatus.reduce((sum, r) => sum + r._count._all, 0);
+
+    res.json({
+      outletName: target.outlet.name,
+      total,
+      byStatus: counts,
+      // Called out separately because this is the part that is not replaceable:
+      // re-running auto-allocation restores ASSIGNED shifts, never history.
+      completed: (counts.COMPLETED || 0) + (counts.MISSED || 0),
+      earliest: span._min.date,
+      latest: span._max.date,
+      autoLeaves,
+      notifications,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/shifts/reset
+// POST rather than DELETE for the reason given on /employees/wipe-staff: the
+// client's delete() sends no body, and this needs one.
+router.post('/reset', authenticateToken, canOrOutletManager('SHIFT_RESET'), async (req, res) => {
+  try {
+    const target = await resolveResetTarget(req);
+    if (target.error) return res.status(target.status).json({ error: target.error });
+    const { id: outletId, name: outletName } = target.outlet;
+
+    // Array form, not the interactive callback: that one carries a 5s default
+    // timeout, which a large outlet's delete can exceed for no good reason.
+    const [shifts, autoLeaves, notifications] = await prisma.$transaction(
+      outletResetOps(prisma, outletId)
+    );
+
+    const details = {
+      outletId,
+      outletName,
+      shifts: shifts.count,
+      autoLeaves: autoLeaves.count,
+      notifications: notifications.count,
+    };
+
+    // logAudit is fire-and-forget and swallows its own failures, so for the
+    // most destructive operation on this router stdout is the only guaranteed
+    // trace. Same reasoning as the staff wipe.
+    console.log(
+      `[shift-reset] ${req.user.id} reset ${outletName}: ${shifts.count} shifts, ` +
+      `${autoLeaves.count} auto-off leaves, ${notifications.count} notifications`
+    );
+    logAudit({ action: 'SHIFT_RESET', entity: 'Shift', actor: req.user, details });
+
+    res.json(details);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

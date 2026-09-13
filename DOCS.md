@@ -235,11 +235,19 @@ reference, along with key issuing and origin allowlisting, is `api/PUBLIC_API.md
 | `PUT` | `/api/shifts/:id` | HEAD_CHEF |
 | `DELETE` | `/api/shifts/:id` | ADMIN |
 | `GET` | `/api/shifts/my/upcoming` | — (own shifts, next 14) |
+| `GET` | `/api/shifts/stats/reset-preview?outlet=` | ADMIN (or Outlet Manager, own outlet) |
+| `POST` | `/api/shifts/reset` | ADMIN (or Outlet Manager, own outlet) |
 | `GET` | `/api/shift-templates?outlet=&activeOnly=` | — |
 | `POST` `PUT` `DELETE` | `/api/shift-templates[/:id]` | HEAD_CHEF |
 
 Shift-template writes additionally verify the target `outletId` against the
 caller's scope, so a head chef cannot create a pattern for another restaurant.
+
+`POST /api/shifts/reset` deletes a restaurant's entire roster — every shift for
+all time, plus the auto-assigned weekly-off leaves and shift notifications that
+belong to it — in one transaction, keeping the patterns so auto-allocation can
+rebuild. Ticking "also delete shifts" on `/api/shift-templates/clear` runs the
+same deletion and so needs the same role.
 `headcount` is validated as an integer 1–99 and times as `HH:MM`.
 
 ### Attendance

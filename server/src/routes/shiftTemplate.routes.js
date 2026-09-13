@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { can } from '../lib/capabilities.js';
+import { can, holdsCapability } from '../lib/capabilities.js';
 import { outletScope, hasGlobalScope } from '../lib/scope.js';
 import { logAudit } from '../lib/audit.js';
+import { outletResetOps } from '../engine/shiftAllocator.js';
 
 const router = Router();
 
@@ -202,14 +203,36 @@ router.post('/clear', authenticateToken, can('PATTERN_CLEAR'), async (req, res) 
       });
     }
 
-    // One transaction so the two deletes commit together: a roster left behind
-    // by a half-applied clear is worse than either outcome on its own.
-    const [patterns, shifts] = await prisma.$transaction([
-      prisma.shiftTemplate.deleteMany({ where: { outletId } }),
-      ...(includeShifts ? [prisma.shift.deleteMany({ where: { outletId } })] : []),
-    ]);
+    // Deleting the whole roster is the same act as POST /api/shifts/reset, so
+    // it answers to the same capability — otherwise the ADMIN floor there would
+    // be decorative, reachable by any head chef one page over. The route-level
+    // can() cannot express "this one field needs more", so it is checked here.
+    if (includeShifts && !holdsCapability(req.user, 'SHIFT_RESET')) {
+      return res.status(403).json({
+        error: 'Deleting shifts as well as patterns requires Admin, or an Outlet Manager at this restaurant',
+      });
+    }
 
-    logAudit({ action: 'PATTERN_CLEAR', entity: 'ShiftTemplate', actor: req.user, details: { outletId, patterns: patterns.count, shifts: shifts?.count ?? 0 } });
+    // One transaction so the deletes commit together: a roster left behind by a
+    // half-applied clear is worse than either outcome on its own. The shift
+    // side goes through the shared reset so this path cannot drift from
+    // /api/shifts/reset — it used to delete shifts but leave the auto-off
+    // leaves behind, which then read as approved leave to the next allocation.
+    const [patterns, ...rest] = await prisma.$transaction([
+      prisma.shiftTemplate.deleteMany({ where: { outletId } }),
+      ...(includeShifts ? outletResetOps(prisma, outletId) : []),
+    ]);
+    const [shifts, autoLeaves, notifications] = rest;
+
+    const details = {
+      outletId,
+      patterns: patterns.count,
+      shifts: shifts?.count ?? 0,
+      autoLeaves: autoLeaves?.count ?? 0,
+      notifications: notifications?.count ?? 0,
+    };
+
+    logAudit({ action: 'PATTERN_CLEAR', entity: 'ShiftTemplate', actor: req.user, details });
 
     res.json({
       patterns: patterns.count,

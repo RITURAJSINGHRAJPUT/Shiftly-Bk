@@ -71,8 +71,12 @@ query parameter, so it cannot be widened by asking differently.
 | Edit a shift | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
 | Run auto-allocation for a week | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
 | Delete a shift | ✅ | ✅ | — | — | — | — | — |
+| See what resetting a restaurant would delete | ✅ | ✅ | — | — | — | — | — |
+| Delete every shift at one restaurant | ✅ | ✅ | — | — | — | — | — |
 
 > **Delete a shift** — Higher than creating one: a deleted shift leaves no record that it existed. Exception: an Outlet Manager may delete a shift at their own outlet.
+
+> **Delete every shift at one restaurant** — The whole roster at once, for all time and every status — including completed shifts, which the dashboard counts for its attendance history. Same floor as deleting a single shift, since this is strictly more destructive. Exception: an Outlet Manager may reset their own restaurant. Also required to tick "delete shifts too" when clearing shift patterns, which reaches the same outcome.
 
 ### Shift patterns
 

@@ -17,6 +17,45 @@ import { startOfLocalDay, localDateKey, localDateRange } from '../lib/dates.js';
 const ROSTERABLE_ROLES = ['STAFF', 'HEAD_CHEF', 'MASTER_OF_HOUSE'];
 
 /**
+ * Marks a Leave row the allocator created to give someone their weekly day off.
+ *
+ * There is no column for "this was generated" — the reason text is the only
+ * thing distinguishing an auto-off from a leave a person actually requested.
+ * So this value is **stored in existing rows and must never be renamed**:
+ * changing it orphans every auto-off already in the database, which would then
+ * read as approved leave that nothing will ever clean up.
+ */
+export const AUTO_OFF_REASON = 'Weekly off (auto-assigned)';
+
+/**
+ * Delete everything an outlet's roster consists of: its shifts, the weekly-off
+ * leaves generated alongside them, and the assignment notifications that point
+ * at those shifts.
+ *
+ * Shared by POST /api/shifts/reset and by the `includeShifts` branch of
+ * POST /api/shift-templates/clear, which used to open-code a bare
+ * `shift.deleteMany` and left the auto-off leaves behind — so the next
+ * allocation run saw stale approved leaves and skipped assigning new days off.
+ *
+ * Returns the three prepared queries rather than running them, so the caller
+ * can put them in one `$transaction` and read the real counts back. All three
+ * scope on the employee's **current** outlet, so an auto-off belonging to
+ * someone who has since transferred away stays behind — the allocator has the
+ * same blind spot, so this is consistent rather than new. Unlike the allocator
+ * these are deliberately *not* filtered by isActive/ROSTERABLE_ROLES: a full
+ * reset should take deactivated staff's rows with it too.
+ */
+export function outletResetOps(prisma, outletId) {
+  return [
+    prisma.shift.deleteMany({ where: { outletId } }),
+    prisma.leave.deleteMany({ where: { reason: AUTO_OFF_REASON, employee: { outletId } } }),
+    prisma.notification.deleteMany({
+      where: { type: 'SHIFT_ASSIGNED', employee: { outletId } },
+    }),
+  ];
+}
+
+/**
  * Score an employee for a given shift slot
  * @param {object} employee - Employee with shifts, attendance, leaves
  * @param {object} slot - { date, startTime, endTime, section, outletId }
@@ -120,7 +159,7 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
 
   await prisma.leave.deleteMany({
     where: {
-      reason: 'Weekly off (auto-assigned)',
+      reason: AUTO_OFF_REASON,
       startDate: { gte: dateRangeBounds.gte },
       endDate: { lt: dateRangeBounds.lt },
       employeeId: { in: employeeIds },
@@ -129,7 +168,7 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
 
   for (const emp of employees) {
     emp.leaves = (emp.leaves || []).filter(l =>
-      l.reason !== 'Weekly off (auto-assigned)' ||
+      l.reason !== AUTO_OFF_REASON ||
       new Date(l.startDate) < dateRangeBounds.gte ||
       new Date(l.endDate) >= dateRangeBounds.lt
     );
@@ -232,7 +271,7 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
           type: 'CASUAL',
           startDate: offDate,
           endDate: offDate,
-          reason: 'Weekly off (auto-assigned)',
+          reason: AUTO_OFF_REASON,
           status: 'APPROVED',
           isEmergency: false,
         },
