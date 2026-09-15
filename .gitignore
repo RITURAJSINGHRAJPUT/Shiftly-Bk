@@ -12,3 +12,6 @@ md/
 # stay in the history after any later deletion. The API reference lives here too
 # and is kept local for the same reason.
 api/
+
+# Staff import sheets — real names and ids, not for version control.
+staff/
