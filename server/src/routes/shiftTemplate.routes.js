@@ -3,6 +3,7 @@ import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { can, holdsCapability } from '../lib/capabilities.js';
 import { outletScope, hasGlobalScope } from '../lib/scope.js';
+import { departmentsFor, ownsDepartment } from '../lib/departments.js';
 import { logAudit } from '../lib/audit.js';
 import { outletResetOps } from '../engine/shiftAllocator.js';
 
@@ -22,6 +23,36 @@ function outletWriteDenied(req, outletId) {
   if (hasGlobalScope(req.user)) return null;
   if (outletId !== req.user.outletId) {
     return 'You can only manage shift patterns for your own outlet';
+  }
+  return null;
+}
+
+/**
+ * Departments this caller may write patterns for, or null for all of them.
+ *
+ * Global roles and outlet managers get null — an outlet manager runs the whole
+ * restaurant, matching the exemption in leave.routes.js and shift.routes.js.
+ */
+function ownedDepartments(req) {
+  if (hasGlobalScope(req.user) || req.user.role === 'OUTLET_MANAGER') return null;
+  return departmentsFor(req.user.role);
+}
+
+/**
+ * A department head writes patterns for their own department only.
+ *
+ * A pattern carries its own `department` column, so unlike a shift this needs
+ * no extra query. readTemplateBody() cannot do this check — req.user is
+ * deliberately not in its scope — so it sits beside each outletWriteDenied call
+ * instead.
+ */
+function departmentWriteDenied(req, department) {
+  const owned = ownedDepartments(req);
+  if (!owned) return null;
+  if (!ownsDepartment(req.user.role, department)) {
+    return owned.length
+      ? `You can only manage ${owned.join(' and ').toLowerCase()} shift patterns`
+      : 'You are not allowed to manage shift patterns';
   }
   return null;
 }
@@ -166,9 +197,17 @@ router.get('/clear-preview', authenticateToken, can('PATTERN_CLEAR_PREVIEW'), as
     const denied = outletWriteDenied(req, outletId);
     if (denied) return res.status(outletId ? 403 : 400).json({ error: denied });
 
+    // Counts what a clear would actually remove for this caller. A department
+    // head's clear only touches their own patterns, so reporting the outlet's
+    // whole total would overstate it and make the confirmation a lie.
+    const owned = ownedDepartments(req);
+    const scope = owned?.length ? { department: { in: owned } } : {};
+
     const [patterns, shifts] = await Promise.all([
-      prisma.shiftTemplate.count({ where: { outletId } }),
-      prisma.shift.count({ where: { outletId } }),
+      prisma.shiftTemplate.count({ where: { outletId, ...scope } }),
+      prisma.shift.count({
+        where: { outletId, ...(owned?.length ? { employee: scope } : {}) },
+      }),
     ]);
 
     res.json({ patterns, shifts });
@@ -218,8 +257,17 @@ router.post('/clear', authenticateToken, can('PATTERN_CLEAR'), async (req, res) 
     // side goes through the shared reset so this path cannot drift from
     // /api/shifts/reset — it used to delete shifts but leave the auto-off
     // leaves behind, which then read as approved leave to the next allocation.
+    // Only the caller's own departments. Without this a head chef clearing the
+    // kitchen's patterns took Service and Housekeeping with them — and unlike
+    // the grid save, there is no per-row hint that it happened.
+    //
+    // The shift side needs no such narrowing: includeShifts is gated on
+    // SHIFT_RESET just above, which no department head holds.
+    const ownedForClear = ownedDepartments(req);
+    const clearScope = ownedForClear?.length ? { department: { in: ownedForClear } } : {};
+
     const [patterns, ...rest] = await prisma.$transaction([
-      prisma.shiftTemplate.deleteMany({ where: { outletId } }),
+      prisma.shiftTemplate.deleteMany({ where: { outletId, ...clearScope } }),
       ...(includeShifts ? outletResetOps(prisma, outletId) : []),
     ]);
     const [shifts, autoLeaves, notifications] = rest;
@@ -281,21 +329,30 @@ router.put('/grid', authenticateToken, can('PATTERN_GRID'), async (req, res) => 
     for (const [i, t] of templates.entries()) {
       const { data, error } = readTemplateBody(t);
       if (error) return res.status(400).json({ error: `Row ${i + 1}: ${error}` });
+      const deptDenied = departmentWriteDenied(req, data.department);
+      if (deptDenied) return res.status(403).json({ error: `Row ${i + 1}: ${deptDenied}` });
       rows.push({ ...data, headcount: data.headcount ?? 1 });
     }
+
+    // What this save is allowed to replace. For a department head the grid is
+    // only their own department's rows, so the delete below must be narrowed to
+    // match — otherwise a head chef saving the kitchen sheet silently erases
+    // every Service and Housekeeping pattern at the outlet.
+    const owned = ownedDepartments(req);
+    const gridScope = owned?.length ? { department: { in: owned } } : {};
 
     const result = await prisma.$transaction(async (tx) => {
       // Active only. An inactive pattern is deliberately absent from the grid,
       // so deleting it here would be silent data loss for something the user
       // parked on purpose.
       const removed = await tx.shiftTemplate.deleteMany({
-        where: { outletId: { in: ids }, isActive: true },
+        where: { outletId: { in: ids }, isActive: true, ...gridScope },
       });
       const created = await tx.shiftTemplate.createMany({
         data: ids.flatMap((outletId) => rows.map((r) => ({ ...r, outletId }))),
       });
       const kept = await tx.shiftTemplate.count({
-        where: { outletId: { in: ids }, isActive: false },
+        where: { outletId: { in: ids }, isActive: false, ...gridScope },
       });
       return { replaced: removed.count, created: created.count, keptInactive: kept };
     });
@@ -325,6 +382,9 @@ router.post('/bulk', authenticateToken, can('PATTERN_BULK'), async (req, res) =>
 
     const { data, error } = readTemplateBody(req.body);
     if (error) return res.status(400).json({ error });
+
+    const deptDenied = departmentWriteDenied(req, data.department);
+    if (deptDenied) return res.status(403).json({ error: deptDenied });
 
     const ids = [...new Set(outletIds)];
 
@@ -392,6 +452,9 @@ router.post('/', authenticateToken, can('PATTERN_CREATE'), async (req, res) => {
     const { data, error } = readTemplateBody(req.body);
     if (error) return res.status(400).json({ error });
 
+    const deptDenied = departmentWriteDenied(req, data.department);
+    if (deptDenied) return res.status(403).json({ error: deptDenied });
+
     const template = await prisma.shiftTemplate.create({
       data: { ...data, outletId, headcount: data.headcount ?? 1 },
       include: { outlet: { select: { id: true, name: true } } },
@@ -424,6 +487,14 @@ router.put('/:id', authenticateToken, can('PATTERN_EDIT'), async (req, res) => {
     if (error) return res.status(400).json({ error });
     if (req.body.outletId) data.outletId = req.body.outletId;
 
+    // Both departments, for the same reason both outlets are checked above: a
+    // head chef must not edit a Service pattern, nor move a Kitchen one into
+    // Service and out of their own reach.
+    for (const department of [existing.department, data.department].filter(Boolean)) {
+      const deptDenied = departmentWriteDenied(req, department);
+      if (deptDenied) return res.status(403).json({ error: deptDenied });
+    }
+
     const template = await prisma.shiftTemplate.update({
       where: { id: req.params.id },
       data,
@@ -442,7 +513,8 @@ router.delete('/:id', authenticateToken, can('PATTERN_DELETE'), async (req, res)
     const existing = await prisma.shiftTemplate.findUnique({ where: { id: req.params.id } });
     if (!existing) return res.status(404).json({ error: 'Shift pattern not found' });
 
-    const denied = outletWriteDenied(req, existing.outletId);
+    const denied = outletWriteDenied(req, existing.outletId)
+      || departmentWriteDenied(req, existing.department);
     if (denied) return res.status(403).json({ error: denied });
 
     await prisma.shiftTemplate.delete({ where: { id: req.params.id } });

@@ -13,7 +13,7 @@ import { resolveOvertime } from './overtime.js';
  * `pg` driver arrives as one — and `String(aDate).split(' ')[0]` would be the
  * weekday name, which parses to NaN and poisons the day key.
  */
-function parsePunchTimestamp(edatetime) {
+export function parsePunchTimestamp(edatetime) {
   if (edatetime instanceof Date) return edatetime;
 
   const [datePart, timePart] = String(edatetime).split(' ');

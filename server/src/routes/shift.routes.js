@@ -4,6 +4,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import { can, canOrOutletManager } from '../lib/capabilities.js';
 import { autoAllocateShifts, AUTO_OFF_REASON, outletResetOps } from '../engine/shiftAllocator.js';
 import { outletScope, hasGlobalScope } from '../lib/scope.js';
+import { departmentsFor, ownsDepartment } from '../lib/departments.js';
 import { localDateRange, startOfLocalDay, localDateKey } from '../lib/dates.js';
 import { logAudit } from '../lib/audit.js';
 
@@ -30,6 +31,55 @@ function outletShiftDenied(req, outletId) {
     return 'You can only manage shifts for your own outlet';
   }
   return null;
+}
+
+/**
+ * The department half of the same rule: a Head Chef rosters Kitchen, a Master of
+ * House rosters Service and Housekeeping.
+ *
+ * Employees, leave and overtime have all enforced this for a while; shifts
+ * checked only the outlet, so a head chef could create, move or delete Service
+ * shifts at their own restaurant. The tiers are ordered exactly as
+ * leaveApprovalDenied() in leave.routes.js, so the two rules read the same and
+ * cannot quietly diverge.
+ *
+ * A shift carries no department of its own — it inherits the employee's — so
+ * the department has to be fetched, which is why the callers are async.
+ */
+function departmentShiftDenied(req, department) {
+  if (hasGlobalScope(req.user)) return null;
+  // An Outlet Manager runs the whole restaurant, every department in it. Same
+  // exemption leave.routes.js makes, for the same reason.
+  if (req.user.role === 'OUTLET_MANAGER') return null;
+  if (!ownsDepartment(req.user.role, department)) {
+    const owned = departmentsFor(req.user.role);
+    return owned.length
+      ? `You can only manage shifts for ${owned.join(' and ').toLowerCase()}`
+      : 'You are not allowed to manage shifts';
+  }
+  return null;
+}
+
+/**
+ * Outlet and department in one call, for the employee a shift is being written
+ * against. Returns an error string or null.
+ */
+async function shiftWriteDenied(req, { outletId, employeeId }) {
+  const outletDenied = outletShiftDenied(req, outletId);
+  if (outletDenied) return outletDenied;
+
+  // Global scope and outlet managers are past the department rule already, so
+  // the lookup is skipped for them rather than run and ignored.
+  if (hasGlobalScope(req.user) || req.user.role === 'OUTLET_MANAGER') return null;
+  if (!employeeId) return 'An employee is required';
+
+  const employee = await prisma.employee.findUnique({
+    where: { id: employeeId },
+    select: { department: true },
+  });
+  if (!employee) return 'Employee not found';
+
+  return departmentShiftDenied(req, employee.department);
 }
 
 // GET /api/shifts — list shifts with filters
@@ -69,7 +119,7 @@ router.post('/', authenticateToken, can('SHIFT_CREATE'), async (req, res) => {
   try {
     const { date, startTime, endTime, section, employeeId, outletId } = req.body;
     const targetOutletId = outletId || req.user.outletId;
-    const denied = outletShiftDenied(req, targetOutletId);
+    const denied = await shiftWriteDenied(req, { outletId: targetOutletId, employeeId });
     if (denied) return res.status(403).json({ error: denied });
 
     // A shift carries no department of its own — it inherits the one the person
@@ -133,7 +183,17 @@ router.post('/auto-allocate', authenticateToken, can('SHIFT_ALLOCATE'), async (r
     const denied = outletShiftDenied(req, targetOutletId);
     if (denied) return res.status(403).json({ error: denied });
 
-    const result = await autoAllocateShifts(prisma, targetOutletId, startDate, endDate);
+    // A department head's run must not touch the other departments' rosters:
+    // the allocator clears the range before rebuilding it, so an unscoped run
+    // by a head chef wiped Service and Housekeeping too. Empty for global roles
+    // and outlet managers, which the allocator reads as "all departments".
+    const owned = hasGlobalScope(req.user) || req.user.role === 'OUTLET_MANAGER'
+      ? null
+      : departmentsFor(req.user.role);
+
+    const result = await autoAllocateShifts(prisma, targetOutletId, startDate, endDate, {
+      departments: owned,
+    });
 
     logAudit({ action: 'SHIFT_ALLOCATE', entity: 'Shift', actor: req.user, details: { outletId: targetOutletId, count: result.count, startDate, endDate } });
 
@@ -251,12 +311,25 @@ router.post('/reset', authenticateToken, canOrOutletManager('SHIFT_RESET'), asyn
 // PUT /api/shifts/:id
 router.put('/:id', authenticateToken, can('SHIFT_EDIT'), async (req, res) => {
   try {
-    const existing = await prisma.shift.findUnique({ where: { id: req.params.id }, select: { outletId: true } });
+    const existing = await prisma.shift.findUnique({
+      where: { id: req.params.id },
+      select: { outletId: true, employeeId: true },
+    });
     if (!existing) return res.status(404).json({ error: 'Shift not found' });
-    const denied = outletShiftDenied(req, existing.outletId);
-    if (denied) return res.status(403).json({ error: denied });
 
     const { date, startTime, endTime, section, employeeId, status } = req.body;
+
+    // Both ends of a reassignment. Checking only the shift's current employee
+    // would let a head chef move a Kitchen shift onto a Service person;
+    // checking only the incoming one would let them take a Service shift over.
+    const denied = await shiftWriteDenied(req, {
+      outletId: existing.outletId,
+      employeeId: existing.employeeId,
+    }) || (employeeId && employeeId !== existing.employeeId
+      ? await shiftWriteDenied(req, { outletId: existing.outletId, employeeId })
+      : null);
+    if (denied) return res.status(403).json({ error: denied });
+
     const data = {};
     if (date) data.date = startOfLocalDay(date);
     if (startTime) data.startTime = startTime;
@@ -283,9 +356,12 @@ router.put('/:id', authenticateToken, can('SHIFT_EDIT'), async (req, res) => {
 // DELETE /api/shifts/:id
 router.delete('/:id', authenticateToken, canOrOutletManager('SHIFT_DELETE'), async (req, res) => {
   try {
-    const existing = await prisma.shift.findUnique({ where: { id: req.params.id }, select: { outletId: true } });
+    const existing = await prisma.shift.findUnique({
+      where: { id: req.params.id },
+      select: { outletId: true, employeeId: true },
+    });
     if (!existing) return res.status(404).json({ error: 'Shift not found' });
-    const denied = outletShiftDenied(req, existing.outletId);
+    const denied = await shiftWriteDenied(req, existing);
     if (denied) return res.status(403).json({ error: denied });
 
     await prisma.shift.delete({ where: { id: req.params.id } });

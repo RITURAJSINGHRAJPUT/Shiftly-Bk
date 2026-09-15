@@ -126,12 +126,26 @@ export function scoreEmployee(employee, slot, existingShifts, allAttendance) {
 /**
  * Auto-allocate shifts for a given date range and outlet
  */
-export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
+/**
+ * @param {string[]|null} [options.departments] Restrict the run to these
+ *   departments. Null or omitted means all of them, which is what a global role
+ *   or an outlet manager gets.
+ *
+ *   A department head must not rebuild a roster they do not own: this function
+ *   clears the date range before regenerating it, so an unscoped run by a head
+ *   chef deleted every Service and Housekeeping shift in the week — and their
+ *   auto-assigned days off with them — before filling only the kitchen back in.
+ */
+export async function autoAllocateShifts(prisma, outletId, startDate, endDate, { departments = null } = {}) {
   const outlet = await prisma.outlet.findUnique({ where: { id: outletId } });
   if (!outlet) throw new Error('Outlet not found');
 
+  // One fragment, spread into every query below, so a scoped run cannot read
+  // one set of people and delete another.
+  const departmentScope = departments?.length ? { department: { in: departments } } : {};
+
   const employees = await prisma.employee.findMany({
-    where: { outletId, isActive: true, role: { in: ROSTERABLE_ROLES } },
+    where: { outletId, isActive: true, role: { in: ROSTERABLE_ROLES }, ...departmentScope },
     include: { leaves: true },
   });
 
@@ -143,6 +157,9 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
     where: {
       outletId,
       date: dateRangeBounds,
+      // Only the people this run covers. Otherwise a scoped run would carry
+      // another department's shifts into keptShifts and count them as its own.
+      ...(departments?.length ? { employee: departmentScope } : {}),
     },
   });
 
@@ -153,8 +170,10 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
   // Clear previous auto-allocated data so re-runs are idempotent.
   const employeeIds = employees.map(e => e.id);
 
+  // Keyed on the employees this run covers, not the whole outlet. The leave
+  // delete below was already keyed this way, which is why it needed no change.
   await prisma.shift.deleteMany({
-    where: { outletId, status: 'ASSIGNED', date: dateRangeBounds },
+    where: { outletId, status: 'ASSIGNED', date: dateRangeBounds, employeeId: { in: employeeIds } },
   });
 
   await prisma.leave.deleteMany({
@@ -180,7 +199,7 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
   // silently applying a generic set to an outlet with none defined is what hid
   // the fact that every restaurant was being planned identically.
   const templates = await prisma.shiftTemplate.findMany({
-    where: { outletId, isActive: true },
+    where: { outletId, isActive: true, ...departmentScope },
     orderBy: [{ department: 'asc' }, { startTime: 'asc' }],
   });
 
@@ -191,9 +210,13 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate) {
       shifts: [],
       shortfalls: [],
       outlet: { id: outlet.id, name: outlet.name },
-      message:
-        `No shift patterns are defined for ${outlet.name}. Add patterns for this ` +
-        `outlet before running allocation.`,
+      // Names the scope: "no patterns for this outlet" reads as false when
+      // Service has plenty and only Kitchen is empty.
+      message: departments?.length
+        ? `No ${departments.join(' or ').toLowerCase()} shift patterns are defined for ` +
+          `${outlet.name}. Add patterns for your department before running allocation.`
+        : `No shift patterns are defined for ${outlet.name}. Add patterns for this ` +
+          `outlet before running allocation.`,
     };
   }
 

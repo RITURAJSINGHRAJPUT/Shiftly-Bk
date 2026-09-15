@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { useScope } from '../contexts/ScopeContext';
-import { ALL_WEEKDAYS, STATIONS, departmentHasStations } from '../constants';
+import { ALL_WEEKDAYS, STATIONS, departmentHasStations, departmentsFor } from '../constants';
 import Modal from '../components/Modal';
 import { format, startOfWeek, endOfWeek, addDays, isSameDay, isToday, parseISO } from 'date-fns';
 import {
@@ -64,6 +64,21 @@ export default function ShiftsPage() {
    * only decides what is worth showing.
    */
   const canReset = ['SUPER_ADMIN', 'ADMIN', 'OUTLET_MANAGER'].includes(user?.role);
+
+  /**
+   * Who this user may actually roster.
+   *
+   * A Head Chef schedules Kitchen, a Master of House Service and Housekeeping.
+   * The server refuses the rest either way — this only keeps the picker from
+   * offering a choice that is going to come back a 403. `departmentsFor`
+   * returns [] for every other role, which is why the length check, not the
+   * role name, decides.
+   */
+  const rosterableEmployees = useMemo(() => {
+    const owned = departmentsFor(user?.role);
+    if (owned.length === 0) return employees;
+    return employees.filter((e) => owned.includes(e.department));
+  }, [employees, user?.role]);
 
   const outlet = outlets.find((o) => o.id === selectedOutletId) || null;
 
@@ -785,7 +800,7 @@ export default function ShiftsPage() {
                 }}
                 required
               >
-                {employees.map((e) => (
+                {rosterableEmployees.map((e) => (
                   <option key={e.id} value={e.id}>{e.name} ({e.department})</option>
                 ))}
               </select>

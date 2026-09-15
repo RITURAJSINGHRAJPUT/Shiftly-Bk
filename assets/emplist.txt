@@ -1,0 +1,6916 @@
+{
+  "GetAttandance": [
+    {
+      "emp_name": "ARJUNLAL NANOMA",
+      "edatetime": "2026-09-10 08:54:06.0",
+      "evtsourcedet": null,
+      "userid": "DP443"
+    },
+    {
+      "emp_name": "ARJUNLAL NANOMA",
+      "edatetime": "2026-09-10 08:54:11.0",
+      "evtsourcedet": null,
+      "userid": "DP443"
+    },
+    {
+      "emp_name": "ARJUNLAL NANOMA",
+      "edatetime": "2026-09-10 18:02:47.0",
+      "evtsourcedet": null,
+      "userid": "DP443"
+    },
+    {
+      "emp_name": "ARJUNLAL NANOMA",
+      "edatetime": "2026-09-11 08:55:32.0",
+      "evtsourcedet": null,
+      "userid": "DP443"
+    },
+    {
+      "emp_name": "ARJUNLAL NANOMA",
+      "edatetime": "2026-09-11 18:13:13.0",
+      "evtsourcedet": null,
+      "userid": "DP443"
+    },
+    {
+      "emp_name": "RUTVIK MUKESHBHAI NAYKA",
+      "edatetime": "2026-09-10 10:56:03.0",
+      "evtsourcedet": null,
+      "userid": "DP13"
+    },
+    {
+      "emp_name": "RUTVIK MUKESHBHAI NAYKA",
+      "edatetime": "2026-09-10 20:44:32.0",
+      "evtsourcedet": null,
+      "userid": "DP13"
+    },
+    {
+      "emp_name": "RUTVIK MUKESHBHAI NAYKA",
+      "edatetime": "2026-09-11 07:20:41.0",
+      "evtsourcedet": null,
+      "userid": "DP13"
+    },
+    {
+      "emp_name": "RUTVIK MUKESHBHAI NAYKA",
+      "edatetime": "2026-09-11 20:11:33.0",
+      "evtsourcedet": null,
+      "userid": "DP13"
+    },
+    {
+      "emp_name": "KAMLESH RAJESHBHAI GAMIT",
+      "edatetime": "2026-09-10 13:17:22.0",
+      "evtsourcedet": null,
+      "userid": "DP24"
+    },
+    {
+      "emp_name": "KAMLESH RAJESHBHAI GAMIT",
+      "edatetime": "2026-09-10 23:57:24.0",
+      "evtsourcedet": null,
+      "userid": "DP24"
+    },
+    {
+      "emp_name": "KAMLESH RAJESHBHAI GAMIT",
+      "edatetime": "2026-09-11 13:33:35.0",
+      "evtsourcedet": null,
+      "userid": "DP24"
+    },
+    {
+      "emp_name": "KAMLESH RAJESHBHAI GAMIT",
+      "edatetime": "2026-09-11 23:57:31.0",
+      "evtsourcedet": null,
+      "userid": "DP24"
+    },
+    {
+      "emp_name": "SIBARAM BHAJRAMBHAI GAUDA",
+      "edatetime": "2026-09-10 12:42:13.0",
+      "evtsourcedet": null,
+      "userid": "DP25"
+    },
+    {
+      "emp_name": "SIBARAM BHAJRAMBHAI GAUDA",
+      "edatetime": "2026-09-10 23:05:59.0",
+      "evtsourcedet": null,
+      "userid": "DP25"
+    },
+    {
+      "emp_name": "SIBARAM BHAJRAMBHAI GAUDA",
+      "edatetime": "2026-09-11 13:09:16.0",
+      "evtsourcedet": null,
+      "userid": "DP25"
+    },
+    {
+      "emp_name": "SIBARAM BHAJRAMBHAI GAUDA",
+      "edatetime": "2026-09-11 22:21:33.0",
+      "evtsourcedet": null,
+      "userid": "DP25"
+    },
+    {
+      "emp_name": "DARSHIT MUKESHBHAI KANPARIYA",
+      "edatetime": "2026-09-10 20:42:27.0",
+      "evtsourcedet": null,
+      "userid": "DP93"
+    },
+    {
+      "emp_name": "NAYEE HARSH VIJAYKUMAR",
+      "edatetime": "2026-09-11 07:14:15.0",
+      "evtsourcedet": null,
+      "userid": "DP458"
+    },
+    {
+      "emp_name": "NAYEE HARSH VIJAYKUMAR",
+      "edatetime": "2026-09-11 16:31:10.0",
+      "evtsourcedet": null,
+      "userid": "DP458"
+    },
+    {
+      "emp_name": "RANU CHANDRA PRAKASH",
+      "edatetime": "2026-09-10 07:19:21.0",
+      "evtsourcedet": null,
+      "userid": "DP459"
+    },
+    {
+      "emp_name": "RANU CHANDRA PRAKASH",
+      "edatetime": "2026-09-10 17:41:10.0",
+      "evtsourcedet": null,
+      "userid": "DP459"
+    },
+    {
+      "emp_name": "RANU CHANDRA PRAKASH",
+      "edatetime": "2026-09-10 17:41:14.0",
+      "evtsourcedet": null,
+      "userid": "DP459"
+    },
+    {
+      "emp_name": "PRINCE MANOJ TURI",
+      "edatetime": "2026-09-11 12:16:03.0",
+      "evtsourcedet": null,
+      "userid": "DP448"
+    },
+    {
+      "emp_name": "PRINCE MANOJ TURI",
+      "edatetime": "2026-09-11 22:14:52.0",
+      "evtsourcedet": null,
+      "userid": "DP448"
+    },
+    {
+      "emp_name": "GHANCHI MOHAMMADAMAN IMRANBHAI",
+      "edatetime": "2026-09-10 01:36:04.0",
+      "evtsourcedet": null,
+      "userid": "DP416"
+    },
+    {
+      "emp_name": "MAHAVEER SHAITAN SINGH",
+      "edatetime": "2026-09-10 14:43:42.0",
+      "evtsourcedet": null,
+      "userid": "DP465"
+    },
+    {
+      "emp_name": "MAHAVEER SHAITAN SINGH",
+      "edatetime": "2026-09-10 23:46:38.0",
+      "evtsourcedet": null,
+      "userid": "DP465"
+    },
+    {
+      "emp_name": "MAHAVEER SHAITAN SINGH",
+      "edatetime": "2026-09-11 14:55:45.0",
+      "evtsourcedet": null,
+      "userid": "DP465"
+    },
+    {
+      "emp_name": "UDAY VISHWAKARMA",
+      "edatetime": "2026-09-10 08:03:27.0",
+      "evtsourcedet": null,
+      "userid": "DP288"
+    },
+    {
+      "emp_name": "UDAY VISHWAKARMA",
+      "edatetime": "2026-09-10 17:29:21.0",
+      "evtsourcedet": null,
+      "userid": "DP288"
+    },
+    {
+      "emp_name": "UDAY VISHWAKARMA",
+      "edatetime": "2026-09-11 09:08:26.0",
+      "evtsourcedet": null,
+      "userid": "DP288"
+    },
+    {
+      "emp_name": "UDAY VISHWAKARMA",
+      "edatetime": "2026-09-11 18:47:33.0",
+      "evtsourcedet": null,
+      "userid": "DP288"
+    },
+    {
+      "emp_name": "ANKIT VERMA",
+      "edatetime": "2026-09-10 00:16:21.0",
+      "evtsourcedet": null,
+      "userid": "DP299"
+    },
+    {
+      "emp_name": "ANKIT VERMA",
+      "edatetime": "2026-09-10 15:06:44.0",
+      "evtsourcedet": null,
+      "userid": "DP299"
+    },
+    {
+      "emp_name": "ANKIT VERMA",
+      "edatetime": "2026-09-11 00:06:42.0",
+      "evtsourcedet": null,
+      "userid": "DP299"
+    },
+    {
+      "emp_name": "ANKIT VERMA",
+      "edatetime": "2026-09-11 12:05:37.0",
+      "evtsourcedet": null,
+      "userid": "DP299"
+    },
+    {
+      "emp_name": "ANKIT VERMA",
+      "edatetime": "2026-09-11 21:16:39.0",
+      "evtsourcedet": null,
+      "userid": "DP299"
+    },
+    {
+      "emp_name": "SAGRA SUJAL RAMESHBHAI",
+      "edatetime": "2026-09-10 07:15:21.0",
+      "evtsourcedet": null,
+      "userid": "DP407"
+    },
+    {
+      "emp_name": "SAGRA SUJAL RAMESHBHAI",
+      "edatetime": "2026-09-10 16:13:07.0",
+      "evtsourcedet": null,
+      "userid": "DP407"
+    },
+    {
+      "emp_name": "SAGRA SUJAL RAMESHBHAI",
+      "edatetime": "2026-09-11 14:54:50.0",
+      "evtsourcedet": null,
+      "userid": "DP407"
+    },
+    {
+      "emp_name": "SAGRA SUJAL RAMESHBHAI",
+      "edatetime": "2026-09-11 23:46:56.0",
+      "evtsourcedet": null,
+      "userid": "DP407"
+    },
+    {
+      "emp_name": "NEETU AMARAJI BALAI",
+      "edatetime": "2026-09-10 11:42:35.0",
+      "evtsourcedet": null,
+      "userid": "DP411"
+    },
+    {
+      "emp_name": "NEETU AMARAJI BALAI",
+      "edatetime": "2026-09-10 21:11:11.0",
+      "evtsourcedet": null,
+      "userid": "DP411"
+    },
+    {
+      "emp_name": "NEETU AMARAJI BALAI",
+      "edatetime": "2026-09-11 11:34:16.0",
+      "evtsourcedet": null,
+      "userid": "DP411"
+    },
+    {
+      "emp_name": "NEETU AMARAJI BALAI",
+      "edatetime": "2026-09-11 21:21:57.0",
+      "evtsourcedet": null,
+      "userid": "DP411"
+    },
+    {
+      "emp_name": "GANGARAM BHADAI RAM",
+      "edatetime": "2026-09-10 09:24:08.0",
+      "evtsourcedet": null,
+      "userid": "DP388"
+    },
+    {
+      "emp_name": "GANGARAM BHADAI RAM",
+      "edatetime": "2026-09-10 16:34:48.0",
+      "evtsourcedet": null,
+      "userid": "DP388"
+    },
+    {
+      "emp_name": "GANGARAM BHADAI RAM",
+      "edatetime": "2026-09-11 12:27:43.0",
+      "evtsourcedet": null,
+      "userid": "DP388"
+    },
+    {
+      "emp_name": "GANGARAM BHADAI RAM",
+      "edatetime": "2026-09-11 12:46:03.0",
+      "evtsourcedet": null,
+      "userid": "DP388"
+    },
+    {
+      "emp_name": "GANGARAM BHADAI RAM",
+      "edatetime": "2026-09-11 15:40:23.0",
+      "evtsourcedet": null,
+      "userid": "DP388"
+    },
+    {
+      "emp_name": "HITESHKUMAR BHIKHABHAI MALIVAD",
+      "edatetime": "2026-09-11 14:33:03.0",
+      "evtsourcedet": null,
+      "userid": "DP27"
+    },
+    {
+      "emp_name": "ALPESHBHAI HIRALAL SHAH",
+      "edatetime": "2026-09-10 10:00:40.0",
+      "evtsourcedet": null,
+      "userid": "DP113"
+    },
+    {
+      "emp_name": "ALPESHBHAI HIRALAL SHAH",
+      "edatetime": "2026-09-10 11:47:54.0",
+      "evtsourcedet": null,
+      "userid": "DP113"
+    },
+    {
+      "emp_name": "SAMIRBHAI NARESHBHAI CHAUDHARI",
+      "edatetime": "2026-09-10 10:52:18.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP14"
+    },
+    {
+      "emp_name": "SAMIRBHAI NARESHBHAI CHAUDHARI",
+      "edatetime": "2026-09-10 22:14:10.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP14"
+    },
+    {
+      "emp_name": "SAMIRBHAI NARESHBHAI CHAUDHARI",
+      "edatetime": "2026-09-10 22:14:45.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP14"
+    },
+    {
+      "emp_name": "SAMIRBHAI NARESHBHAI CHAUDHARI",
+      "edatetime": "2026-09-11 13:13:30.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP14"
+    },
+    {
+      "emp_name": "SAMIRBHAI NARESHBHAI CHAUDHARI",
+      "edatetime": "2026-09-11 23:23:49.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP14"
+    },
+    {
+      "emp_name": "MOHAMMED HUSEN KHAN",
+      "edatetime": "2026-09-10 07:23:53.0",
+      "evtsourcedet": null,
+      "userid": "DP10"
+    },
+    {
+      "emp_name": "MOHAMMED HUSEN KHAN",
+      "edatetime": "2026-09-10 16:30:47.0",
+      "evtsourcedet": null,
+      "userid": "DP10"
+    },
+    {
+      "emp_name": "MOHAMMED HUSEN KHAN",
+      "edatetime": "2026-09-11 13:45:34.0",
+      "evtsourcedet": null,
+      "userid": "DP10"
+    },
+    {
+      "emp_name": "MOHAMMED HUSEN KHAN",
+      "edatetime": "2026-09-11 19:16:24.0",
+      "evtsourcedet": null,
+      "userid": "DP10"
+    },
+    {
+      "emp_name": "IRSAD ASAGAR ALAM",
+      "edatetime": "2026-09-10 14:56:57.0",
+      "evtsourcedet": null,
+      "userid": "DP168"
+    },
+    {
+      "emp_name": "IRSAD ASAGAR ALAM",
+      "edatetime": "2026-09-10 23:55:58.0",
+      "evtsourcedet": null,
+      "userid": "DP168"
+    },
+    {
+      "emp_name": "JAY PAREKH ANANTBHAI",
+      "edatetime": "2026-09-10 11:53:09.0",
+      "evtsourcedet": null,
+      "userid": "DP182"
+    },
+    {
+      "emp_name": "JAY PAREKH ANANTBHAI",
+      "edatetime": "2026-09-10 23:59:47.0",
+      "evtsourcedet": null,
+      "userid": "DP182"
+    },
+    {
+      "emp_name": "JAY PAREKH ANANTBHAI",
+      "edatetime": "2026-09-11 11:48:29.0",
+      "evtsourcedet": null,
+      "userid": "DP182"
+    },
+    {
+      "emp_name": "YASH SANJEEV GHODKE",
+      "edatetime": "2026-09-10 15:59:27.0",
+      "evtsourcedet": null,
+      "userid": "DP36"
+    },
+    {
+      "emp_name": "ADNAN SAIFUDDIN RUPAWALA",
+      "edatetime": "2026-09-10 11:21:15.0",
+      "evtsourcedet": null,
+      "userid": "DP38"
+    },
+    {
+      "emp_name": "ADNAN SAIFUDDIN RUPAWALA",
+      "edatetime": "2026-09-10 22:16:58.0",
+      "evtsourcedet": null,
+      "userid": "DP38"
+    },
+    {
+      "emp_name": "ADNAN SAIFUDDIN RUPAWALA",
+      "edatetime": "2026-09-11 11:20:45.0",
+      "evtsourcedet": null,
+      "userid": "DP38"
+    },
+    {
+      "emp_name": "ADNAN SAIFUDDIN RUPAWALA",
+      "edatetime": "2026-09-11 23:50:53.0",
+      "evtsourcedet": null,
+      "userid": "DP38"
+    },
+    {
+      "emp_name": "DIPAKKUMAR DHANSUKHBHAI PATEL",
+      "edatetime": "2026-09-10 09:44:49.0",
+      "evtsourcedet": null,
+      "userid": "DP192"
+    },
+    {
+      "emp_name": "DIPAKKUMAR DHANSUKHBHAI PATEL",
+      "edatetime": "2026-09-10 16:03:44.0",
+      "evtsourcedet": null,
+      "userid": "DP192"
+    },
+    {
+      "emp_name": "DIPAKKUMAR DHANSUKHBHAI PATEL",
+      "edatetime": "2026-09-10 16:03:45.0",
+      "evtsourcedet": null,
+      "userid": "DP192"
+    },
+    {
+      "emp_name": "DIPAKKUMAR DHANSUKHBHAI PATEL",
+      "edatetime": "2026-09-10 16:03:46.0",
+      "evtsourcedet": null,
+      "userid": "DP192"
+    },
+    {
+      "emp_name": "DIPAKKUMAR DHANSUKHBHAI PATEL",
+      "edatetime": "2026-09-10 16:03:51.0",
+      "evtsourcedet": null,
+      "userid": "DP192"
+    },
+    {
+      "emp_name": "DIPAKKUMAR DHANSUKHBHAI PATEL",
+      "edatetime": "2026-09-11 09:11:12.0",
+      "evtsourcedet": null,
+      "userid": "DP192"
+    },
+    {
+      "emp_name": "DIPAKKUMAR DHANSUKHBHAI PATEL",
+      "edatetime": "2026-09-11 15:37:24.0",
+      "evtsourcedet": null,
+      "userid": "DP192"
+    },
+    {
+      "emp_name": "DIPAKKUMAR DHANSUKHBHAI PATEL",
+      "edatetime": "2026-09-11 16:44:04.0",
+      "evtsourcedet": null,
+      "userid": "DP192"
+    },
+    {
+      "emp_name": "DIPAKKUMAR DHANSUKHBHAI PATEL",
+      "edatetime": "2026-09-11 18:31:50.0",
+      "evtsourcedet": null,
+      "userid": "DP192"
+    },
+    {
+      "emp_name": "Kiran",
+      "edatetime": "2026-09-10 07:36:32.0",
+      "evtsourcedet": null,
+      "userid": "OTH28"
+    },
+    {
+      "emp_name": "Kiran",
+      "edatetime": "2026-09-10 17:33:24.0",
+      "evtsourcedet": null,
+      "userid": "OTH28"
+    },
+    {
+      "emp_name": "Kiran",
+      "edatetime": "2026-09-11 07:32:40.0",
+      "evtsourcedet": null,
+      "userid": "OTH28"
+    },
+    {
+      "emp_name": "Kiran",
+      "edatetime": "2026-09-11 16:45:45.0",
+      "evtsourcedet": null,
+      "userid": "OTH28"
+    },
+    {
+      "emp_name": "KINJAL SANJAY JANI",
+      "edatetime": "2026-09-10 12:06:39.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP205"
+    },
+    {
+      "emp_name": "KINJAL SANJAY JANI",
+      "edatetime": "2026-09-10 19:25:34.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP205"
+    },
+    {
+      "emp_name": "KINJAL SANJAY JANI",
+      "edatetime": "2026-09-11 10:29:08.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP205"
+    },
+    {
+      "emp_name": "KINJAL SANJAY JANI",
+      "edatetime": "2026-09-11 18:40:26.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP205"
+    },
+    {
+      "emp_name": "GEETA RAJENDRA TANTI",
+      "edatetime": "2026-09-10 07:39:45.0",
+      "evtsourcedet": null,
+      "userid": "BA6"
+    },
+    {
+      "emp_name": "GEETA RAJENDRA TANTI",
+      "edatetime": "2026-09-10 17:32:45.0",
+      "evtsourcedet": null,
+      "userid": "BA6"
+    },
+    {
+      "emp_name": "GEETA RAJENDRA TANTI",
+      "edatetime": "2026-09-11 07:34:02.0",
+      "evtsourcedet": null,
+      "userid": "BA6"
+    },
+    {
+      "emp_name": "GEETA RAJENDRA TANTI",
+      "edatetime": "2026-09-11 16:48:21.0",
+      "evtsourcedet": null,
+      "userid": "BA6"
+    },
+    {
+      "emp_name": "DILIP TURI",
+      "edatetime": "2026-09-10 00:09:38.0",
+      "evtsourcedet": null,
+      "userid": "DP255"
+    },
+    {
+      "emp_name": "DILIP TURI",
+      "edatetime": "2026-09-11 14:54:50.0",
+      "evtsourcedet": null,
+      "userid": "DP255"
+    },
+    {
+      "emp_name": "AMIT SHERSING ODD",
+      "edatetime": "2026-09-10 10:58:26.0",
+      "evtsourcedet": null,
+      "userid": "DP228"
+    },
+    {
+      "emp_name": "AMIT SHERSING ODD",
+      "edatetime": "2026-09-10 20:15:48.0",
+      "evtsourcedet": null,
+      "userid": "DP228"
+    },
+    {
+      "emp_name": "AMIT SHERSING ODD",
+      "edatetime": "2026-09-11 13:55:34.0",
+      "evtsourcedet": null,
+      "userid": "DP228"
+    },
+    {
+      "emp_name": "AMIT SHERSING ODD",
+      "edatetime": "2026-09-11 23:10:36.0",
+      "evtsourcedet": null,
+      "userid": "DP228"
+    },
+    {
+      "emp_name": "MOHAMMADATIK SHAIKH",
+      "edatetime": "2026-09-10 01:35:29.0",
+      "evtsourcedet": null,
+      "userid": "DP281"
+    },
+    {
+      "emp_name": "MOHAMMADATIK SHAIKH",
+      "edatetime": "2026-09-10 15:04:24.0",
+      "evtsourcedet": null,
+      "userid": "DP281"
+    },
+    {
+      "emp_name": "MOHAMMADATIK SHAIKH",
+      "edatetime": "2026-09-11 00:27:20.0",
+      "evtsourcedet": null,
+      "userid": "DP281"
+    },
+    {
+      "emp_name": "MOHAMMADATIK SHAIKH",
+      "edatetime": "2026-09-11 13:57:19.0",
+      "evtsourcedet": null,
+      "userid": "DP281"
+    },
+    {
+      "emp_name": "PARMAR ATUL RAMESHBHAI",
+      "edatetime": "2026-09-10 14:52:58.0",
+      "evtsourcedet": null,
+      "userid": "DP413"
+    },
+    {
+      "emp_name": "PARMAR ATUL RAMESHBHAI",
+      "edatetime": "2026-09-11 00:12:02.0",
+      "evtsourcedet": null,
+      "userid": "DP413"
+    },
+    {
+      "emp_name": "PARMAR ATUL RAMESHBHAI",
+      "edatetime": "2026-09-11 14:58:33.0",
+      "evtsourcedet": null,
+      "userid": "DP413"
+    },
+    {
+      "emp_name": "PARMAR ATUL RAMESHBHAI",
+      "edatetime": "2026-09-11 23:59:28.0",
+      "evtsourcedet": null,
+      "userid": "DP413"
+    },
+    {
+      "emp_name": "ALOK RAJKUMAR JAISWAL",
+      "edatetime": "2026-09-10 00:18:05.0",
+      "evtsourcedet": null,
+      "userid": "DP460"
+    },
+    {
+      "emp_name": "ALOK RAJKUMAR JAISWAL",
+      "edatetime": "2026-09-11 12:43:25.0",
+      "evtsourcedet": null,
+      "userid": "DP460"
+    },
+    {
+      "emp_name": "ALOK RAJKUMAR JAISWAL",
+      "edatetime": "2026-09-11 22:01:13.0",
+      "evtsourcedet": null,
+      "userid": "DP460"
+    },
+    {
+      "emp_name": "GONDHIYA DHRUVIL SUNILBHAI",
+      "edatetime": "2026-09-10 07:45:34.0",
+      "evtsourcedet": null,
+      "userid": "DP449"
+    },
+    {
+      "emp_name": "GONDHIYA DHRUVIL SUNILBHAI",
+      "edatetime": "2026-09-10 17:47:18.0",
+      "evtsourcedet": null,
+      "userid": "DP449"
+    },
+    {
+      "emp_name": "GONDHIYA DHRUVIL SUNILBHAI",
+      "edatetime": "2026-09-11 07:38:29.0",
+      "evtsourcedet": null,
+      "userid": "DP449"
+    },
+    {
+      "emp_name": "GONDHIYA DHRUVIL SUNILBHAI",
+      "edatetime": "2026-09-11 22:20:56.0",
+      "evtsourcedet": null,
+      "userid": "DP449"
+    },
+    {
+      "emp_name": "PRACHI SHAH",
+      "edatetime": "2026-09-10 14:17:59.0",
+      "evtsourcedet": null,
+      "userid": "DP417"
+    },
+    {
+      "emp_name": "PRACHI SHAH",
+      "edatetime": "2026-09-10 23:29:57.0",
+      "evtsourcedet": null,
+      "userid": "DP417"
+    },
+    {
+      "emp_name": "MOHAMMAD ZAID",
+      "edatetime": "2026-09-10 15:04:52.0",
+      "evtsourcedet": null,
+      "userid": "DP394"
+    },
+    {
+      "emp_name": "MOHAMMAD ZAID",
+      "edatetime": "2026-09-11 00:17:03.0",
+      "evtsourcedet": null,
+      "userid": "DP394"
+    },
+    {
+      "emp_name": "MOHAMMAD ZAID",
+      "edatetime": "2026-09-11 15:04:35.0",
+      "evtsourcedet": null,
+      "userid": "DP394"
+    },
+    {
+      "emp_name": "KELASH KUMAR",
+      "edatetime": "2026-09-10 11:54:13.0",
+      "evtsourcedet": null,
+      "userid": "LAL37"
+    },
+    {
+      "emp_name": "KELASH KUMAR",
+      "edatetime": "2026-09-10 23:00:38.0",
+      "evtsourcedet": null,
+      "userid": "LAL37"
+    },
+    {
+      "emp_name": "KELASH KUMAR",
+      "edatetime": "2026-09-11 13:19:45.0",
+      "evtsourcedet": null,
+      "userid": "LAL37"
+    },
+    {
+      "emp_name": "KELASH KUMAR",
+      "edatetime": "2026-09-11 22:33:11.0",
+      "evtsourcedet": null,
+      "userid": "LAL37"
+    },
+    {
+      "emp_name": "KELASH KUMAR",
+      "edatetime": "2026-09-11 22:49:07.0",
+      "evtsourcedet": null,
+      "userid": "LAL37"
+    },
+    {
+      "emp_name": "Arun Kumar Yadav",
+      "edatetime": "2026-09-10 00:29:56.0",
+      "evtsourcedet": null,
+      "userid": "LAL77"
+    },
+    {
+      "emp_name": "Arun Kumar Yadav",
+      "edatetime": "2026-09-10 15:01:20.0",
+      "evtsourcedet": null,
+      "userid": "LAL77"
+    },
+    {
+      "emp_name": "Arun Kumar Yadav",
+      "edatetime": "2026-09-11 00:19:46.0",
+      "evtsourcedet": null,
+      "userid": "LAL77"
+    },
+    {
+      "emp_name": "Arun Kumar Yadav",
+      "edatetime": "2026-09-11 14:58:12.0",
+      "evtsourcedet": null,
+      "userid": "LAL77"
+    },
+    {
+      "emp_name": "GAURAV SHARMA",
+      "edatetime": "2026-09-10 13:03:09.0",
+      "evtsourcedet": null,
+      "userid": "DP280"
+    },
+    {
+      "emp_name": "GAURAV SHARMA",
+      "edatetime": "2026-09-10 22:02:08.0",
+      "evtsourcedet": null,
+      "userid": "DP280"
+    },
+    {
+      "emp_name": "RAVI SINGH",
+      "edatetime": "2026-09-11 13:53:30.0",
+      "evtsourcedet": null,
+      "userid": "DP279"
+    },
+    {
+      "emp_name": "RAVI SINGH",
+      "edatetime": "2026-09-11 23:09:05.0",
+      "evtsourcedet": null,
+      "userid": "DP279"
+    },
+    {
+      "emp_name": "SAGAR NATH",
+      "edatetime": "2026-09-10 00:10:49.0",
+      "evtsourcedet": null,
+      "userid": "DP290"
+    },
+    {
+      "emp_name": "SAGAR NATH",
+      "edatetime": "2026-09-10 12:49:11.0",
+      "evtsourcedet": null,
+      "userid": "DP290"
+    },
+    {
+      "emp_name": "SAGAR NATH",
+      "edatetime": "2026-09-10 22:15:24.0",
+      "evtsourcedet": null,
+      "userid": "DP290"
+    },
+    {
+      "emp_name": "SAGAR NATH",
+      "edatetime": "2026-09-11 12:59:39.0",
+      "evtsourcedet": null,
+      "userid": "DP290"
+    },
+    {
+      "emp_name": "SAGAR NATH",
+      "edatetime": "2026-09-11 22:14:18.0",
+      "evtsourcedet": null,
+      "userid": "DP290"
+    },
+    {
+      "emp_name": "BIJAY MAHARA",
+      "edatetime": "2026-09-10 12:24:41.0",
+      "evtsourcedet": null,
+      "userid": "DP314"
+    },
+    {
+      "emp_name": "BIJAY MAHARA",
+      "edatetime": "2026-09-10 21:42:17.0",
+      "evtsourcedet": null,
+      "userid": "DP314"
+    },
+    {
+      "emp_name": "BIJAY MAHARA",
+      "edatetime": "2026-09-11 12:34:52.0",
+      "evtsourcedet": null,
+      "userid": "DP314"
+    },
+    {
+      "emp_name": "BIJAY MAHARA",
+      "edatetime": "2026-09-11 21:48:10.0",
+      "evtsourcedet": null,
+      "userid": "DP314"
+    },
+    {
+      "emp_name": "RISHABH YAQUB",
+      "edatetime": "2026-09-10 14:36:19.0",
+      "evtsourcedet": null,
+      "userid": "DP295"
+    },
+    {
+      "emp_name": "RISHABH YAQUB",
+      "edatetime": "2026-09-11 00:14:08.0",
+      "evtsourcedet": null,
+      "userid": "DP295"
+    },
+    {
+      "emp_name": "RISHABH YAQUB",
+      "edatetime": "2026-09-11 14:39:02.0",
+      "evtsourcedet": null,
+      "userid": "DP295"
+    },
+    {
+      "emp_name": "CHOUDHARY JAYESHBHAI SURESHBHAI",
+      "edatetime": "2026-09-10 07:23:57.0",
+      "evtsourcedet": null,
+      "userid": "DP410"
+    },
+    {
+      "emp_name": "CHOUDHARY JAYESHBHAI SURESHBHAI",
+      "edatetime": "2026-09-10 18:13:22.0",
+      "evtsourcedet": null,
+      "userid": "DP410"
+    },
+    {
+      "emp_name": "CHOUDHARY JAYESHBHAI SURESHBHAI",
+      "edatetime": "2026-09-11 07:23:08.0",
+      "evtsourcedet": null,
+      "userid": "DP410"
+    },
+    {
+      "emp_name": "CHOUDHARY JAYESHBHAI SURESHBHAI",
+      "edatetime": "2026-09-11 19:05:03.0",
+      "evtsourcedet": null,
+      "userid": "DP410"
+    },
+    {
+      "emp_name": "MANNU MANJAY RAY",
+      "edatetime": "2026-09-10 07:20:40.0",
+      "evtsourcedet": null,
+      "userid": "DP408"
+    },
+    {
+      "emp_name": "MANNU MANJAY RAY",
+      "edatetime": "2026-09-10 17:21:40.0",
+      "evtsourcedet": null,
+      "userid": "DP408"
+    },
+    {
+      "emp_name": "MANNU MANJAY RAY",
+      "edatetime": "2026-09-10 17:23:47.0",
+      "evtsourcedet": null,
+      "userid": "DP408"
+    },
+    {
+      "emp_name": "MANNU MANJAY RAY",
+      "edatetime": "2026-09-10 17:31:49.0",
+      "evtsourcedet": null,
+      "userid": "DP408"
+    },
+    {
+      "emp_name": "MANNU MANJAY RAY",
+      "edatetime": "2026-09-11 07:09:59.0",
+      "evtsourcedet": null,
+      "userid": "DP408"
+    },
+    {
+      "emp_name": "MANNU MANJAY RAY",
+      "edatetime": "2026-09-11 18:05:10.0",
+      "evtsourcedet": null,
+      "userid": "DP408"
+    },
+    {
+      "emp_name": "DEVANSHI PATEL",
+      "edatetime": "2026-09-10 12:44:22.0",
+      "evtsourcedet": null,
+      "userid": "DP272"
+    },
+    {
+      "emp_name": "DEVANSHI PATEL",
+      "edatetime": "2026-09-10 22:33:14.0",
+      "evtsourcedet": null,
+      "userid": "DP272"
+    },
+    {
+      "emp_name": "KARAN VASAVA",
+      "edatetime": "2026-09-10 11:59:02.0",
+      "evtsourcedet": null,
+      "userid": "DP240"
+    },
+    {
+      "emp_name": "KARAN VASAVA",
+      "edatetime": "2026-09-10 23:44:12.0",
+      "evtsourcedet": null,
+      "userid": "DP240"
+    },
+    {
+      "emp_name": "KARAN VASAVA",
+      "edatetime": "2026-09-11 11:18:09.0",
+      "evtsourcedet": null,
+      "userid": "DP240"
+    },
+    {
+      "emp_name": "KARAN VASAVA",
+      "edatetime": "2026-09-11 23:47:45.0",
+      "evtsourcedet": null,
+      "userid": "DP240"
+    },
+    {
+      "emp_name": "MUFADDAL ABBAS SHAIKHMAHMOOD",
+      "edatetime": "2026-09-10 11:59:19.0",
+      "evtsourcedet": null,
+      "userid": "DP120"
+    },
+    {
+      "emp_name": "MUFADDAL ABBAS SHAIKHMAHMOOD",
+      "edatetime": "2026-09-10 23:19:05.0",
+      "evtsourcedet": null,
+      "userid": "DP120"
+    },
+    {
+      "emp_name": "MUFADDAL ABBAS SHAIKHMAHMOOD",
+      "edatetime": "2026-09-11 11:44:02.0",
+      "evtsourcedet": null,
+      "userid": "DP120"
+    },
+    {
+      "emp_name": "MUFADDAL ABBAS SHAIKHMAHMOOD",
+      "edatetime": "2026-09-11 23:44:49.0",
+      "evtsourcedet": null,
+      "userid": "DP120"
+    },
+    {
+      "emp_name": "SHAMIYA AJAYKUMAR SINGH",
+      "edatetime": "2026-09-10 10:21:04.0",
+      "evtsourcedet": null,
+      "userid": "DP138"
+    },
+    {
+      "emp_name": "SHAMIYA AJAYKUMAR SINGH",
+      "edatetime": "2026-09-10 10:21:07.0",
+      "evtsourcedet": null,
+      "userid": "DP138"
+    },
+    {
+      "emp_name": "SHAMIYA AJAYKUMAR SINGH",
+      "edatetime": "2026-09-10 18:58:00.0",
+      "evtsourcedet": null,
+      "userid": "DP138"
+    },
+    {
+      "emp_name": "SHAMIYA AJAYKUMAR SINGH",
+      "edatetime": "2026-09-11 10:25:10.0",
+      "evtsourcedet": null,
+      "userid": "DP138"
+    },
+    {
+      "emp_name": "SHAMIYA AJAYKUMAR SINGH",
+      "edatetime": "2026-09-11 18:54:26.0",
+      "evtsourcedet": null,
+      "userid": "DP138"
+    },
+    {
+      "emp_name": "RAKESHBHAI BHIKHABHAI MALIVAD",
+      "edatetime": "2026-09-11 11:53:34.0",
+      "evtsourcedet": null,
+      "userid": "DP32"
+    },
+    {
+      "emp_name": "RAKESHBHAI BHIKHABHAI MALIVAD",
+      "edatetime": "2026-09-11 21:26:42.0",
+      "evtsourcedet": null,
+      "userid": "DP32"
+    },
+    {
+      "emp_name": "KAJAL PRAVINJI THAKOR",
+      "edatetime": "2026-09-10 18:27:23.0",
+      "evtsourcedet": null,
+      "userid": "DP146"
+    },
+    {
+      "emp_name": "KAJAL PRAVINJI THAKOR",
+      "edatetime": "2026-09-11 13:51:19.0",
+      "evtsourcedet": null,
+      "userid": "DP146"
+    },
+    {
+      "emp_name": "KAJAL PRAVINJI THAKOR",
+      "edatetime": "2026-09-11 23:17:59.0",
+      "evtsourcedet": null,
+      "userid": "DP146"
+    },
+    {
+      "emp_name": "UMANG RAJENDRABHAI NAIDU",
+      "edatetime": "2026-09-10 11:18:30.0",
+      "evtsourcedet": null,
+      "userid": "DP18"
+    },
+    {
+      "emp_name": "UMANG RAJENDRABHAI NAIDU",
+      "edatetime": "2026-09-10 19:48:25.0",
+      "evtsourcedet": null,
+      "userid": "DP18"
+    },
+    {
+      "emp_name": "UMANG RAJENDRABHAI NAIDU",
+      "edatetime": "2026-09-11 11:09:52.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP18"
+    },
+    {
+      "emp_name": "UMANG RAJENDRABHAI NAIDU",
+      "edatetime": "2026-09-11 20:41:52.0",
+      "evtsourcedet": null,
+      "userid": "DP18"
+    },
+    {
+      "emp_name": "MITANGI NARESHBHAI PATEL",
+      "edatetime": "2026-09-10 13:37:00.0",
+      "evtsourcedet": null,
+      "userid": "DP41"
+    },
+    {
+      "emp_name": "MITANGI NARESHBHAI PATEL",
+      "edatetime": "2026-09-10 23:07:52.0",
+      "evtsourcedet": null,
+      "userid": "DP41"
+    },
+    {
+      "emp_name": "MITANGI NARESHBHAI PATEL",
+      "edatetime": "2026-09-11 12:18:50.0",
+      "evtsourcedet": null,
+      "userid": "DP41"
+    },
+    {
+      "emp_name": "RAHIL JATIN SHAH",
+      "edatetime": "2026-09-11 22:27:50.0",
+      "evtsourcedet": null,
+      "userid": "DP77"
+    },
+    {
+      "emp_name": "GANESH RAJKISHOR MAHARA",
+      "edatetime": "2026-09-10 11:59:34.0",
+      "evtsourcedet": null,
+      "userid": "DP79"
+    },
+    {
+      "emp_name": "GANESH RAJKISHOR MAHARA",
+      "edatetime": "2026-09-10 21:42:13.0",
+      "evtsourcedet": null,
+      "userid": "DP79"
+    },
+    {
+      "emp_name": "GANESH RAJKISHOR MAHARA",
+      "edatetime": "2026-09-11 12:06:02.0",
+      "evtsourcedet": null,
+      "userid": "DP79"
+    },
+    {
+      "emp_name": "GANESH RAJKISHOR MAHARA",
+      "edatetime": "2026-09-11 21:35:40.0",
+      "evtsourcedet": null,
+      "userid": "DP79"
+    },
+    {
+      "emp_name": "SAHIL MUBARAK KHATIK",
+      "edatetime": "2026-09-10 13:52:37.0",
+      "evtsourcedet": null,
+      "userid": "DP85"
+    },
+    {
+      "emp_name": "SAHIL MUBARAK KHATIK",
+      "edatetime": "2026-09-10 22:54:27.0",
+      "evtsourcedet": null,
+      "userid": "DP85"
+    },
+    {
+      "emp_name": "SAHIL MUBARAK KHATIK",
+      "edatetime": "2026-09-11 13:40:32.0",
+      "evtsourcedet": null,
+      "userid": "DP85"
+    },
+    {
+      "emp_name": "SAHIL MUBARAK KHATIK",
+      "edatetime": "2026-09-11 22:55:27.0",
+      "evtsourcedet": null,
+      "userid": "DP85"
+    },
+    {
+      "emp_name": "ASHIKA VILAS KHADE",
+      "edatetime": "2026-09-10 13:31:30.0",
+      "evtsourcedet": null,
+      "userid": "DP87"
+    },
+    {
+      "emp_name": "ASHIKA VILAS KHADE",
+      "edatetime": "2026-09-10 17:34:37.0",
+      "evtsourcedet": null,
+      "userid": "DP87"
+    },
+    {
+      "emp_name": "ASHIKA VILAS KHADE",
+      "edatetime": "2026-09-10 22:49:14.0",
+      "evtsourcedet": null,
+      "userid": "DP87"
+    },
+    {
+      "emp_name": "ASHIKA VILAS KHADE",
+      "edatetime": "2026-09-11 13:21:31.0",
+      "evtsourcedet": null,
+      "userid": "DP87"
+    },
+    {
+      "emp_name": "ASHIKA VILAS KHADE",
+      "edatetime": "2026-09-11 22:40:52.0",
+      "evtsourcedet": null,
+      "userid": "DP87"
+    },
+    {
+      "emp_name": "DILIP RAGHUBHAI RAVAL",
+      "edatetime": "2026-09-10 14:55:22.0",
+      "evtsourcedet": null,
+      "userid": "DP88"
+    },
+    {
+      "emp_name": "DILIP RAGHUBHAI RAVAL",
+      "edatetime": "2026-09-11 00:35:57.0",
+      "evtsourcedet": null,
+      "userid": "DP88"
+    },
+    {
+      "emp_name": "DILIP RAGHUBHAI RAVAL",
+      "edatetime": "2026-09-11 15:01:15.0",
+      "evtsourcedet": null,
+      "userid": "DP88"
+    },
+    {
+      "emp_name": "VINODBHAI KISHORBHAI CHAURYA",
+      "edatetime": "2026-09-10 14:44:53.0",
+      "evtsourcedet": null,
+      "userid": "DP90"
+    },
+    {
+      "emp_name": "VINODBHAI KISHORBHAI CHAURYA",
+      "edatetime": "2026-09-10 23:52:25.0",
+      "evtsourcedet": null,
+      "userid": "DP90"
+    },
+    {
+      "emp_name": "VINODBHAI KISHORBHAI CHAURYA",
+      "edatetime": "2026-09-11 14:34:08.0",
+      "evtsourcedet": null,
+      "userid": "DP90"
+    },
+    {
+      "emp_name": "VINODBHAI KISHORBHAI CHAURYA",
+      "edatetime": "2026-09-11 22:54:22.0",
+      "evtsourcedet": null,
+      "userid": "DP90"
+    },
+    {
+      "emp_name": "VINODBHAI KISHORBHAI CHAURYA",
+      "edatetime": "2026-09-11 23:14:10.0",
+      "evtsourcedet": null,
+      "userid": "DP90"
+    },
+    {
+      "emp_name": "YASH YASHWANT KHADE",
+      "edatetime": "2026-09-10 19:06:26.0",
+      "evtsourcedet": null,
+      "userid": "DP94"
+    },
+    {
+      "emp_name": "YASH YASHWANT KHADE",
+      "edatetime": "2026-09-11 00:12:18.0",
+      "evtsourcedet": null,
+      "userid": "DP94"
+    },
+    {
+      "emp_name": "YASH YASHWANT KHADE",
+      "edatetime": "2026-09-11 14:51:05.0",
+      "evtsourcedet": null,
+      "userid": "DP94"
+    },
+    {
+      "emp_name": "SHASHIKANT GAMIT",
+      "edatetime": "2026-09-10 10:12:02.0",
+      "evtsourcedet": null,
+      "userid": "DP97"
+    },
+    {
+      "emp_name": "SHASHIKANT GAMIT",
+      "edatetime": "2026-09-10 19:10:12.0",
+      "evtsourcedet": null,
+      "userid": "DP97"
+    },
+    {
+      "emp_name": "SHASHIKANT GAMIT",
+      "edatetime": "2026-09-10 19:10:19.0",
+      "evtsourcedet": null,
+      "userid": "DP97"
+    },
+    {
+      "emp_name": "SHASHIKANT GAMIT",
+      "edatetime": "2026-09-10 19:10:24.0",
+      "evtsourcedet": null,
+      "userid": "DP97"
+    },
+    {
+      "emp_name": "SHASHIKANT GAMIT",
+      "edatetime": "2026-09-10 19:10:33.0",
+      "evtsourcedet": null,
+      "userid": "DP97"
+    },
+    {
+      "emp_name": "SHASHIKANT GAMIT",
+      "edatetime": "2026-09-11 10:08:29.0",
+      "evtsourcedet": null,
+      "userid": "DP97"
+    },
+    {
+      "emp_name": "SHASHIKANT GAMIT",
+      "edatetime": "2026-09-11 15:21:51.0",
+      "evtsourcedet": null,
+      "userid": "DP97"
+    },
+    {
+      "emp_name": "SANJAY PATEL",
+      "edatetime": "2026-09-10 14:43:35.0",
+      "evtsourcedet": null,
+      "userid": "DP210"
+    },
+    {
+      "emp_name": "SANJAY PATEL",
+      "edatetime": "2026-09-11 00:11:59.0",
+      "evtsourcedet": null,
+      "userid": "DP210"
+    },
+    {
+      "emp_name": "SANJAY PATEL",
+      "edatetime": "2026-09-11 14:55:21.0",
+      "evtsourcedet": null,
+      "userid": "DP210"
+    },
+    {
+      "emp_name": "MAHIMA SURENDRA PANDEY",
+      "edatetime": "2026-09-10 12:44:51.0",
+      "evtsourcedet": null,
+      "userid": "DP100"
+    },
+    {
+      "emp_name": "MAHIMA SURENDRA PANDEY",
+      "edatetime": "2026-09-10 22:06:54.0",
+      "evtsourcedet": null,
+      "userid": "DP100"
+    },
+    {
+      "emp_name": "PRATISHEE MINOO DESAI",
+      "edatetime": "2026-09-10 09:23:50.0",
+      "evtsourcedet": null,
+      "userid": "DP110"
+    },
+    {
+      "emp_name": "PRATISHEE MINOO DESAI",
+      "edatetime": "2026-09-10 17:40:52.0",
+      "evtsourcedet": null,
+      "userid": "DP110"
+    },
+    {
+      "emp_name": "PRATISHEE MINOO DESAI",
+      "edatetime": "2026-09-11 09:33:07.0",
+      "evtsourcedet": null,
+      "userid": "DP110"
+    },
+    {
+      "emp_name": "PRATISHEE MINOO DESAI",
+      "edatetime": "2026-09-11 17:54:06.0",
+      "evtsourcedet": null,
+      "userid": "DP110"
+    },
+    {
+      "emp_name": "SHEKH SHARIFNAWAZ",
+      "edatetime": "2026-09-10 14:51:09.0",
+      "evtsourcedet": null,
+      "userid": "DP258"
+    },
+    {
+      "emp_name": "SHEKH SHARIFNAWAZ",
+      "edatetime": "2026-09-10 23:55:53.0",
+      "evtsourcedet": null,
+      "userid": "DP258"
+    },
+    {
+      "emp_name": "SHEKH SHARIFNAWAZ",
+      "edatetime": "2026-09-11 14:49:56.0",
+      "evtsourcedet": null,
+      "userid": "DP258"
+    },
+    {
+      "emp_name": "SHEKH SHARIFNAWAZ",
+      "edatetime": "2026-09-11 23:49:24.0",
+      "evtsourcedet": null,
+      "userid": "DP258"
+    },
+    {
+      "emp_name": "MINI KUMARI",
+      "edatetime": "2026-09-10 10:32:57.0",
+      "evtsourcedet": null,
+      "userid": "DP395"
+    },
+    {
+      "emp_name": "MINI KUMARI",
+      "edatetime": "2026-09-10 18:51:27.0",
+      "evtsourcedet": null,
+      "userid": "DP395"
+    },
+    {
+      "emp_name": "MINI KUMARI",
+      "edatetime": "2026-09-11 10:31:07.0",
+      "evtsourcedet": null,
+      "userid": "DP395"
+    },
+    {
+      "emp_name": "MINI KUMARI",
+      "edatetime": "2026-09-11 18:28:44.0",
+      "evtsourcedet": null,
+      "userid": "DP395"
+    },
+    {
+      "emp_name": "AKSHAY MAHADEVBHAI WAGHMARE",
+      "edatetime": "2026-09-10 12:12:29.0",
+      "evtsourcedet": null,
+      "userid": "DP2"
+    },
+    {
+      "emp_name": "AKSHAY MAHADEVBHAI WAGHMARE",
+      "edatetime": "2026-09-10 23:01:38.0",
+      "evtsourcedet": null,
+      "userid": "DP2"
+    },
+    {
+      "emp_name": "AKSHAY MAHADEVBHAI WAGHMARE",
+      "edatetime": "2026-09-11 13:15:52.0",
+      "evtsourcedet": null,
+      "userid": "DP2"
+    },
+    {
+      "emp_name": "AKSHAY MAHADEVBHAI WAGHMARE",
+      "edatetime": "2026-09-11 23:23:52.0",
+      "evtsourcedet": null,
+      "userid": "DP2"
+    },
+    {
+      "emp_name": "SHEKH MOHAMMAD FARHAN SALIM MAHAMAD",
+      "edatetime": "2026-09-11 15:03:35.0",
+      "evtsourcedet": null,
+      "userid": "DP418"
+    },
+    {
+      "emp_name": "SURAJ GURUNG",
+      "edatetime": "2026-09-10 11:42:06.0",
+      "evtsourcedet": null,
+      "userid": "DP284"
+    },
+    {
+      "emp_name": "SURAJ GURUNG",
+      "edatetime": "2026-09-11 00:13:34.0",
+      "evtsourcedet": null,
+      "userid": "DP284"
+    },
+    {
+      "emp_name": "SURAJ GURUNG",
+      "edatetime": "2026-09-11 11:36:33.0",
+      "evtsourcedet": null,
+      "userid": "DP284"
+    },
+    {
+      "emp_name": "GAVIT MAMTABEN MAGANBHAI",
+      "edatetime": "2026-09-10 08:04:46.0",
+      "evtsourcedet": null,
+      "userid": "DP467"
+    },
+    {
+      "emp_name": "GAVIT MAMTABEN MAGANBHAI",
+      "edatetime": "2026-09-10 17:13:46.0",
+      "evtsourcedet": null,
+      "userid": "DP467"
+    },
+    {
+      "emp_name": "GAVIT MAMTABEN MAGANBHAI",
+      "edatetime": "2026-09-11 08:04:59.0",
+      "evtsourcedet": null,
+      "userid": "DP467"
+    },
+    {
+      "emp_name": "GAVIT MAMTABEN MAGANBHAI",
+      "edatetime": "2026-09-11 08:05:01.0",
+      "evtsourcedet": null,
+      "userid": "DP467"
+    },
+    {
+      "emp_name": "GAVIT MAMTABEN MAGANBHAI",
+      "edatetime": "2026-09-11 17:26:49.0",
+      "evtsourcedet": null,
+      "userid": "DP467"
+    },
+    {
+      "emp_name": "KRISH PANCHAL",
+      "edatetime": "2026-09-10 00:08:40.0",
+      "evtsourcedet": null,
+      "userid": "DP389"
+    },
+    {
+      "emp_name": "KRISH PANCHAL",
+      "edatetime": "2026-09-11 14:49:29.0",
+      "evtsourcedet": null,
+      "userid": "DP389"
+    },
+    {
+      "emp_name": "KRISH PANCHAL",
+      "edatetime": "2026-09-11 23:59:13.0",
+      "evtsourcedet": null,
+      "userid": "DP389"
+    },
+    {
+      "emp_name": "JARIWALA DHRUVIL",
+      "edatetime": "2026-09-10 14:18:04.0",
+      "evtsourcedet": null,
+      "userid": "DP302"
+    },
+    {
+      "emp_name": "JARIWALA DHRUVIL",
+      "edatetime": "2026-09-10 21:06:44.0",
+      "evtsourcedet": null,
+      "userid": "DP302"
+    },
+    {
+      "emp_name": "VRUSHANK NIRAJ CHAUDHARI",
+      "edatetime": "2026-09-10 16:50:03.0",
+      "evtsourcedet": null,
+      "userid": "DP305"
+    },
+    {
+      "emp_name": "VRUSHANK NIRAJ CHAUDHARI",
+      "edatetime": "2026-09-10 23:42:58.0",
+      "evtsourcedet": null,
+      "userid": "DP305"
+    },
+    {
+      "emp_name": "VRUSHANK NIRAJ CHAUDHARI",
+      "edatetime": "2026-09-11 14:00:36.0",
+      "evtsourcedet": null,
+      "userid": "DP305"
+    },
+    {
+      "emp_name": "Chupan Mangru",
+      "edatetime": "2026-09-10 10:46:26.0",
+      "evtsourcedet": null,
+      "userid": "LAL87"
+    },
+    {
+      "emp_name": "Chupan Mangru",
+      "edatetime": "2026-09-10 21:03:37.0",
+      "evtsourcedet": null,
+      "userid": "LAL87"
+    },
+    {
+      "emp_name": "Chupan Mangru",
+      "edatetime": "2026-09-11 10:58:25.0",
+      "evtsourcedet": null,
+      "userid": "LAL87"
+    },
+    {
+      "emp_name": "Chupan Mangru",
+      "edatetime": "2026-09-11 21:02:38.0",
+      "evtsourcedet": null,
+      "userid": "LAL87"
+    },
+    {
+      "emp_name": "Hanif ansari",
+      "edatetime": "2026-09-10 00:19:08.0",
+      "evtsourcedet": null,
+      "userid": "OTH50"
+    },
+    {
+      "emp_name": "Hanif ansari",
+      "edatetime": "2026-09-10 14:38:28.0",
+      "evtsourcedet": null,
+      "userid": "OTH50"
+    },
+    {
+      "emp_name": "Hanif ansari",
+      "edatetime": "2026-09-11 00:20:26.0",
+      "evtsourcedet": null,
+      "userid": "OTH50"
+    },
+    {
+      "emp_name": "JITENDRA KUMAR MOLAT",
+      "edatetime": "2026-09-10 00:16:10.0",
+      "evtsourcedet": null,
+      "userid": "DP376"
+    },
+    {
+      "emp_name": "JITENDRA KUMAR MOLAT",
+      "edatetime": "2026-09-10 11:43:33.0",
+      "evtsourcedet": null,
+      "userid": "DP376"
+    },
+    {
+      "emp_name": "JITENDRA KUMAR MOLAT",
+      "edatetime": "2026-09-11 01:11:08.0",
+      "evtsourcedet": null,
+      "userid": "DP376"
+    },
+    {
+      "emp_name": "JITENDRA KUMAR MOLAT",
+      "edatetime": "2026-09-11 16:02:06.0",
+      "evtsourcedet": null,
+      "userid": "DP376"
+    },
+    {
+      "emp_name": "RAMI VINIT MANISHKUMAR",
+      "edatetime": "2026-09-10 07:36:38.0",
+      "evtsourcedet": null,
+      "userid": "DP478"
+    },
+    {
+      "emp_name": "RAMI VINIT MANISHKUMAR",
+      "edatetime": "2026-09-10 16:21:05.0",
+      "evtsourcedet": null,
+      "userid": "DP478"
+    },
+    {
+      "emp_name": "AVISHKAR BHANDARI",
+      "edatetime": "2026-09-10 13:54:06.0",
+      "evtsourcedet": null,
+      "userid": "OTH18"
+    },
+    {
+      "emp_name": "AVISHKAR BHANDARI",
+      "edatetime": "2026-09-10 23:09:46.0",
+      "evtsourcedet": null,
+      "userid": "OTH18"
+    },
+    {
+      "emp_name": "AVISHKAR BHANDARI",
+      "edatetime": "2026-09-11 14:57:25.0",
+      "evtsourcedet": null,
+      "userid": "OTH18"
+    },
+    {
+      "emp_name": "NAMAN KALPESHBHAI PUJARA",
+      "edatetime": "2026-09-10 15:02:45.0",
+      "evtsourcedet": null,
+      "userid": "DP544"
+    },
+    {
+      "emp_name": "NAMAN KALPESHBHAI PUJARA",
+      "edatetime": "2026-09-11 00:07:37.0",
+      "evtsourcedet": null,
+      "userid": "DP544"
+    },
+    {
+      "emp_name": "NAMAN KALPESHBHAI PUJARA",
+      "edatetime": "2026-09-11 15:10:34.0",
+      "evtsourcedet": null,
+      "userid": "DP544"
+    },
+    {
+      "emp_name": "Lucky Sanjeev Kumar Paswan",
+      "edatetime": "2026-09-10 12:21:07.0",
+      "evtsourcedet": null,
+      "userid": "OTH67"
+    },
+    {
+      "emp_name": "Lucky Sanjeev Kumar Paswan",
+      "edatetime": "2026-09-10 14:57:18.0",
+      "evtsourcedet": null,
+      "userid": "OTH67"
+    },
+    {
+      "emp_name": "Lucky Sanjeev Kumar Paswan",
+      "edatetime": "2026-09-10 23:52:45.0",
+      "evtsourcedet": null,
+      "userid": "OTH67"
+    },
+    {
+      "emp_name": "Lucky Sanjeev Kumar Paswan",
+      "edatetime": "2026-09-11 14:37:22.0",
+      "evtsourcedet": null,
+      "userid": "OTH67"
+    },
+    {
+      "emp_name": "Lucky Sanjeev Kumar Paswan",
+      "edatetime": "2026-09-11 23:54:34.0",
+      "evtsourcedet": null,
+      "userid": "OTH67"
+    },
+    {
+      "emp_name": "Durgesh Kumar Das",
+      "edatetime": "2026-09-10 14:13:18.0",
+      "evtsourcedet": null,
+      "userid": "OTH68"
+    },
+    {
+      "emp_name": "Durgesh Kumar Das",
+      "edatetime": "2026-09-10 23:57:34.0",
+      "evtsourcedet": null,
+      "userid": "OTH68"
+    },
+    {
+      "emp_name": "Durgesh Kumar Das",
+      "edatetime": "2026-09-11 14:08:55.0",
+      "evtsourcedet": null,
+      "userid": "OTH68"
+    },
+    {
+      "emp_name": "RASHMI BANKA",
+      "edatetime": "2026-09-10 11:11:33.0",
+      "evtsourcedet": null,
+      "userid": "DP325"
+    },
+    {
+      "emp_name": "RASHMI BANKA",
+      "edatetime": "2026-09-10 15:06:57.0",
+      "evtsourcedet": null,
+      "userid": "DP325"
+    },
+    {
+      "emp_name": "NITESH KUMAR",
+      "edatetime": "2026-09-10 00:16:01.0",
+      "evtsourcedet": null,
+      "userid": "DP545"
+    },
+    {
+      "emp_name": "NITESH KUMAR",
+      "edatetime": "2026-09-10 15:08:28.0",
+      "evtsourcedet": null,
+      "userid": "DP545"
+    },
+    {
+      "emp_name": "NITESH KUMAR",
+      "edatetime": "2026-09-11 00:15:42.0",
+      "evtsourcedet": null,
+      "userid": "DP545"
+    },
+    {
+      "emp_name": "NITESH KUMAR",
+      "edatetime": "2026-09-11 14:30:37.0",
+      "evtsourcedet": null,
+      "userid": "DP545"
+    },
+    {
+      "emp_name": "BHARAT KUMAR YADAV",
+      "edatetime": "2026-09-10 13:34:43.0",
+      "evtsourcedet": null,
+      "userid": "DP547"
+    },
+    {
+      "emp_name": "BHARAT KUMAR YADAV",
+      "edatetime": "2026-09-10 22:18:14.0",
+      "evtsourcedet": null,
+      "userid": "DP547"
+    },
+    {
+      "emp_name": "BHARAT KUMAR YADAV",
+      "edatetime": "2026-09-11 12:10:24.0",
+      "evtsourcedet": null,
+      "userid": "DP547"
+    },
+    {
+      "emp_name": "BHARAT KUMAR YADAV",
+      "edatetime": "2026-09-11 22:15:01.0",
+      "evtsourcedet": null,
+      "userid": "DP547"
+    },
+    {
+      "emp_name": "PRITAM GUPTA",
+      "edatetime": "2026-09-10 07:21:13.0",
+      "evtsourcedet": null,
+      "userid": "DP549"
+    },
+    {
+      "emp_name": "PRITAM GUPTA",
+      "edatetime": "2026-09-10 17:31:51.0",
+      "evtsourcedet": null,
+      "userid": "DP549"
+    },
+    {
+      "emp_name": "PRITAM GUPTA",
+      "edatetime": "2026-09-11 07:16:54.0",
+      "evtsourcedet": null,
+      "userid": "DP549"
+    },
+    {
+      "emp_name": "PRITAM GUPTA",
+      "edatetime": "2026-09-11 18:50:46.0",
+      "evtsourcedet": null,
+      "userid": "DP549"
+    },
+    {
+      "emp_name": "MD Asad Ansari",
+      "edatetime": "2026-09-10 00:15:53.0",
+      "evtsourcedet": null,
+      "userid": "OTH69"
+    },
+    {
+      "emp_name": "MD Asad Ansari",
+      "edatetime": "2026-09-10 15:04:52.0",
+      "evtsourcedet": null,
+      "userid": "OTH69"
+    },
+    {
+      "emp_name": "MD Asad Ansari",
+      "edatetime": "2026-09-11 00:16:19.0",
+      "evtsourcedet": null,
+      "userid": "OTH69"
+    },
+    {
+      "emp_name": "MD Asad Ansari",
+      "edatetime": "2026-09-11 14:40:35.0",
+      "evtsourcedet": null,
+      "userid": "OTH69"
+    },
+    {
+      "emp_name": "RAJ DEVIDAS MURKAR",
+      "edatetime": "2026-09-10 13:57:01.0",
+      "evtsourcedet": null,
+      "userid": "DP533"
+    },
+    {
+      "emp_name": "RAJ DEVIDAS MURKAR",
+      "edatetime": "2026-09-10 22:55:49.0",
+      "evtsourcedet": null,
+      "userid": "DP533"
+    },
+    {
+      "emp_name": "RAJ DEVIDAS MURKAR",
+      "edatetime": "2026-09-11 13:58:10.0",
+      "evtsourcedet": null,
+      "userid": "DP533"
+    },
+    {
+      "emp_name": "RAJ DEVIDAS MURKAR",
+      "edatetime": "2026-09-11 22:55:03.0",
+      "evtsourcedet": null,
+      "userid": "DP533"
+    },
+    {
+      "emp_name": "MAHIR KALUBHAI BISHWAKARMA",
+      "edatetime": "2026-09-10 10:52:00.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP534"
+    },
+    {
+      "emp_name": "MAHIR KALUBHAI BISHWAKARMA",
+      "edatetime": "2026-09-10 19:30:40.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP534"
+    },
+    {
+      "emp_name": "MAHIR KALUBHAI BISHWAKARMA",
+      "edatetime": "2026-09-11 13:14:16.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP534"
+    },
+    {
+      "emp_name": "MAHIR KALUBHAI BISHWAKARMA",
+      "edatetime": "2026-09-11 23:24:51.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP534"
+    },
+    {
+      "emp_name": "KARAN SINGH SANKHALA",
+      "edatetime": "2026-09-10 07:38:12.0",
+      "evtsourcedet": null,
+      "userid": "DP333"
+    },
+    {
+      "emp_name": "KARAN SINGH SANKHALA",
+      "edatetime": "2026-09-11 07:34:10.0",
+      "evtsourcedet": null,
+      "userid": "DP333"
+    },
+    {
+      "emp_name": "KARAN SINGH SANKHALA",
+      "edatetime": "2026-09-11 16:11:17.0",
+      "evtsourcedet": null,
+      "userid": "DP333"
+    },
+    {
+      "emp_name": "JOHN MUKESH SINGH KATROLIYA",
+      "edatetime": "2026-09-10 14:27:48.0",
+      "evtsourcedet": null,
+      "userid": "DP582"
+    },
+    {
+      "emp_name": "JOHN MUKESH SINGH KATROLIYA",
+      "edatetime": "2026-09-10 23:44:06.0",
+      "evtsourcedet": null,
+      "userid": "DP582"
+    },
+    {
+      "emp_name": "JOHN MUKESH SINGH KATROLIYA",
+      "edatetime": "2026-09-11 14:24:09.0",
+      "evtsourcedet": null,
+      "userid": "DP582"
+    },
+    {
+      "emp_name": "SANJU GOPALBHAI RAJPUT",
+      "edatetime": "2026-09-10 14:28:05.0",
+      "evtsourcedet": null,
+      "userid": "DP583"
+    },
+    {
+      "emp_name": "SANJU GOPALBHAI RAJPUT",
+      "edatetime": "2026-09-10 23:49:06.0",
+      "evtsourcedet": null,
+      "userid": "DP583"
+    },
+    {
+      "emp_name": "SANJU GOPALBHAI RAJPUT",
+      "edatetime": "2026-09-11 14:25:30.0",
+      "evtsourcedet": null,
+      "userid": "DP583"
+    },
+    {
+      "emp_name": "ROLI SHIVNAYAK SINGH",
+      "edatetime": "2026-09-10 12:59:58.0",
+      "evtsourcedet": null,
+      "userid": "DP532"
+    },
+    {
+      "emp_name": "ROLI SHIVNAYAK SINGH",
+      "edatetime": "2026-09-10 22:07:07.0",
+      "evtsourcedet": null,
+      "userid": "DP532"
+    },
+    {
+      "emp_name": "ROLI SHIVNAYAK SINGH",
+      "edatetime": "2026-09-11 12:45:16.0",
+      "evtsourcedet": null,
+      "userid": "DP532"
+    },
+    {
+      "emp_name": "ROLI SHIVNAYAK SINGH",
+      "edatetime": "2026-09-11 22:04:42.0",
+      "evtsourcedet": null,
+      "userid": "DP532"
+    },
+    {
+      "emp_name": "Dhashyam kumar Thakur",
+      "edatetime": "2026-09-10 00:16:42.0",
+      "evtsourcedet": null,
+      "userid": "OTH49"
+    },
+    {
+      "emp_name": "VANSH VADUKAR",
+      "edatetime": "2026-09-10 12:44:11.0",
+      "evtsourcedet": null,
+      "userid": "DP490"
+    },
+    {
+      "emp_name": "VANSH VADUKAR",
+      "edatetime": "2026-09-10 22:07:35.0",
+      "evtsourcedet": null,
+      "userid": "DP490"
+    },
+    {
+      "emp_name": "VANSH VADUKAR",
+      "edatetime": "2026-09-11 11:47:39.0",
+      "evtsourcedet": null,
+      "userid": "DP490"
+    },
+    {
+      "emp_name": "VANSH VADUKAR",
+      "edatetime": "2026-09-11 21:30:04.0",
+      "evtsourcedet": null,
+      "userid": "DP490"
+    },
+    {
+      "emp_name": "KENNY BORSADA",
+      "edatetime": "2026-09-10 12:41:38.0",
+      "evtsourcedet": null,
+      "userid": "DP239"
+    },
+    {
+      "emp_name": "KENNY BORSADA",
+      "edatetime": "2026-09-10 21:37:38.0",
+      "evtsourcedet": null,
+      "userid": "DP239"
+    },
+    {
+      "emp_name": "KENNY BORSADA",
+      "edatetime": "2026-09-11 12:08:29.0",
+      "evtsourcedet": null,
+      "userid": "DP239"
+    },
+    {
+      "emp_name": "KENNY BORSADA",
+      "edatetime": "2026-09-11 21:34:30.0",
+      "evtsourcedet": null,
+      "userid": "DP239"
+    },
+    {
+      "emp_name": "YASH YOGESHKUMAR DARUWALA",
+      "edatetime": "2026-09-10 00:14:25.0",
+      "evtsourcedet": null,
+      "userid": "DP114"
+    },
+    {
+      "emp_name": "YASH YOGESHKUMAR DARUWALA",
+      "edatetime": "2026-09-10 15:00:45.0",
+      "evtsourcedet": null,
+      "userid": "DP114"
+    },
+    {
+      "emp_name": "YASH YOGESHKUMAR DARUWALA",
+      "edatetime": "2026-09-11 00:24:24.0",
+      "evtsourcedet": null,
+      "userid": "DP114"
+    },
+    {
+      "emp_name": "YASH YOGESHKUMAR DARUWALA",
+      "edatetime": "2026-09-11 14:58:50.0",
+      "evtsourcedet": null,
+      "userid": "DP114"
+    },
+    {
+      "emp_name": "AMISHA VILAS KHADE",
+      "edatetime": "2026-09-10 12:49:34.0",
+      "evtsourcedet": null,
+      "userid": "DP3"
+    },
+    {
+      "emp_name": "AMISHA VILAS KHADE",
+      "edatetime": "2026-09-10 22:15:56.0",
+      "evtsourcedet": null,
+      "userid": "DP3"
+    },
+    {
+      "emp_name": "AMISHA VILAS KHADE",
+      "edatetime": "2026-09-11 12:48:30.0",
+      "evtsourcedet": null,
+      "userid": "DP3"
+    },
+    {
+      "emp_name": "AMISHA VILAS KHADE",
+      "edatetime": "2026-09-11 22:52:43.0",
+      "evtsourcedet": null,
+      "userid": "DP3"
+    },
+    {
+      "emp_name": "DIKSHABEN JAGDISHBHAI CHAUDHARI",
+      "edatetime": "2026-09-10 12:52:33.0",
+      "evtsourcedet": null,
+      "userid": "DP5"
+    },
+    {
+      "emp_name": "DIKSHABEN JAGDISHBHAI CHAUDHARI",
+      "edatetime": "2026-09-10 22:18:36.0",
+      "evtsourcedet": null,
+      "userid": "DP5"
+    },
+    {
+      "emp_name": "DIKSHABEN JAGDISHBHAI CHAUDHARI",
+      "edatetime": "2026-09-11 13:16:42.0",
+      "evtsourcedet": null,
+      "userid": "DP5"
+    },
+    {
+      "emp_name": "DIKSHABEN JAGDISHBHAI CHAUDHARI",
+      "edatetime": "2026-09-11 22:53:22.0",
+      "evtsourcedet": null,
+      "userid": "DP5"
+    },
+    {
+      "emp_name": "JASMEEN DEVCHANDBHAI RATHOD",
+      "edatetime": "2026-09-10 13:50:06.0",
+      "evtsourcedet": null,
+      "userid": "DP130"
+    },
+    {
+      "emp_name": "JASMEEN DEVCHANDBHAI RATHOD",
+      "edatetime": "2026-09-10 23:25:30.0",
+      "evtsourcedet": null,
+      "userid": "DP130"
+    },
+    {
+      "emp_name": "JASMEEN DEVCHANDBHAI RATHOD",
+      "edatetime": "2026-09-11 12:43:20.0",
+      "evtsourcedet": null,
+      "userid": "DP130"
+    },
+    {
+      "emp_name": "JASMEEN DEVCHANDBHAI RATHOD",
+      "edatetime": "2026-09-11 22:04:24.0",
+      "evtsourcedet": null,
+      "userid": "DP130"
+    },
+    {
+      "emp_name": "PALLAVKUMAR NARESHBHAI CHAUDHRI",
+      "edatetime": "2026-09-10 12:02:15.0",
+      "evtsourcedet": null,
+      "userid": "DP11"
+    },
+    {
+      "emp_name": "PALLAVKUMAR NARESHBHAI CHAUDHRI",
+      "edatetime": "2026-09-10 22:32:06.0",
+      "evtsourcedet": null,
+      "userid": "DP11"
+    },
+    {
+      "emp_name": "PALLAVKUMAR NARESHBHAI CHAUDHRI",
+      "edatetime": "2026-09-11 13:50:18.0",
+      "evtsourcedet": null,
+      "userid": "DP11"
+    },
+    {
+      "emp_name": "PALLAVKUMAR NARESHBHAI CHAUDHRI",
+      "edatetime": "2026-09-11 23:31:27.0",
+      "evtsourcedet": null,
+      "userid": "DP11"
+    },
+    {
+      "emp_name": "RISHAL GUNAJI SANGLE",
+      "edatetime": "2026-09-10 12:22:58.0",
+      "evtsourcedet": null,
+      "userid": "DP12"
+    },
+    {
+      "emp_name": "RISHAL GUNAJI SANGLE",
+      "edatetime": "2026-09-10 22:19:42.0",
+      "evtsourcedet": null,
+      "userid": "DP12"
+    },
+    {
+      "emp_name": "RISHAL GUNAJI SANGLE",
+      "edatetime": "2026-09-11 12:50:48.0",
+      "evtsourcedet": null,
+      "userid": "DP12"
+    },
+    {
+      "emp_name": "RISHAL GUNAJI SANGLE",
+      "edatetime": "2026-09-11 22:52:34.0",
+      "evtsourcedet": null,
+      "userid": "DP12"
+    },
+    {
+      "emp_name": "SEHALKUMAR CHAUDHARI",
+      "edatetime": "2026-09-10 12:54:47.0",
+      "evtsourcedet": null,
+      "userid": "DP33"
+    },
+    {
+      "emp_name": "SEHALKUMAR CHAUDHARI",
+      "edatetime": "2026-09-10 22:53:00.0",
+      "evtsourcedet": null,
+      "userid": "DP33"
+    },
+    {
+      "emp_name": "SEHALKUMAR CHAUDHARI",
+      "edatetime": "2026-09-11 13:16:29.0",
+      "evtsourcedet": null,
+      "userid": "DP33"
+    },
+    {
+      "emp_name": "SEHALKUMAR CHAUDHARI",
+      "edatetime": "2026-09-11 22:22:21.0",
+      "evtsourcedet": null,
+      "userid": "DP33"
+    },
+    {
+      "emp_name": "SHUBHAM SUNILBHAI KADU",
+      "edatetime": "2026-09-10 12:56:26.0",
+      "evtsourcedet": null,
+      "userid": "DP35"
+    },
+    {
+      "emp_name": "SHUBHAM SUNILBHAI KADU",
+      "edatetime": "2026-09-10 22:37:26.0",
+      "evtsourcedet": null,
+      "userid": "DP35"
+    },
+    {
+      "emp_name": "SHUBHAM SUNILBHAI KADU",
+      "edatetime": "2026-09-11 11:47:04.0",
+      "evtsourcedet": null,
+      "userid": "DP35"
+    },
+    {
+      "emp_name": "SHUBHAM SUNILBHAI KADU",
+      "edatetime": "2026-09-11 22:08:00.0",
+      "evtsourcedet": null,
+      "userid": "DP35"
+    },
+    {
+      "emp_name": "JUNAID SHEKH SIRAJBHAI",
+      "edatetime": "2026-09-10 08:02:05.0",
+      "evtsourcedet": null,
+      "userid": "DP163"
+    },
+    {
+      "emp_name": "JUNAID SHEKH SIRAJBHAI",
+      "edatetime": "2026-09-10 17:33:49.0",
+      "evtsourcedet": null,
+      "userid": "DP163"
+    },
+    {
+      "emp_name": "JUNAID SHEKH SIRAJBHAI",
+      "edatetime": "2026-09-11 07:56:45.0",
+      "evtsourcedet": null,
+      "userid": "DP163"
+    },
+    {
+      "emp_name": "JUNAID SHEKH SIRAJBHAI",
+      "edatetime": "2026-09-11 16:36:18.0",
+      "evtsourcedet": null,
+      "userid": "DP163"
+    },
+    {
+      "emp_name": "SHUBHAM MAHADEV VAGHMARE",
+      "edatetime": "2026-09-10 13:00:12.0",
+      "evtsourcedet": null,
+      "userid": "DP15"
+    },
+    {
+      "emp_name": "SHUBHAM MAHADEV VAGHMARE",
+      "edatetime": "2026-09-10 22:18:14.0",
+      "evtsourcedet": null,
+      "userid": "DP15"
+    },
+    {
+      "emp_name": "SHUBHAM MAHADEV VAGHMARE",
+      "edatetime": "2026-09-11 13:43:47.0",
+      "evtsourcedet": null,
+      "userid": "DP15"
+    },
+    {
+      "emp_name": "SHUBHAM MAHADEV VAGHMARE",
+      "edatetime": "2026-09-11 22:52:38.0",
+      "evtsourcedet": null,
+      "userid": "DP15"
+    },
+    {
+      "emp_name": "MARU VRUSHABH MUKESHBHAI",
+      "edatetime": "2026-09-10 18:08:24.0",
+      "evtsourcedet": null,
+      "userid": "DP187"
+    },
+    {
+      "emp_name": "MARU VRUSHABH MUKESHBHAI",
+      "edatetime": "2026-09-10 21:11:12.0",
+      "evtsourcedet": null,
+      "userid": "DP187"
+    },
+    {
+      "emp_name": "BHAVISHA RAMESHBHAI GAJJAR",
+      "edatetime": "2026-09-10 12:47:16.0",
+      "evtsourcedet": null,
+      "userid": "DP209"
+    },
+    {
+      "emp_name": "BHAVISHA RAMESHBHAI GAJJAR",
+      "edatetime": "2026-09-10 22:12:18.0",
+      "evtsourcedet": null,
+      "userid": "DP209"
+    },
+    {
+      "emp_name": "SAHIL JITESHBHAI GAMIT",
+      "edatetime": "2026-09-10 08:13:40.0",
+      "evtsourcedet": null,
+      "userid": "DP91"
+    },
+    {
+      "emp_name": "SAHIL JITESHBHAI GAMIT",
+      "edatetime": "2026-09-10 19:52:29.0",
+      "evtsourcedet": null,
+      "userid": "DP91"
+    },
+    {
+      "emp_name": "SAHIL JITESHBHAI GAMIT",
+      "edatetime": "2026-09-11 08:45:32.0",
+      "evtsourcedet": null,
+      "userid": "DP91"
+    },
+    {
+      "emp_name": "SAHIL JITESHBHAI GAMIT",
+      "edatetime": "2026-09-11 17:33:27.0",
+      "evtsourcedet": null,
+      "userid": "DP91"
+    },
+    {
+      "emp_name": "KRUNAL KALIDAS PATEL",
+      "edatetime": "2026-09-10 08:03:59.0",
+      "evtsourcedet": null,
+      "userid": "DP109"
+    },
+    {
+      "emp_name": "KRUNAL KALIDAS PATEL",
+      "edatetime": "2026-09-10 20:58:19.0",
+      "evtsourcedet": null,
+      "userid": "DP109"
+    },
+    {
+      "emp_name": "KRUNAL KALIDAS PATEL",
+      "edatetime": "2026-09-11 10:41:22.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP109"
+    },
+    {
+      "emp_name": "KRUNAL KALIDAS PATEL",
+      "edatetime": "2026-09-11 19:17:15.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP109"
+    },
+    {
+      "emp_name": "KRUNAL KALIDAS PATEL",
+      "edatetime": "2026-09-11 20:02:54.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP109"
+    },
+    {
+      "emp_name": "KRUNAL KALIDAS PATEL",
+      "edatetime": "2026-09-11 20:06:04.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP109"
+    },
+    {
+      "emp_name": "KRUNAL KALIDAS PATEL",
+      "edatetime": "2026-09-11 20:06:04.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP109"
+    },
+    {
+      "emp_name": "KRUNAL KALIDAS PATEL",
+      "edatetime": "2026-09-11 20:06:04.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP109"
+    },
+    {
+      "emp_name": "KRUNAL KALIDAS PATEL",
+      "edatetime": "2026-09-11 20:06:04.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP109"
+    },
+    {
+      "emp_name": "KRUNAL KALIDAS PATEL",
+      "edatetime": "2026-09-11 20:06:04.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP109"
+    },
+    {
+      "emp_name": "PRANAV PATIL",
+      "edatetime": "2026-09-10 11:39:31.0",
+      "evtsourcedet": null,
+      "userid": "DP277"
+    },
+    {
+      "emp_name": "PRANAV PATIL",
+      "edatetime": "2026-09-10 20:29:54.0",
+      "evtsourcedet": null,
+      "userid": "DP277"
+    },
+    {
+      "emp_name": "PRANAV PATIL",
+      "edatetime": "2026-09-10 20:31:44.0",
+      "evtsourcedet": null,
+      "userid": "DP277"
+    },
+    {
+      "emp_name": "SHIVSHANKAR VISHNU PANJARKAR",
+      "edatetime": "2026-09-10 12:40:13.0",
+      "evtsourcedet": null,
+      "userid": "DP420"
+    },
+    {
+      "emp_name": "SHIVSHANKAR VISHNU PANJARKAR",
+      "edatetime": "2026-09-10 21:06:38.0",
+      "evtsourcedet": null,
+      "userid": "DP420"
+    },
+    {
+      "emp_name": "AJAY RAM BADRIRAM",
+      "edatetime": "2026-09-11 12:10:43.0",
+      "evtsourcedet": null,
+      "userid": "LAL06"
+    },
+    {
+      "emp_name": "AJAY RAM BADRIRAM",
+      "edatetime": "2026-09-11 22:23:02.0",
+      "evtsourcedet": null,
+      "userid": "LAL06"
+    },
+    {
+      "emp_name": "CHIRAJSINH NEPALSINH RATHOD",
+      "edatetime": "2026-09-10 15:38:49.0",
+      "evtsourcedet": null,
+      "userid": "DP377"
+    },
+    {
+      "emp_name": "CHIRAJSINH NEPALSINH RATHOD",
+      "edatetime": "2026-09-10 19:00:11.0",
+      "evtsourcedet": null,
+      "userid": "DP377"
+    },
+    {
+      "emp_name": "CHIRAJSINH NEPALSINH RATHOD",
+      "edatetime": "2026-09-11 10:18:30.0",
+      "evtsourcedet": null,
+      "userid": "DP377"
+    },
+    {
+      "emp_name": "CHIRAJSINH NEPALSINH RATHOD",
+      "edatetime": "2026-09-11 20:56:48.0",
+      "evtsourcedet": null,
+      "userid": "DP377"
+    },
+    {
+      "emp_name": "BALGOBIND SHAH",
+      "edatetime": "2026-09-11 12:59:15.0",
+      "evtsourcedet": null,
+      "userid": "OTH16"
+    },
+    {
+      "emp_name": "BALGOBIND SHAH",
+      "edatetime": "2026-09-11 22:09:40.0",
+      "evtsourcedet": null,
+      "userid": "OTH16"
+    },
+    {
+      "emp_name": "AMRIT SAH",
+      "edatetime": "2026-09-10 15:01:57.0",
+      "evtsourcedet": null,
+      "userid": "OTH19"
+    },
+    {
+      "emp_name": "AMRIT SAH",
+      "edatetime": "2026-09-11 00:26:41.0",
+      "evtsourcedet": null,
+      "userid": "OTH19"
+    },
+    {
+      "emp_name": "AMRIT SAH",
+      "edatetime": "2026-09-11 12:34:57.0",
+      "evtsourcedet": null,
+      "userid": "OTH19"
+    },
+    {
+      "emp_name": "AMRIT SAH",
+      "edatetime": "2026-09-11 21:48:04.0",
+      "evtsourcedet": null,
+      "userid": "OTH19"
+    },
+    {
+      "emp_name": "BIKAS KUMAR SAH",
+      "edatetime": "2026-09-10 00:09:32.0",
+      "evtsourcedet": null,
+      "userid": "OTH20"
+    },
+    {
+      "emp_name": "BIKAS KUMAR SAH",
+      "edatetime": "2026-09-10 15:02:15.0",
+      "evtsourcedet": null,
+      "userid": "OTH20"
+    },
+    {
+      "emp_name": "BIKAS KUMAR SAH",
+      "edatetime": "2026-09-11 00:28:24.0",
+      "evtsourcedet": null,
+      "userid": "OTH20"
+    },
+    {
+      "emp_name": "BIKAS KUMAR SAH",
+      "edatetime": "2026-09-11 14:58:33.0",
+      "evtsourcedet": null,
+      "userid": "OTH20"
+    },
+    {
+      "emp_name": "BIKAS KUMAR SAH",
+      "edatetime": "2026-09-11 23:59:48.0",
+      "evtsourcedet": null,
+      "userid": "OTH20"
+    },
+    {
+      "emp_name": "RACHIT RAJESH SHAH",
+      "edatetime": "2026-09-10 07:47:15.0",
+      "evtsourcedet": null,
+      "userid": "DP327"
+    },
+    {
+      "emp_name": "RACHIT RAJESH SHAH",
+      "edatetime": "2026-09-10 17:23:11.0",
+      "evtsourcedet": null,
+      "userid": "DP327"
+    },
+    {
+      "emp_name": "RACHIT RAJESH SHAH",
+      "edatetime": "2026-09-11 07:49:56.0",
+      "evtsourcedet": null,
+      "userid": "DP327"
+    },
+    {
+      "emp_name": "RACHIT RAJESH SHAH",
+      "edatetime": "2026-09-11 16:57:32.0",
+      "evtsourcedet": null,
+      "userid": "DP327"
+    },
+    {
+      "emp_name": "SANJU KUMAR",
+      "edatetime": "2026-09-10 07:37:17.0",
+      "evtsourcedet": null,
+      "userid": "DP550"
+    },
+    {
+      "emp_name": "SANJU KUMAR",
+      "edatetime": "2026-09-10 17:32:40.0",
+      "evtsourcedet": null,
+      "userid": "DP550"
+    },
+    {
+      "emp_name": "SANJU KUMAR",
+      "edatetime": "2026-09-11 16:40:11.0",
+      "evtsourcedet": null,
+      "userid": "DP550"
+    },
+    {
+      "emp_name": "AADYA AKHILESH SHARMA",
+      "edatetime": "2026-09-10 13:35:57.0",
+      "evtsourcedet": null,
+      "userid": "DP551"
+    },
+    {
+      "emp_name": "AADYA AKHILESH SHARMA",
+      "edatetime": "2026-09-10 22:51:57.0",
+      "evtsourcedet": null,
+      "userid": "DP551"
+    },
+    {
+      "emp_name": "AADYA AKHILESH SHARMA",
+      "edatetime": "2026-09-11 14:46:35.0",
+      "evtsourcedet": null,
+      "userid": "DP551"
+    },
+    {
+      "emp_name": "PRITAM DULARCHAND SAH",
+      "edatetime": "2026-09-10 07:21:12.0",
+      "evtsourcedet": null,
+      "userid": "DP552"
+    },
+    {
+      "emp_name": "PRITAM DULARCHAND SAH",
+      "edatetime": "2026-09-10 17:31:52.0",
+      "evtsourcedet": null,
+      "userid": "DP552"
+    },
+    {
+      "emp_name": "PRITAM DULARCHAND SAH",
+      "edatetime": "2026-09-11 07:16:56.0",
+      "evtsourcedet": null,
+      "userid": "DP552"
+    },
+    {
+      "emp_name": "PRITAM DULARCHAND SAH",
+      "edatetime": "2026-09-11 18:50:46.0",
+      "evtsourcedet": null,
+      "userid": "DP552"
+    },
+    {
+      "emp_name": "ANUJ RAMESHBHAI GUPTA",
+      "edatetime": "2026-09-10 10:21:59.0",
+      "evtsourcedet": null,
+      "userid": "DP565"
+    },
+    {
+      "emp_name": "ANUJ RAMESHBHAI GUPTA",
+      "edatetime": "2026-09-11 10:37:58.0",
+      "evtsourcedet": null,
+      "userid": "DP565"
+    },
+    {
+      "emp_name": "ANUJ RAMESHBHAI GUPTA",
+      "edatetime": "2026-09-11 19:28:02.0",
+      "evtsourcedet": null,
+      "userid": "DP565"
+    },
+    {
+      "emp_name": "VISHAL MAHESHBHAI KALSARIYA",
+      "edatetime": "2026-09-10 10:10:22.0",
+      "evtsourcedet": null,
+      "userid": "DP535"
+    },
+    {
+      "emp_name": "VISHAL MAHESHBHAI KALSARIYA",
+      "edatetime": "2026-09-10 19:55:43.0",
+      "evtsourcedet": null,
+      "userid": "DP535"
+    },
+    {
+      "emp_name": "VISHAL MAHESHBHAI KALSARIYA",
+      "edatetime": "2026-09-11 12:34:22.0",
+      "evtsourcedet": null,
+      "userid": "DP535"
+    },
+    {
+      "emp_name": "VISHAL MAHESHBHAI KALSARIYA",
+      "edatetime": "2026-09-11 21:58:44.0",
+      "evtsourcedet": null,
+      "userid": "DP535"
+    },
+    {
+      "emp_name": "SWAPNESWAR BIDYADHAR SWAIN",
+      "edatetime": "2026-09-10 00:00:29.0",
+      "evtsourcedet": null,
+      "userid": "DP537"
+    },
+    {
+      "emp_name": "SWAPNESWAR BIDYADHAR SWAIN",
+      "edatetime": "2026-09-11 14:51:50.0",
+      "evtsourcedet": null,
+      "userid": "DP537"
+    },
+    {
+      "emp_name": "SWAPNESWAR BIDYADHAR SWAIN",
+      "edatetime": "2026-09-11 23:54:38.0",
+      "evtsourcedet": null,
+      "userid": "DP537"
+    },
+    {
+      "emp_name": "ZALA ARTIBEN",
+      "edatetime": "2026-09-10 00:16:32.0",
+      "evtsourcedet": null,
+      "userid": "DP335"
+    },
+    {
+      "emp_name": "ZALA ARTIBEN",
+      "edatetime": "2026-09-10 13:20:42.0",
+      "evtsourcedet": null,
+      "userid": "DP335"
+    },
+    {
+      "emp_name": "ZALA ARTIBEN",
+      "edatetime": "2026-09-10 22:37:18.0",
+      "evtsourcedet": null,
+      "userid": "DP335"
+    },
+    {
+      "emp_name": "ZALA ARTIBEN",
+      "edatetime": "2026-09-11 12:45:27.0",
+      "evtsourcedet": null,
+      "userid": "DP335"
+    },
+    {
+      "emp_name": "ZALA ARTIBEN",
+      "edatetime": "2026-09-11 22:08:18.0",
+      "evtsourcedet": null,
+      "userid": "DP335"
+    },
+    {
+      "emp_name": "ASHVANI KUMAR",
+      "edatetime": "2026-09-10 09:23:56.0",
+      "evtsourcedet": null,
+      "userid": "DP492"
+    },
+    {
+      "emp_name": "ASHVANI KUMAR",
+      "edatetime": "2026-09-10 18:27:23.0",
+      "evtsourcedet": null,
+      "userid": "DP492"
+    },
+    {
+      "emp_name": "ASHVANI KUMAR",
+      "edatetime": "2026-09-11 09:07:05.0",
+      "evtsourcedet": null,
+      "userid": "DP492"
+    },
+    {
+      "emp_name": "ASHVANI KUMAR",
+      "edatetime": "2026-09-11 18:13:57.0",
+      "evtsourcedet": null,
+      "userid": "DP492"
+    },
+    {
+      "emp_name": "ASHVANI KUMAR",
+      "edatetime": "2026-09-11 18:13:57.0",
+      "evtsourcedet": null,
+      "userid": "DP492"
+    },
+    {
+      "emp_name": "ANISHA CHONHAS BALMOCH",
+      "edatetime": "2026-09-10 08:32:11.0",
+      "evtsourcedet": null,
+      "userid": "DP496"
+    },
+    {
+      "emp_name": "ANISHA CHONHAS BALMOCH",
+      "edatetime": "2026-09-10 17:33:45.0",
+      "evtsourcedet": null,
+      "userid": "DP496"
+    },
+    {
+      "emp_name": "ANSHU KUMARI KAMAL LOHARA",
+      "edatetime": "2026-09-10 11:34:14.0",
+      "evtsourcedet": null,
+      "userid": "DP499"
+    },
+    {
+      "emp_name": "ANSHU KUMARI KAMAL LOHARA",
+      "edatetime": "2026-09-10 23:57:19.0",
+      "evtsourcedet": null,
+      "userid": "DP499"
+    },
+    {
+      "emp_name": "ANSHU KUMARI KAMAL LOHARA",
+      "edatetime": "2026-09-11 10:40:31.0",
+      "evtsourcedet": null,
+      "userid": "DP499"
+    },
+    {
+      "emp_name": "Suraj Kumar Dhanraj",
+      "edatetime": "2026-09-10 06:34:49.0",
+      "evtsourcedet": null,
+      "userid": "LAL88"
+    },
+    {
+      "emp_name": "Suraj Kumar Dhanraj",
+      "edatetime": "2026-09-10 16:07:21.0",
+      "evtsourcedet": null,
+      "userid": "LAL88"
+    },
+    {
+      "emp_name": "Suraj Kumar Dhanraj",
+      "edatetime": "2026-09-11 06:49:23.0",
+      "evtsourcedet": null,
+      "userid": "LAL88"
+    },
+    {
+      "emp_name": "Suraj Kumar Dhanraj",
+      "edatetime": "2026-09-11 16:15:26.0",
+      "evtsourcedet": null,
+      "userid": "LAL88"
+    },
+    {
+      "emp_name": "CHANDRAMUNI KUMARI SHIVNATH ORAON",
+      "edatetime": "2026-09-10 14:37:20.0",
+      "evtsourcedet": null,
+      "userid": "DP502"
+    },
+    {
+      "emp_name": "CHANDRAMUNI KUMARI SHIVNATH ORAON",
+      "edatetime": "2026-09-10 23:52:33.0",
+      "evtsourcedet": null,
+      "userid": "DP502"
+    },
+    {
+      "emp_name": "CHANDRAMUNI KUMARI SHIVNATH ORAON",
+      "edatetime": "2026-09-11 14:05:32.0",
+      "evtsourcedet": null,
+      "userid": "DP502"
+    },
+    {
+      "emp_name": "CHANDRAMUNI KUMARI SHIVNATH ORAON",
+      "edatetime": "2026-09-11 23:59:09.0",
+      "evtsourcedet": null,
+      "userid": "DP502"
+    },
+    {
+      "emp_name": "RIYA KUMARI PARMESHWAR MAHLI",
+      "edatetime": "2026-09-10 11:34:38.0",
+      "evtsourcedet": null,
+      "userid": "DP505"
+    },
+    {
+      "emp_name": "RIYA KUMARI PARMESHWAR MAHLI",
+      "edatetime": "2026-09-10 23:43:57.0",
+      "evtsourcedet": null,
+      "userid": "DP505"
+    },
+    {
+      "emp_name": "RIYA KUMARI PARMESHWAR MAHLI",
+      "edatetime": "2026-09-11 11:23:48.0",
+      "evtsourcedet": null,
+      "userid": "DP505"
+    },
+    {
+      "emp_name": "RIYA KUMARI PARMESHWAR MAHLI",
+      "edatetime": "2026-09-11 23:42:48.0",
+      "evtsourcedet": null,
+      "userid": "DP505"
+    },
+    {
+      "emp_name": "Santosh Budhn Hembrom",
+      "edatetime": "2026-09-10 07:36:04.0",
+      "evtsourcedet": null,
+      "userid": "LAL86"
+    },
+    {
+      "emp_name": "Santosh Budhn Hembrom",
+      "edatetime": "2026-09-10 17:33:40.0",
+      "evtsourcedet": null,
+      "userid": "LAL86"
+    },
+    {
+      "emp_name": "Santosh Budhn Hembrom",
+      "edatetime": "2026-09-11 07:33:02.0",
+      "evtsourcedet": null,
+      "userid": "LAL86"
+    },
+    {
+      "emp_name": "Santosh Budhn Hembrom",
+      "edatetime": "2026-09-11 16:36:43.0",
+      "evtsourcedet": null,
+      "userid": "LAL86"
+    },
+    {
+      "emp_name": "SUNIL KUMAR NARAYAN DAS",
+      "edatetime": "2026-09-10 00:15:38.0",
+      "evtsourcedet": null,
+      "userid": "DP538"
+    },
+    {
+      "emp_name": "SUNIL KUMAR NARAYAN DAS",
+      "edatetime": "2026-09-10 12:09:33.0",
+      "evtsourcedet": null,
+      "userid": "DP538"
+    },
+    {
+      "emp_name": "SUNIL KUMAR NARAYAN DAS",
+      "edatetime": "2026-09-11 00:19:26.0",
+      "evtsourcedet": null,
+      "userid": "DP538"
+    },
+    {
+      "emp_name": "SUNIL KUMAR NARAYAN DAS",
+      "edatetime": "2026-09-11 11:56:53.0",
+      "evtsourcedet": null,
+      "userid": "DP538"
+    },
+    {
+      "emp_name": "SUNIL KUMAR NARAYAN DAS",
+      "edatetime": "2026-09-11 22:37:05.0",
+      "evtsourcedet": null,
+      "userid": "DP538"
+    },
+    {
+      "emp_name": "DINESH PUNDLIK PATIL",
+      "edatetime": "2026-09-10 13:46:19.0",
+      "evtsourcedet": null,
+      "userid": "DP539"
+    },
+    {
+      "emp_name": "DINESH PUNDLIK PATIL",
+      "edatetime": "2026-09-10 23:08:28.0",
+      "evtsourcedet": null,
+      "userid": "DP539"
+    },
+    {
+      "emp_name": "DINESH PUNDLIK PATIL",
+      "edatetime": "2026-09-11 13:54:53.0",
+      "evtsourcedet": null,
+      "userid": "DP539"
+    },
+    {
+      "emp_name": "DINESH PUNDLIK PATIL",
+      "edatetime": "2026-09-11 23:10:51.0",
+      "evtsourcedet": null,
+      "userid": "DP539"
+    },
+    {
+      "emp_name": "JOY HITESHBHAI SEVAK",
+      "edatetime": "2026-09-10 07:09:01.0",
+      "evtsourcedet": null,
+      "userid": "DP349"
+    },
+    {
+      "emp_name": "JOY HITESHBHAI SEVAK",
+      "edatetime": "2026-09-10 16:05:12.0",
+      "evtsourcedet": null,
+      "userid": "DP349"
+    },
+    {
+      "emp_name": "JOY HITESHBHAI SEVAK",
+      "edatetime": "2026-09-11 07:15:01.0",
+      "evtsourcedet": null,
+      "userid": "DP349"
+    },
+    {
+      "emp_name": "JOY HITESHBHAI SEVAK",
+      "edatetime": "2026-09-11 16:37:28.0",
+      "evtsourcedet": null,
+      "userid": "DP349"
+    },
+    {
+      "emp_name": "RIMPALKUMAR BIPINBHAI CHAUDHARI",
+      "edatetime": "2026-09-10 07:23:57.0",
+      "evtsourcedet": null,
+      "userid": "DP553"
+    },
+    {
+      "emp_name": "RIMPALKUMAR BIPINBHAI CHAUDHARI",
+      "edatetime": "2026-09-10 07:24:02.0",
+      "evtsourcedet": null,
+      "userid": "DP553"
+    },
+    {
+      "emp_name": "RIMPALKUMAR BIPINBHAI CHAUDHARI",
+      "edatetime": "2026-09-10 07:24:08.0",
+      "evtsourcedet": null,
+      "userid": "DP553"
+    },
+    {
+      "emp_name": "RIMPALKUMAR BIPINBHAI CHAUDHARI",
+      "edatetime": "2026-09-10 07:24:09.0",
+      "evtsourcedet": null,
+      "userid": "DP553"
+    },
+    {
+      "emp_name": "RIMPALKUMAR BIPINBHAI CHAUDHARI",
+      "edatetime": "2026-09-10 07:24:10.0",
+      "evtsourcedet": null,
+      "userid": "DP553"
+    },
+    {
+      "emp_name": "RIMPALKUMAR BIPINBHAI CHAUDHARI",
+      "edatetime": "2026-09-10 18:13:21.0",
+      "evtsourcedet": null,
+      "userid": "DP553"
+    },
+    {
+      "emp_name": "RIMPALKUMAR BIPINBHAI CHAUDHARI",
+      "edatetime": "2026-09-11 07:23:08.0",
+      "evtsourcedet": null,
+      "userid": "DP553"
+    },
+    {
+      "emp_name": "RIMPALKUMAR BIPINBHAI CHAUDHARI",
+      "edatetime": "2026-09-11 19:05:03.0",
+      "evtsourcedet": null,
+      "userid": "DP553"
+    },
+    {
+      "emp_name": "Manoj Murmu",
+      "edatetime": "2026-09-10 00:24:56.0",
+      "evtsourcedet": null,
+      "userid": "OTH64"
+    },
+    {
+      "emp_name": "Manoj Murmu",
+      "edatetime": "2026-09-10 14:59:44.0",
+      "evtsourcedet": null,
+      "userid": "OTH64"
+    },
+    {
+      "emp_name": "Manoj Murmu",
+      "edatetime": "2026-09-11 00:19:59.0",
+      "evtsourcedet": null,
+      "userid": "OTH64"
+    },
+    {
+      "emp_name": "Manoj Murmu",
+      "edatetime": "2026-09-11 14:57:33.0",
+      "evtsourcedet": null,
+      "userid": "OTH64"
+    },
+    {
+      "emp_name": "Amra ram",
+      "edatetime": "2026-09-10 14:42:51.0",
+      "evtsourcedet": null,
+      "userid": "OTH53"
+    },
+    {
+      "emp_name": "Amra ram",
+      "edatetime": "2026-09-10 23:57:14.0",
+      "evtsourcedet": null,
+      "userid": "OTH53"
+    },
+    {
+      "emp_name": "Amra ram",
+      "edatetime": "2026-09-11 14:08:16.0",
+      "evtsourcedet": null,
+      "userid": "OTH53"
+    },
+    {
+      "emp_name": "Susen Tudu",
+      "edatetime": "2026-09-10 14:40:02.0",
+      "evtsourcedet": null,
+      "userid": "OTH66"
+    },
+    {
+      "emp_name": "Susen Tudu",
+      "edatetime": "2026-09-11 00:16:26.0",
+      "evtsourcedet": null,
+      "userid": "OTH66"
+    },
+    {
+      "emp_name": "Susen Tudu",
+      "edatetime": "2026-09-11 14:40:44.0",
+      "evtsourcedet": null,
+      "userid": "OTH66"
+    },
+    {
+      "emp_name": "AHSAN ALI",
+      "edatetime": "2026-09-10 13:32:26.0",
+      "evtsourcedet": null,
+      "userid": "DP475"
+    },
+    {
+      "emp_name": "AHSAN ALI",
+      "edatetime": "2026-09-10 22:47:11.0",
+      "evtsourcedet": null,
+      "userid": "DP475"
+    },
+    {
+      "emp_name": "AHSAN ALI",
+      "edatetime": "2026-09-11 15:35:15.0",
+      "evtsourcedet": null,
+      "userid": "DP475"
+    },
+    {
+      "emp_name": "Saturdhan Mahara",
+      "edatetime": "2026-09-10 00:28:00.0",
+      "evtsourcedet": null,
+      "userid": "OTH59"
+    },
+    {
+      "emp_name": "Saturdhan Mahara",
+      "edatetime": "2026-09-10 15:02:08.0",
+      "evtsourcedet": null,
+      "userid": "OTH59"
+    },
+    {
+      "emp_name": "Saturdhan Mahara",
+      "edatetime": "2026-09-11 00:23:57.0",
+      "evtsourcedet": null,
+      "userid": "OTH59"
+    },
+    {
+      "emp_name": "Saturdhan Mahara",
+      "edatetime": "2026-09-11 14:58:50.0",
+      "evtsourcedet": null,
+      "userid": "OTH59"
+    },
+    {
+      "emp_name": "RAHUL CHANDU PATIL",
+      "edatetime": "2026-09-10 00:02:51.0",
+      "evtsourcedet": null,
+      "userid": "DP566"
+    },
+    {
+      "emp_name": "RAHUL CHANDU PATIL",
+      "edatetime": "2026-09-10 14:20:20.0",
+      "evtsourcedet": null,
+      "userid": "DP566"
+    },
+    {
+      "emp_name": "RAHUL CHANDU PATIL",
+      "edatetime": "2026-09-11 00:47:34.0",
+      "evtsourcedet": null,
+      "userid": "DP566"
+    },
+    {
+      "emp_name": "RAHUL CHANDU PATIL",
+      "edatetime": "2026-09-11 14:19:16.0",
+      "evtsourcedet": null,
+      "userid": "DP566"
+    },
+    {
+      "emp_name": "RONAK BATRA",
+      "edatetime": "2026-09-10 15:04:46.0",
+      "evtsourcedet": null,
+      "userid": "DP563"
+    },
+    {
+      "emp_name": "RONAK BATRA",
+      "edatetime": "2026-09-11 00:00:02.0",
+      "evtsourcedet": null,
+      "userid": "DP563"
+    },
+    {
+      "emp_name": "RONAK BATRA",
+      "edatetime": "2026-09-11 12:05:10.0",
+      "evtsourcedet": null,
+      "userid": "DP563"
+    },
+    {
+      "emp_name": "RONAK BATRA",
+      "edatetime": "2026-09-11 21:15:39.0",
+      "evtsourcedet": null,
+      "userid": "DP563"
+    },
+    {
+      "emp_name": "MANSI PIYUSH JARIWALA",
+      "edatetime": "2026-09-10 07:59:13.0",
+      "evtsourcedet": null,
+      "userid": "DP564"
+    },
+    {
+      "emp_name": "MANSI PIYUSH JARIWALA",
+      "edatetime": "2026-09-10 17:01:41.0",
+      "evtsourcedet": null,
+      "userid": "DP564"
+    },
+    {
+      "emp_name": "MANSI PIYUSH JARIWALA",
+      "edatetime": "2026-09-11 07:56:33.0",
+      "evtsourcedet": null,
+      "userid": "DP564"
+    },
+    {
+      "emp_name": "MANSI PIYUSH JARIWALA",
+      "edatetime": "2026-09-11 17:22:06.0",
+      "evtsourcedet": null,
+      "userid": "DP564"
+    },
+    {
+      "emp_name": "VASU SANJEEV ARORA",
+      "edatetime": "2026-09-10 12:48:16.0",
+      "evtsourcedet": null,
+      "userid": "DP585"
+    },
+    {
+      "emp_name": "VASU SANJEEV ARORA",
+      "edatetime": "2026-09-10 22:03:55.0",
+      "evtsourcedet": null,
+      "userid": "DP585"
+    },
+    {
+      "emp_name": "VASU SANJEEV ARORA",
+      "edatetime": "2026-09-11 14:54:57.0",
+      "evtsourcedet": null,
+      "userid": "DP585"
+    },
+    {
+      "emp_name": "VASU SANJEEV ARORA",
+      "edatetime": "2026-09-11 23:41:30.0",
+      "evtsourcedet": null,
+      "userid": "DP585"
+    },
+    {
+      "emp_name": "YOGESH NARENDRA DHANGAR",
+      "edatetime": "2026-09-10 00:03:16.0",
+      "evtsourcedet": null,
+      "userid": "DP586"
+    },
+    {
+      "emp_name": "YOGESH NARENDRA DHANGAR",
+      "edatetime": "2026-09-10 14:54:57.0",
+      "evtsourcedet": null,
+      "userid": "DP586"
+    },
+    {
+      "emp_name": "YOGESH NARENDRA DHANGAR",
+      "edatetime": "2026-09-10 14:55:48.0",
+      "evtsourcedet": null,
+      "userid": "DP586"
+    },
+    {
+      "emp_name": "YOGESH NARENDRA DHANGAR",
+      "edatetime": "2026-09-10 14:56:20.0",
+      "evtsourcedet": null,
+      "userid": "DP586"
+    },
+    {
+      "emp_name": "YOGESH NARENDRA DHANGAR",
+      "edatetime": "2026-09-11 00:48:23.0",
+      "evtsourcedet": null,
+      "userid": "DP586"
+    },
+    {
+      "emp_name": "YOGESH NARENDRA DHANGAR",
+      "edatetime": "2026-09-11 14:21:02.0",
+      "evtsourcedet": null,
+      "userid": "DP586"
+    },
+    {
+      "emp_name": "KULDIPSINH CHETANSINH CHAVDA",
+      "edatetime": "2026-09-11 18:01:28.0",
+      "evtsourcedet": null,
+      "userid": "DP589"
+    },
+    {
+      "emp_name": "KRISH HITESHBHAI SAVALIYA",
+      "edatetime": "2026-09-10 12:06:43.0",
+      "evtsourcedet": null,
+      "userid": "DP587"
+    },
+    {
+      "emp_name": "KRISH HITESHBHAI SAVALIYA",
+      "edatetime": "2026-09-10 20:37:16.0",
+      "evtsourcedet": null,
+      "userid": "DP587"
+    },
+    {
+      "emp_name": "KRISH HITESHBHAI SAVALIYA",
+      "edatetime": "2026-09-11 12:16:38.0",
+      "evtsourcedet": null,
+      "userid": "DP587"
+    },
+    {
+      "emp_name": "KRISH HITESHBHAI SAVALIYA",
+      "edatetime": "2026-09-11 20:41:39.0",
+      "evtsourcedet": null,
+      "userid": "DP587"
+    },
+    {
+      "emp_name": "MOHAMMADRAZA NAJMUDDIN KADRI",
+      "edatetime": "2026-09-10 14:00:19.0",
+      "evtsourcedet": null,
+      "userid": "DP588"
+    },
+    {
+      "emp_name": "MOHAMMADRAZA NAJMUDDIN KADRI",
+      "edatetime": "2026-09-10 18:46:15.0",
+      "evtsourcedet": null,
+      "userid": "DP588"
+    },
+    {
+      "emp_name": "MOHAMMADRAZA NAJMUDDIN KADRI",
+      "edatetime": "2026-09-10 18:59:21.0",
+      "evtsourcedet": null,
+      "userid": "DP588"
+    },
+    {
+      "emp_name": "MOHAMMADRAZA NAJMUDDIN KADRI",
+      "edatetime": "2026-09-10 22:56:10.0",
+      "evtsourcedet": null,
+      "userid": "DP588"
+    },
+    {
+      "emp_name": "MOHAMMADRAZA NAJMUDDIN KADRI",
+      "edatetime": "2026-09-11 13:59:34.0",
+      "evtsourcedet": null,
+      "userid": "DP588"
+    },
+    {
+      "emp_name": "MOHAMMADRAZA NAJMUDDIN KADRI",
+      "edatetime": "2026-09-11 23:01:50.0",
+      "evtsourcedet": null,
+      "userid": "DP588"
+    },
+    {
+      "emp_name": "SANTOSHI JAYKARAN ASUR",
+      "edatetime": "2026-09-10 08:32:43.0",
+      "evtsourcedet": null,
+      "userid": "BA33"
+    },
+    {
+      "emp_name": "SANTOSHI JAYKARAN ASUR",
+      "edatetime": "2026-09-10 08:32:46.0",
+      "evtsourcedet": null,
+      "userid": "BA33"
+    },
+    {
+      "emp_name": "SANTOSHI JAYKARAN ASUR",
+      "edatetime": "2026-09-10 17:32:42.0",
+      "evtsourcedet": null,
+      "userid": "BA33"
+    },
+    {
+      "emp_name": "SANTOSHI JAYKARAN ASUR",
+      "edatetime": "2026-09-11 08:53:29.0",
+      "evtsourcedet": null,
+      "userid": "BA33"
+    },
+    {
+      "emp_name": "SANTOSHI JAYKARAN ASUR",
+      "edatetime": "2026-09-11 08:53:29.0",
+      "evtsourcedet": null,
+      "userid": "BA33"
+    },
+    {
+      "emp_name": "SANTOSHI JAYKARAN ASUR",
+      "edatetime": "2026-09-11 18:04:30.0",
+      "evtsourcedet": null,
+      "userid": "BA33"
+    },
+    {
+      "emp_name": "HIMANSHU JITENDRASINGH JODHA",
+      "edatetime": "2026-09-10 10:13:03.0",
+      "evtsourcedet": null,
+      "userid": "DP405"
+    },
+    {
+      "emp_name": "HIMANSHU JITENDRASINGH JODHA",
+      "edatetime": "2026-09-10 18:13:35.0",
+      "evtsourcedet": null,
+      "userid": "DP405"
+    },
+    {
+      "emp_name": "HIMANSHU JITENDRASINGH JODHA",
+      "edatetime": "2026-09-11 10:30:42.0",
+      "evtsourcedet": null,
+      "userid": "DP405"
+    },
+    {
+      "emp_name": "HIMANSHU JITENDRASINGH JODHA",
+      "edatetime": "2026-09-11 18:32:26.0",
+      "evtsourcedet": null,
+      "userid": "DP405"
+    },
+    {
+      "emp_name": "ISA BOPARIYA",
+      "edatetime": "2026-09-10 14:31:18.0",
+      "evtsourcedet": null,
+      "userid": "DP491"
+    },
+    {
+      "emp_name": "ISA BOPARIYA",
+      "edatetime": "2026-09-10 23:30:48.0",
+      "evtsourcedet": null,
+      "userid": "DP491"
+    },
+    {
+      "emp_name": "ISA BOPARIYA",
+      "edatetime": "2026-09-11 13:55:07.0",
+      "evtsourcedet": null,
+      "userid": "DP491"
+    },
+    {
+      "emp_name": "ISA BOPARIYA",
+      "edatetime": "2026-09-11 23:05:52.0",
+      "evtsourcedet": null,
+      "userid": "DP491"
+    },
+    {
+      "emp_name": "SAIKH MOHAMMEDFAIZAN",
+      "edatetime": "2026-09-10 15:27:31.0",
+      "evtsourcedet": null,
+      "userid": "DP235"
+    },
+    {
+      "emp_name": "SAIKH MOHAMMEDFAIZAN",
+      "edatetime": "2026-09-11 00:06:27.0",
+      "evtsourcedet": null,
+      "userid": "DP235"
+    },
+    {
+      "emp_name": "SAIKH MOHAMMEDFAIZAN",
+      "edatetime": "2026-09-11 15:15:35.0",
+      "evtsourcedet": null,
+      "userid": "DP235"
+    },
+    {
+      "emp_name": "SMITA PANDEY",
+      "edatetime": "2026-09-10 07:33:41.0",
+      "evtsourcedet": null,
+      "userid": "DP237"
+    },
+    {
+      "emp_name": "SMITA PANDEY",
+      "edatetime": "2026-09-10 17:41:10.0",
+      "evtsourcedet": null,
+      "userid": "DP237"
+    },
+    {
+      "emp_name": "SMITA PANDEY",
+      "edatetime": "2026-09-10 17:41:14.0",
+      "evtsourcedet": null,
+      "userid": "DP237"
+    },
+    {
+      "emp_name": "SMITA PANDEY",
+      "edatetime": "2026-09-11 07:30:00.0",
+      "evtsourcedet": null,
+      "userid": "DP237"
+    },
+    {
+      "emp_name": "SMITA PANDEY",
+      "edatetime": "2026-09-11 19:06:28.0",
+      "evtsourcedet": null,
+      "userid": "DP237"
+    },
+    {
+      "emp_name": "SHUBHAM THATE",
+      "edatetime": "2026-09-10 13:53:11.0",
+      "evtsourcedet": null,
+      "userid": "DP238"
+    },
+    {
+      "emp_name": "SHUBHAM THATE",
+      "edatetime": "2026-09-10 23:13:05.0",
+      "evtsourcedet": null,
+      "userid": "DP238"
+    },
+    {
+      "emp_name": "SHUBHAM THATE",
+      "edatetime": "2026-09-11 13:48:10.0",
+      "evtsourcedet": null,
+      "userid": "DP238"
+    },
+    {
+      "emp_name": "SHUBHAM THATE",
+      "edatetime": "2026-09-11 23:18:16.0",
+      "evtsourcedet": null,
+      "userid": "DP238"
+    },
+    {
+      "emp_name": "GAURANG BHARUCHI",
+      "edatetime": "2026-09-10 11:55:23.0",
+      "evtsourcedet": null,
+      "userid": "DP243"
+    },
+    {
+      "emp_name": "GAURANG BHARUCHI",
+      "edatetime": "2026-09-10 21:14:44.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP243"
+    },
+    {
+      "emp_name": "GAURANG BHARUCHI",
+      "edatetime": "2026-09-10 21:18:20.0",
+      "evtsourcedet": null,
+      "userid": "DP243"
+    },
+    {
+      "emp_name": "GAURANG BHARUCHI",
+      "edatetime": "2026-09-11 12:17:52.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP243"
+    },
+    {
+      "emp_name": "GAURANG BHARUCHI",
+      "edatetime": "2026-09-11 22:11:01.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP243"
+    },
+    {
+      "emp_name": "GAURANG BHARUCHI",
+      "edatetime": "2026-09-11 22:11:17.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP243"
+    },
+    {
+      "emp_name": "CHAUHAN LALITA",
+      "edatetime": "2026-09-10 10:10:24.0",
+      "evtsourcedet": null,
+      "userid": "DP252"
+    },
+    {
+      "emp_name": "CHAUHAN LALITA",
+      "edatetime": "2026-09-10 19:10:50.0",
+      "evtsourcedet": null,
+      "userid": "DP252"
+    },
+    {
+      "emp_name": "CHAUHAN LALITA",
+      "edatetime": "2026-09-10 19:10:52.0",
+      "evtsourcedet": null,
+      "userid": "DP252"
+    },
+    {
+      "emp_name": "CHAUHAN LALITA",
+      "edatetime": "2026-09-10 19:10:57.0",
+      "evtsourcedet": null,
+      "userid": "DP252"
+    },
+    {
+      "emp_name": "CHAUHAN LALITA",
+      "edatetime": "2026-09-10 19:11:01.0",
+      "evtsourcedet": null,
+      "userid": "DP252"
+    },
+    {
+      "emp_name": "CHAUHAN LALITA",
+      "edatetime": "2026-09-11 10:00:45.0",
+      "evtsourcedet": null,
+      "userid": "DP252"
+    },
+    {
+      "emp_name": "CHAUHAN LALITA",
+      "edatetime": "2026-09-11 19:42:52.0",
+      "evtsourcedet": null,
+      "userid": "DP252"
+    },
+    {
+      "emp_name": "REENA LALJIBHAI PARMAR",
+      "edatetime": "2026-09-10 13:47:07.0",
+      "evtsourcedet": null,
+      "userid": "DP145"
+    },
+    {
+      "emp_name": "REENA LALJIBHAI PARMAR",
+      "edatetime": "2026-09-10 23:18:58.0",
+      "evtsourcedet": null,
+      "userid": "DP145"
+    },
+    {
+      "emp_name": "REENA LALJIBHAI PARMAR",
+      "edatetime": "2026-09-11 13:53:06.0",
+      "evtsourcedet": null,
+      "userid": "DP145"
+    },
+    {
+      "emp_name": "REENA LALJIBHAI PARMAR",
+      "edatetime": "2026-09-11 23:11:43.0",
+      "evtsourcedet": null,
+      "userid": "DP145"
+    },
+    {
+      "emp_name": "JAGANNATH LADUKISHOR PANDA",
+      "edatetime": "2026-09-10 15:53:42.0",
+      "evtsourcedet": null,
+      "userid": "DP152"
+    },
+    {
+      "emp_name": "JAGANNATH LADUKISHOR PANDA",
+      "edatetime": "2026-09-11 00:49:37.0",
+      "evtsourcedet": null,
+      "userid": "DP152"
+    },
+    {
+      "emp_name": "JAGANNATH LADUKISHOR PANDA",
+      "edatetime": "2026-09-11 19:11:25.0",
+      "evtsourcedet": null,
+      "userid": "DP152"
+    },
+    {
+      "emp_name": "VIBHUTI VIPINBHAI CHAUDHARI",
+      "edatetime": "2026-09-10 13:15:12.0",
+      "evtsourcedet": null,
+      "userid": "DP172"
+    },
+    {
+      "emp_name": "VIBHUTI VIPINBHAI CHAUDHARI",
+      "edatetime": "2026-09-10 22:15:13.0",
+      "evtsourcedet": null,
+      "userid": "DP172"
+    },
+    {
+      "emp_name": "VIBHUTI VIPINBHAI CHAUDHARI",
+      "edatetime": "2026-09-11 13:37:47.0",
+      "evtsourcedet": null,
+      "userid": "DP172"
+    },
+    {
+      "emp_name": "VIBHUTI VIPINBHAI CHAUDHARI",
+      "edatetime": "2026-09-11 22:45:30.0",
+      "evtsourcedet": null,
+      "userid": "DP172"
+    },
+    {
+      "emp_name": "YASHDEEP JITENDRA SINGH",
+      "edatetime": "2026-09-10 11:32:01.0",
+      "evtsourcedet": null,
+      "userid": "DP37"
+    },
+    {
+      "emp_name": "YASHDEEP JITENDRA SINGH",
+      "edatetime": "2026-09-10 23:58:21.0",
+      "evtsourcedet": null,
+      "userid": "DP37"
+    },
+    {
+      "emp_name": "YASHDEEP JITENDRA SINGH",
+      "edatetime": "2026-09-11 10:13:44.0",
+      "evtsourcedet": null,
+      "userid": "DP37"
+    },
+    {
+      "emp_name": "MAKSAD RAZA  SHEKH IKBAL",
+      "edatetime": "2026-09-10 12:03:03.0",
+      "evtsourcedet": null,
+      "userid": "DP194"
+    },
+    {
+      "emp_name": "MAKSAD RAZA  SHEKH IKBAL",
+      "edatetime": "2026-09-10 23:59:40.0",
+      "evtsourcedet": null,
+      "userid": "DP194"
+    },
+    {
+      "emp_name": "MAKSAD RAZA  SHEKH IKBAL",
+      "edatetime": "2026-09-11 11:22:03.0",
+      "evtsourcedet": null,
+      "userid": "DP194"
+    },
+    {
+      "emp_name": "MANISH SANJAY KUDCHI",
+      "edatetime": "2026-09-10 09:17:26.0",
+      "evtsourcedet": null,
+      "userid": "DP71"
+    },
+    {
+      "emp_name": "MANISH SANJAY KUDCHI",
+      "edatetime": "2026-09-10 11:50:13.0",
+      "evtsourcedet": null,
+      "userid": "DP71"
+    },
+    {
+      "emp_name": "ROUSHANIBEN DINESHBHAI GAMIT",
+      "edatetime": "2026-09-10 13:48:15.0",
+      "evtsourcedet": null,
+      "userid": "DP203"
+    },
+    {
+      "emp_name": "ROUSHANIBEN DINESHBHAI GAMIT",
+      "edatetime": "2026-09-10 23:04:05.0",
+      "evtsourcedet": null,
+      "userid": "DP203"
+    },
+    {
+      "emp_name": "ROUSHANIBEN DINESHBHAI GAMIT",
+      "edatetime": "2026-09-11 13:50:23.0",
+      "evtsourcedet": null,
+      "userid": "DP203"
+    },
+    {
+      "emp_name": "ROUSHANIBEN DINESHBHAI GAMIT",
+      "edatetime": "2026-09-11 23:10:10.0",
+      "evtsourcedet": null,
+      "userid": "DP203"
+    },
+    {
+      "emp_name": "NAVEEN MANOJ SHARMA",
+      "edatetime": "2026-09-10 14:54:51.0",
+      "evtsourcedet": null,
+      "userid": "DP204"
+    },
+    {
+      "emp_name": "NAVEEN MANOJ SHARMA",
+      "edatetime": "2026-09-10 23:51:03.0",
+      "evtsourcedet": null,
+      "userid": "DP204"
+    },
+    {
+      "emp_name": "VIRENDRA VINOD BARAPATRE",
+      "edatetime": "2026-09-10 10:51:43.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP83"
+    },
+    {
+      "emp_name": "VIRENDRA VINOD BARAPATRE",
+      "edatetime": "2026-09-11 11:09:36.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP83"
+    },
+    {
+      "emp_name": "VIRENDRA VINOD BARAPATRE",
+      "edatetime": "2026-09-11 20:44:17.0",
+      "evtsourcedet": null,
+      "userid": "DP83"
+    },
+    {
+      "emp_name": "VIRENDRA VINOD BARAPATRE",
+      "edatetime": "2026-09-11 20:44:21.0",
+      "evtsourcedet": null,
+      "userid": "DP83"
+    },
+    {
+      "emp_name": "NOOR E ELAHI",
+      "edatetime": "2026-09-10 14:54:31.0",
+      "evtsourcedet": null,
+      "userid": "DP256"
+    },
+    {
+      "emp_name": "NOOR E ELAHI",
+      "edatetime": "2026-09-11 00:05:00.0",
+      "evtsourcedet": null,
+      "userid": "DP256"
+    },
+    {
+      "emp_name": "NOOR E ELAHI",
+      "edatetime": "2026-09-11 15:00:03.0",
+      "evtsourcedet": null,
+      "userid": "DP256"
+    },
+    {
+      "emp_name": "PAL CHIRAG SHAH",
+      "edatetime": "2026-09-10 08:45:44.0",
+      "evtsourcedet": null,
+      "userid": "DP99"
+    },
+    {
+      "emp_name": "PAL CHIRAG SHAH",
+      "edatetime": "2026-09-10 17:28:06.0",
+      "evtsourcedet": null,
+      "userid": "DP99"
+    },
+    {
+      "emp_name": "PAL CHIRAG SHAH",
+      "edatetime": "2026-09-11 08:55:17.0",
+      "evtsourcedet": null,
+      "userid": "DP99"
+    },
+    {
+      "emp_name": "PAL CHIRAG SHAH",
+      "edatetime": "2026-09-11 17:44:56.0",
+      "evtsourcedet": null,
+      "userid": "DP99"
+    },
+    {
+      "emp_name": "HARISH GOPAL VISHWAKARMA",
+      "edatetime": "2026-09-10 11:49:58.0",
+      "evtsourcedet": null,
+      "userid": "DP102"
+    },
+    {
+      "emp_name": "HARISH GOPAL VISHWAKARMA",
+      "edatetime": "2026-09-10 21:59:35.0",
+      "evtsourcedet": null,
+      "userid": "DP102"
+    },
+    {
+      "emp_name": "HARISH GOPAL VISHWAKARMA",
+      "edatetime": "2026-09-11 12:42:33.0",
+      "evtsourcedet": null,
+      "userid": "DP102"
+    },
+    {
+      "emp_name": "HARISH GOPAL VISHWAKARMA",
+      "edatetime": "2026-09-11 23:27:00.0",
+      "evtsourcedet": null,
+      "userid": "DP102"
+    },
+    {
+      "emp_name": "PRACHI SANDIPBHAI TAILOR",
+      "edatetime": "2026-09-10 13:57:05.0",
+      "evtsourcedet": null,
+      "userid": "DP215"
+    },
+    {
+      "emp_name": "PRACHI SANDIPBHAI TAILOR",
+      "edatetime": "2026-09-10 19:27:49.0",
+      "evtsourcedet": null,
+      "userid": "DP215"
+    },
+    {
+      "emp_name": "PRACHI SANDIPBHAI TAILOR",
+      "edatetime": "2026-09-11 10:19:30.0",
+      "evtsourcedet": null,
+      "userid": "DP215"
+    },
+    {
+      "emp_name": "PRACHI SANDIPBHAI TAILOR",
+      "edatetime": "2026-09-11 18:54:26.0",
+      "evtsourcedet": null,
+      "userid": "DP215"
+    },
+    {
+      "emp_name": "VIDHI KUMARI KAMLESHBHAI JAIN",
+      "edatetime": "2026-09-10 08:04:39.0",
+      "evtsourcedet": null,
+      "userid": "DP229"
+    },
+    {
+      "emp_name": "VIDHI KUMARI KAMLESHBHAI JAIN",
+      "edatetime": "2026-09-10 17:10:33.0",
+      "evtsourcedet": null,
+      "userid": "DP229"
+    },
+    {
+      "emp_name": "VIDHI KUMARI KAMLESHBHAI JAIN",
+      "edatetime": "2026-09-11 08:16:02.0",
+      "evtsourcedet": null,
+      "userid": "DP229"
+    },
+    {
+      "emp_name": "VIDHI KUMARI KAMLESHBHAI JAIN",
+      "edatetime": "2026-09-11 17:25:17.0",
+      "evtsourcedet": null,
+      "userid": "DP229"
+    },
+    {
+      "emp_name": "RAJU PASWAN",
+      "edatetime": "2026-09-10 07:36:53.0",
+      "evtsourcedet": null,
+      "userid": "LAL08"
+    },
+    {
+      "emp_name": "RAJU PASWAN",
+      "edatetime": "2026-09-10 17:34:16.0",
+      "evtsourcedet": null,
+      "userid": "LAL08"
+    },
+    {
+      "emp_name": "RAJU PASWAN",
+      "edatetime": "2026-09-11 07:14:39.0",
+      "evtsourcedet": null,
+      "userid": "LAL08"
+    },
+    {
+      "emp_name": "RAJU PASWAN",
+      "edatetime": "2026-09-11 07:17:12.0",
+      "evtsourcedet": null,
+      "userid": "LAL08"
+    },
+    {
+      "emp_name": "RAJU PASWAN",
+      "edatetime": "2026-09-11 07:17:16.0",
+      "evtsourcedet": null,
+      "userid": "LAL08"
+    },
+    {
+      "emp_name": "RAJU PASWAN",
+      "edatetime": "2026-09-11 16:36:36.0",
+      "evtsourcedet": null,
+      "userid": "LAL08"
+    },
+    {
+      "emp_name": "SANJANA RADHESHYAN KEVAT",
+      "edatetime": "2026-09-10 14:17:57.0",
+      "evtsourcedet": null,
+      "userid": "DP479"
+    },
+    {
+      "emp_name": "SANJANA RADHESHYAN KEVAT",
+      "edatetime": "2026-09-10 14:18:08.0",
+      "evtsourcedet": null,
+      "userid": "DP479"
+    },
+    {
+      "emp_name": "SANJANA RADHESHYAN KEVAT",
+      "edatetime": "2026-09-10 23:54:33.0",
+      "evtsourcedet": null,
+      "userid": "DP479"
+    },
+    {
+      "emp_name": "SANJANA RADHESHYAN KEVAT",
+      "edatetime": "2026-09-11 14:27:08.0",
+      "evtsourcedet": null,
+      "userid": "DP479"
+    },
+    {
+      "emp_name": "SANJANA RADHESHYAN KEVAT",
+      "edatetime": "2026-09-11 23:36:44.0",
+      "evtsourcedet": null,
+      "userid": "DP479"
+    },
+    {
+      "emp_name": "REHAN ANSARI",
+      "edatetime": "2026-09-11 07:33:09.0",
+      "evtsourcedet": null,
+      "userid": "LAL64"
+    },
+    {
+      "emp_name": "REHAN ANSARI",
+      "edatetime": "2026-09-11 16:48:33.0",
+      "evtsourcedet": null,
+      "userid": "LAL64"
+    },
+    {
+      "emp_name": "AADITYA PALIMKAR",
+      "edatetime": "2026-09-10 13:39:08.0",
+      "evtsourcedet": null,
+      "userid": "DP385"
+    },
+    {
+      "emp_name": "AADITYA PALIMKAR",
+      "edatetime": "2026-09-10 23:09:38.0",
+      "evtsourcedet": null,
+      "userid": "DP385"
+    },
+    {
+      "emp_name": "AADITYA PALIMKAR",
+      "edatetime": "2026-09-11 23:25:11.0",
+      "evtsourcedet": null,
+      "userid": "DP385"
+    },
+    {
+      "emp_name": "DHIRAJ MAFARAM SARGARA",
+      "edatetime": "2026-09-10 12:00:29.0",
+      "evtsourcedet": null,
+      "userid": "DP329"
+    },
+    {
+      "emp_name": "DHIRAJ MAFARAM SARGARA",
+      "edatetime": "2026-09-10 21:23:40.0",
+      "evtsourcedet": null,
+      "userid": "DP329"
+    },
+    {
+      "emp_name": "DHIRAJ MAFARAM SARGARA",
+      "edatetime": "2026-09-11 11:53:59.0",
+      "evtsourcedet": null,
+      "userid": "DP329"
+    },
+    {
+      "emp_name": "DHIRAJ MAFARAM SARGARA",
+      "edatetime": "2026-09-11 21:31:20.0",
+      "evtsourcedet": null,
+      "userid": "DP329"
+    },
+    {
+      "emp_name": "PIYUSH MAHENDRABHAI VIRVADIYA",
+      "edatetime": "2026-09-10 08:48:25.0",
+      "evtsourcedet": null,
+      "userid": "DP469"
+    },
+    {
+      "emp_name": "PIYUSH MAHENDRABHAI VIRVADIYA",
+      "edatetime": "2026-09-10 16:13:27.0",
+      "evtsourcedet": null,
+      "userid": "DP469"
+    },
+    {
+      "emp_name": "PIYUSH MAHENDRABHAI VIRVADIYA",
+      "edatetime": "2026-09-11 09:16:47.0",
+      "evtsourcedet": null,
+      "userid": "DP469"
+    },
+    {
+      "emp_name": "PIYUSH MAHENDRABHAI VIRVADIYA",
+      "edatetime": "2026-09-11 17:20:10.0",
+      "evtsourcedet": null,
+      "userid": "DP469"
+    },
+    {
+      "emp_name": "ANJLI SARGAM PURTY",
+      "edatetime": "2026-09-10 13:11:30.0",
+      "evtsourcedet": null,
+      "userid": "DP497"
+    },
+    {
+      "emp_name": "ANJLI SARGAM PURTY",
+      "edatetime": "2026-09-10 23:43:47.0",
+      "evtsourcedet": null,
+      "userid": "DP497"
+    },
+    {
+      "emp_name": "ANJLI SARGAM PURTY",
+      "edatetime": "2026-09-11 11:24:49.0",
+      "evtsourcedet": null,
+      "userid": "DP497"
+    },
+    {
+      "emp_name": "ANJLI SARGAM PURTY",
+      "edatetime": "2026-09-11 23:48:58.0",
+      "evtsourcedet": null,
+      "userid": "DP497"
+    },
+    {
+      "emp_name": "ANSHU KUMARI BIRI BHAGAT",
+      "edatetime": "2026-09-10 11:35:20.0",
+      "evtsourcedet": null,
+      "userid": "DP498"
+    },
+    {
+      "emp_name": "ANSHU KUMARI BIRI BHAGAT",
+      "edatetime": "2026-09-11 00:00:11.0",
+      "evtsourcedet": null,
+      "userid": "DP498"
+    },
+    {
+      "emp_name": "ANSHU KUMARI BIRI BHAGAT",
+      "edatetime": "2026-09-11 10:40:31.0",
+      "evtsourcedet": null,
+      "userid": "DP498"
+    },
+    {
+      "emp_name": "ANSHU KUMARI BIRI BHAGAT",
+      "edatetime": "2026-09-11 23:59:47.0",
+      "evtsourcedet": null,
+      "userid": "DP498"
+    },
+    {
+      "emp_name": "ARTI KUMARI SUBHASH NAYAK",
+      "edatetime": "2026-09-11 14:05:54.0",
+      "evtsourcedet": null,
+      "userid": "DP500"
+    },
+    {
+      "emp_name": "AVINASH KUMAR BHOLA RAM",
+      "edatetime": "2026-09-10 08:59:59.0",
+      "evtsourcedet": null,
+      "userid": "DP493"
+    },
+    {
+      "emp_name": "AVINASH KUMAR BHOLA RAM",
+      "edatetime": "2026-09-10 18:07:55.0",
+      "evtsourcedet": null,
+      "userid": "DP493"
+    },
+    {
+      "emp_name": "AVINASH KUMAR BHOLA RAM",
+      "edatetime": "2026-09-11 09:23:25.0",
+      "evtsourcedet": null,
+      "userid": "DP493"
+    },
+    {
+      "emp_name": "AVINASH KUMAR BHOLA RAM",
+      "edatetime": "2026-09-11 18:13:54.0",
+      "evtsourcedet": null,
+      "userid": "DP493"
+    },
+    {
+      "emp_name": "NEHA KUMARI KALU BARAIK",
+      "edatetime": "2026-09-10 12:17:34.0",
+      "evtsourcedet": null,
+      "userid": "DP503"
+    },
+    {
+      "emp_name": "NEHA KUMARI KALU BARAIK",
+      "edatetime": "2026-09-10 22:15:40.0",
+      "evtsourcedet": null,
+      "userid": "DP503"
+    },
+    {
+      "emp_name": "NEHA KUMARI KALU BARAIK",
+      "edatetime": "2026-09-11 12:05:44.0",
+      "evtsourcedet": null,
+      "userid": "DP503"
+    },
+    {
+      "emp_name": "NEHA KUMARI KALU BARAIK",
+      "edatetime": "2026-09-11 22:12:32.0",
+      "evtsourcedet": null,
+      "userid": "DP503"
+    },
+    {
+      "emp_name": "PRITI PREM EKKA",
+      "edatetime": "2026-09-10 12:47:05.0",
+      "evtsourcedet": null,
+      "userid": "DP504"
+    },
+    {
+      "emp_name": "PRITI PREM EKKA",
+      "edatetime": "2026-09-10 14:31:11.0",
+      "evtsourcedet": null,
+      "userid": "DP504"
+    },
+    {
+      "emp_name": "PRITI PREM EKKA",
+      "edatetime": "2026-09-10 23:46:45.0",
+      "evtsourcedet": null,
+      "userid": "DP504"
+    },
+    {
+      "emp_name": "PRITI PREM EKKA",
+      "edatetime": "2026-09-11 11:23:58.0",
+      "evtsourcedet": null,
+      "userid": "DP504"
+    },
+    {
+      "emp_name": "PRITI PREM EKKA",
+      "edatetime": "2026-09-11 23:59:15.0",
+      "evtsourcedet": null,
+      "userid": "DP504"
+    },
+    {
+      "emp_name": "BINITA MAHENDAR LAGURI",
+      "edatetime": "2026-09-10 08:32:19.0",
+      "evtsourcedet": null,
+      "userid": "DP506"
+    },
+    {
+      "emp_name": "BINITA MAHENDAR LAGURI",
+      "edatetime": "2026-09-10 17:33:53.0",
+      "evtsourcedet": null,
+      "userid": "DP506"
+    },
+    {
+      "emp_name": "BINITA MAHENDAR LAGURI",
+      "edatetime": "2026-09-10 17:33:57.0",
+      "evtsourcedet": null,
+      "userid": "DP506"
+    },
+    {
+      "emp_name": "BINITA MAHENDAR LAGURI",
+      "edatetime": "2026-09-10 17:33:58.0",
+      "evtsourcedet": null,
+      "userid": "DP506"
+    },
+    {
+      "emp_name": "BINITA MAHENDAR LAGURI",
+      "edatetime": "2026-09-11 08:53:29.0",
+      "evtsourcedet": null,
+      "userid": "DP506"
+    },
+    {
+      "emp_name": "BINITA MAHENDAR LAGURI",
+      "edatetime": "2026-09-11 17:54:02.0",
+      "evtsourcedet": null,
+      "userid": "DP506"
+    },
+    {
+      "emp_name": "Krishna Yadav",
+      "edatetime": "2026-09-10 15:01:45.0",
+      "evtsourcedet": null,
+      "userid": "LAL76"
+    },
+    {
+      "emp_name": "Krishna Yadav",
+      "edatetime": "2026-09-11 00:20:05.0",
+      "evtsourcedet": null,
+      "userid": "LAL76"
+    },
+    {
+      "emp_name": "Krishna Yadav",
+      "edatetime": "2026-09-11 10:52:27.0",
+      "evtsourcedet": null,
+      "userid": "LAL76"
+    },
+    {
+      "emp_name": "Krishna Yadav",
+      "edatetime": "2026-09-11 20:17:27.0",
+      "evtsourcedet": null,
+      "userid": "LAL76"
+    },
+    {
+      "emp_name": "Rupesh Yadav",
+      "edatetime": "2026-09-10 15:01:01.0",
+      "evtsourcedet": null,
+      "userid": "LAL75"
+    },
+    {
+      "emp_name": "Rupesh Yadav",
+      "edatetime": "2026-09-11 00:19:38.0",
+      "evtsourcedet": null,
+      "userid": "LAL75"
+    },
+    {
+      "emp_name": "Rupesh Yadav",
+      "edatetime": "2026-09-11 14:58:42.0",
+      "evtsourcedet": null,
+      "userid": "LAL75"
+    },
+    {
+      "emp_name": "SHAIKH MOHAMMED KHALID",
+      "edatetime": "2026-09-10 15:49:47.0",
+      "evtsourcedet": null,
+      "userid": "DP510"
+    },
+    {
+      "emp_name": "SHAIKH MOHAMMED KHALID",
+      "edatetime": "2026-09-11 00:19:58.0",
+      "evtsourcedet": null,
+      "userid": "DP510"
+    },
+    {
+      "emp_name": "HUNNY RAJESHKUMAR SHRIVASTAV",
+      "edatetime": "2026-09-10 13:54:31.0",
+      "evtsourcedet": null,
+      "userid": "DP540"
+    },
+    {
+      "emp_name": "HUNNY RAJESHKUMAR SHRIVASTAV",
+      "edatetime": "2026-09-11 00:06:44.0",
+      "evtsourcedet": null,
+      "userid": "DP540"
+    },
+    {
+      "emp_name": "HUNNY RAJESHKUMAR SHRIVASTAV",
+      "edatetime": "2026-09-11 23:21:09.0",
+      "evtsourcedet": null,
+      "userid": "DP540"
+    },
+    {
+      "emp_name": "Arvind Murmu",
+      "edatetime": "2026-09-10 00:28:19.0",
+      "evtsourcedet": null,
+      "userid": "OTH62"
+    },
+    {
+      "emp_name": "Arvind Murmu",
+      "edatetime": "2026-09-10 00:29:00.0",
+      "evtsourcedet": null,
+      "userid": "OTH62"
+    },
+    {
+      "emp_name": "Arvind Murmu",
+      "edatetime": "2026-09-10 00:29:06.0",
+      "evtsourcedet": null,
+      "userid": "OTH62"
+    },
+    {
+      "emp_name": "Arvind Murmu",
+      "edatetime": "2026-09-10 09:33:03.0",
+      "evtsourcedet": null,
+      "userid": "OTH62"
+    },
+    {
+      "emp_name": "Arvind Murmu",
+      "edatetime": "2026-09-10 19:58:54.0",
+      "evtsourcedet": null,
+      "userid": "OTH62"
+    },
+    {
+      "emp_name": "Arvind Murmu",
+      "edatetime": "2026-09-11 14:57:19.0",
+      "evtsourcedet": null,
+      "userid": "OTH62"
+    },
+    {
+      "emp_name": "Sunil Murmu",
+      "edatetime": "2026-09-10 15:05:48.0",
+      "evtsourcedet": null,
+      "userid": "OTH63"
+    },
+    {
+      "emp_name": "Sunil Murmu",
+      "edatetime": "2026-09-11 00:15:43.0",
+      "evtsourcedet": null,
+      "userid": "OTH63"
+    },
+    {
+      "emp_name": "Sunil Murmu",
+      "edatetime": "2026-09-11 15:07:19.0",
+      "evtsourcedet": null,
+      "userid": "OTH63"
+    },
+    {
+      "emp_name": "SHAIKH KHALID HUSAIN AHMED HUSAIN",
+      "edatetime": "2026-09-10 08:13:35.0",
+      "evtsourcedet": null,
+      "userid": "DP345"
+    },
+    {
+      "emp_name": "SHAIKH KHALID HUSAIN AHMED HUSAIN",
+      "edatetime": "2026-09-10 17:33:35.0",
+      "evtsourcedet": null,
+      "userid": "DP345"
+    },
+    {
+      "emp_name": "SHAIKH KHALID HUSAIN AHMED HUSAIN",
+      "edatetime": "2026-09-11 07:46:07.0",
+      "evtsourcedet": null,
+      "userid": "DP345"
+    },
+    {
+      "emp_name": "SHAIKH KHALID HUSAIN AHMED HUSAIN",
+      "edatetime": "2026-09-11 16:36:32.0",
+      "evtsourcedet": null,
+      "userid": "DP345"
+    },
+    {
+      "emp_name": "KUNAL RAKESHBHAI RATHOD",
+      "edatetime": "2026-09-11 07:23:05.0",
+      "evtsourcedet": null,
+      "userid": "DP346"
+    },
+    {
+      "emp_name": "KUNAL RAKESHBHAI RATHOD",
+      "edatetime": "2026-09-11 19:03:59.0",
+      "evtsourcedet": null,
+      "userid": "DP346"
+    },
+    {
+      "emp_name": "BHALANI RISHIKA KAILESHKUMAR",
+      "edatetime": "2026-09-10 11:15:52.0",
+      "evtsourcedet": null,
+      "userid": "DP353"
+    },
+    {
+      "emp_name": "Ramprit Mahara",
+      "edatetime": "2026-09-10 14:36:24.0",
+      "evtsourcedet": null,
+      "userid": "OTH42"
+    },
+    {
+      "emp_name": "Ramprit Mahara",
+      "edatetime": "2026-09-11 00:12:27.0",
+      "evtsourcedet": null,
+      "userid": "OTH42"
+    },
+    {
+      "emp_name": "Ramprit Mahara",
+      "edatetime": "2026-09-11 14:39:35.0",
+      "evtsourcedet": null,
+      "userid": "OTH42"
+    },
+    {
+      "emp_name": "RANJITA SURESH LOHAR",
+      "edatetime": "2026-09-10 11:53:54.0",
+      "evtsourcedet": null,
+      "userid": "BA34"
+    },
+    {
+      "emp_name": "RANJITA SURESH LOHAR",
+      "edatetime": "2026-09-10 23:01:24.0",
+      "evtsourcedet": null,
+      "userid": "BA34"
+    },
+    {
+      "emp_name": "RANJITA SURESH LOHAR",
+      "edatetime": "2026-09-11 11:41:50.0",
+      "evtsourcedet": null,
+      "userid": "BA34"
+    },
+    {
+      "emp_name": "RANJITA SURESH LOHAR",
+      "edatetime": "2026-09-11 22:53:15.0",
+      "evtsourcedet": null,
+      "userid": "BA34"
+    },
+    {
+      "emp_name": "UMESH KUMAR NANOMA",
+      "edatetime": "2026-09-10 08:54:23.0",
+      "evtsourcedet": null,
+      "userid": "DP476"
+    },
+    {
+      "emp_name": "UMESH KUMAR NANOMA",
+      "edatetime": "2026-09-10 17:56:58.0",
+      "evtsourcedet": null,
+      "userid": "DP476"
+    },
+    {
+      "emp_name": "UMESH KUMAR NANOMA",
+      "edatetime": "2026-09-11 08:55:06.0",
+      "evtsourcedet": null,
+      "userid": "DP476"
+    },
+    {
+      "emp_name": "UMESH KUMAR NANOMA",
+      "edatetime": "2026-09-11 18:13:16.0",
+      "evtsourcedet": null,
+      "userid": "DP476"
+    },
+    {
+      "emp_name": "MOHAMMAD SAMIR MANSURI",
+      "edatetime": "2026-09-10 15:02:04.0",
+      "evtsourcedet": null,
+      "userid": "DP403"
+    },
+    {
+      "emp_name": "MOHAMMAD SAMIR MANSURI",
+      "edatetime": "2026-09-11 00:25:07.0",
+      "evtsourcedet": null,
+      "userid": "DP403"
+    },
+    {
+      "emp_name": "MOHAMMAD SAMIR MANSURI",
+      "edatetime": "2026-09-11 14:57:01.0",
+      "evtsourcedet": null,
+      "userid": "DP403"
+    },
+    {
+      "emp_name": "MOHAMMAD SAMIR MANSURI",
+      "edatetime": "2026-09-11 23:59:33.0",
+      "evtsourcedet": null,
+      "userid": "DP403"
+    },
+    {
+      "emp_name": "CHOTU TURI KARU",
+      "edatetime": "2026-09-10 13:54:20.0",
+      "evtsourcedet": null,
+      "userid": "LAL07"
+    },
+    {
+      "emp_name": "CHOTU TURI KARU",
+      "edatetime": "2026-09-10 23:21:06.0",
+      "evtsourcedet": null,
+      "userid": "LAL07"
+    },
+    {
+      "emp_name": "CHOTU TURI KARU",
+      "edatetime": "2026-09-11 14:57:12.0",
+      "evtsourcedet": null,
+      "userid": "LAL07"
+    },
+    {
+      "emp_name": "CHOTU TURI KARU",
+      "edatetime": "2026-09-11 23:59:51.0",
+      "evtsourcedet": null,
+      "userid": "LAL07"
+    },
+    {
+      "emp_name": "VYAS VRAJ JAYKUMAR",
+      "edatetime": "2026-09-11 15:04:10.0",
+      "evtsourcedet": null,
+      "userid": "DP442"
+    },
+    {
+      "emp_name": "VYAS VRAJ JAYKUMAR",
+      "edatetime": "2026-09-11 23:46:05.0",
+      "evtsourcedet": null,
+      "userid": "DP442"
+    },
+    {
+      "emp_name": "BARSA RAGHUNATH SANDIL",
+      "edatetime": "2026-09-10 08:32:34.0",
+      "evtsourcedet": null,
+      "userid": "BA36"
+    },
+    {
+      "emp_name": "BARSA RAGHUNATH SANDIL",
+      "edatetime": "2026-09-10 08:32:37.0",
+      "evtsourcedet": null,
+      "userid": "BA36"
+    },
+    {
+      "emp_name": "BARSA RAGHUNATH SANDIL",
+      "edatetime": "2026-09-10 08:32:40.0",
+      "evtsourcedet": null,
+      "userid": "BA36"
+    },
+    {
+      "emp_name": "BARSA RAGHUNATH SANDIL",
+      "edatetime": "2026-09-10 08:32:42.0",
+      "evtsourcedet": null,
+      "userid": "BA36"
+    },
+    {
+      "emp_name": "BARSA RAGHUNATH SANDIL",
+      "edatetime": "2026-09-10 08:32:44.0",
+      "evtsourcedet": null,
+      "userid": "BA36"
+    },
+    {
+      "emp_name": "BARSA RAGHUNATH SANDIL",
+      "edatetime": "2026-09-10 08:32:46.0",
+      "evtsourcedet": null,
+      "userid": "BA36"
+    },
+    {
+      "emp_name": "BARSA RAGHUNATH SANDIL",
+      "edatetime": "2026-09-10 08:32:48.0",
+      "evtsourcedet": null,
+      "userid": "BA36"
+    },
+    {
+      "emp_name": "BARSA RAGHUNATH SANDIL",
+      "edatetime": "2026-09-10 17:47:53.0",
+      "evtsourcedet": null,
+      "userid": "BA36"
+    },
+    {
+      "emp_name": "BARSA RAGHUNATH SANDIL",
+      "edatetime": "2026-09-11 07:09:46.0",
+      "evtsourcedet": null,
+      "userid": "BA36"
+    },
+    {
+      "emp_name": "BARSA RAGHUNATH SANDIL",
+      "edatetime": "2026-09-11 18:04:32.0",
+      "evtsourcedet": null,
+      "userid": "BA36"
+    },
+    {
+      "emp_name": "JOYCY VINAY EKKA",
+      "edatetime": "2026-09-10 08:32:16.0",
+      "evtsourcedet": null,
+      "userid": "BA35"
+    },
+    {
+      "emp_name": "JOYCY VINAY EKKA",
+      "edatetime": "2026-09-10 08:32:17.0",
+      "evtsourcedet": null,
+      "userid": "BA35"
+    },
+    {
+      "emp_name": "JOYCY VINAY EKKA",
+      "edatetime": "2026-09-10 08:32:19.0",
+      "evtsourcedet": null,
+      "userid": "BA35"
+    },
+    {
+      "emp_name": "JOYCY VINAY EKKA",
+      "edatetime": "2026-09-10 08:32:21.0",
+      "evtsourcedet": null,
+      "userid": "BA35"
+    },
+    {
+      "emp_name": "JOYCY VINAY EKKA",
+      "edatetime": "2026-09-10 10:12:43.0",
+      "evtsourcedet": null,
+      "userid": "BA35"
+    },
+    {
+      "emp_name": "JOYCY VINAY EKKA",
+      "edatetime": "2026-09-10 17:33:49.0",
+      "evtsourcedet": null,
+      "userid": "BA35"
+    },
+    {
+      "emp_name": "JOYCY VINAY EKKA",
+      "edatetime": "2026-09-10 17:33:52.0",
+      "evtsourcedet": null,
+      "userid": "BA35"
+    },
+    {
+      "emp_name": "JOYCY VINAY EKKA",
+      "edatetime": "2026-09-11 08:53:30.0",
+      "evtsourcedet": null,
+      "userid": "BA35"
+    },
+    {
+      "emp_name": "JOYCY VINAY EKKA",
+      "edatetime": "2026-09-11 17:54:01.0",
+      "evtsourcedet": null,
+      "userid": "BA35"
+    },
+    {
+      "emp_name": "URVISHKUMAR RATILAL HARKHANI",
+      "edatetime": "2026-09-10 08:26:33.0",
+      "evtsourcedet": null,
+      "userid": "DP571"
+    },
+    {
+      "emp_name": "URVISHKUMAR RATILAL HARKHANI",
+      "edatetime": "2026-09-10 18:22:59.0",
+      "evtsourcedet": null,
+      "userid": "DP571"
+    },
+    {
+      "emp_name": "URVISHKUMAR RATILAL HARKHANI",
+      "edatetime": "2026-09-11 09:41:11.0",
+      "evtsourcedet": null,
+      "userid": "DP571"
+    },
+    {
+      "emp_name": "URVISHKUMAR RATILAL HARKHANI",
+      "edatetime": "2026-09-11 19:30:15.0",
+      "evtsourcedet": null,
+      "userid": "DP571"
+    },
+    {
+      "emp_name": "SAMIR DANGODRA",
+      "edatetime": "2026-09-10 14:30:57.0",
+      "evtsourcedet": null,
+      "userid": "DP570"
+    },
+    {
+      "emp_name": "SAMIR DANGODRA",
+      "edatetime": "2026-09-10 23:50:27.0",
+      "evtsourcedet": null,
+      "userid": "DP570"
+    },
+    {
+      "emp_name": "SAMIR DANGODRA",
+      "edatetime": "2026-09-11 14:22:27.0",
+      "evtsourcedet": null,
+      "userid": "DP570"
+    },
+    {
+      "emp_name": "MANSHI FULCHAND YADAV",
+      "edatetime": "2026-09-10 15:02:24.0",
+      "evtsourcedet": null,
+      "userid": "DP569"
+    },
+    {
+      "emp_name": "MANSHI FULCHAND YADAV",
+      "edatetime": "2026-09-11 00:39:16.0",
+      "evtsourcedet": null,
+      "userid": "DP569"
+    },
+    {
+      "emp_name": "MANSHI FULCHAND YADAV",
+      "edatetime": "2026-09-11 14:52:25.0",
+      "evtsourcedet": null,
+      "userid": "DP569"
+    },
+    {
+      "emp_name": "MOHSINKHAN ANVARKHAN PATHAN",
+      "edatetime": "2026-09-10 11:43:57.0",
+      "evtsourcedet": null,
+      "userid": "DP557"
+    },
+    {
+      "emp_name": "MOHSINKHAN ANVARKHAN PATHAN",
+      "edatetime": "2026-09-10 21:05:53.0",
+      "evtsourcedet": null,
+      "userid": "DP557"
+    },
+    {
+      "emp_name": "MOHSINKHAN ANVARKHAN PATHAN",
+      "edatetime": "2026-09-11 13:15:46.0",
+      "evtsourcedet": null,
+      "userid": "DP557"
+    },
+    {
+      "emp_name": "MOHSINKHAN ANVARKHAN PATHAN",
+      "edatetime": "2026-09-11 22:18:00.0",
+      "evtsourcedet": null,
+      "userid": "DP557"
+    },
+    {
+      "emp_name": "SAAD ABDULRAHIM GANGAT",
+      "edatetime": "2026-09-10 17:45:18.0",
+      "evtsourcedet": null,
+      "userid": "DP554"
+    },
+    {
+      "emp_name": "SAAD ABDULRAHIM GANGAT",
+      "edatetime": "2026-09-10 22:57:21.0",
+      "evtsourcedet": null,
+      "userid": "DP554"
+    },
+    {
+      "emp_name": "SAAD ABDULRAHIM GANGAT",
+      "edatetime": "2026-09-11 13:54:12.0",
+      "evtsourcedet": null,
+      "userid": "DP554"
+    },
+    {
+      "emp_name": "SAAD ABDULRAHIM GANGAT",
+      "edatetime": "2026-09-11 23:13:15.0",
+      "evtsourcedet": null,
+      "userid": "DP554"
+    },
+    {
+      "emp_name": "YATHARTH BHATIA",
+      "edatetime": "2026-09-10 12:42:43.0",
+      "evtsourcedet": null,
+      "userid": "DP555"
+    },
+    {
+      "emp_name": "YATHARTH BHATIA",
+      "edatetime": "2026-09-10 22:29:53.0",
+      "evtsourcedet": null,
+      "userid": "DP555"
+    },
+    {
+      "emp_name": "YATHARTH BHATIA",
+      "edatetime": "2026-09-11 12:42:48.0",
+      "evtsourcedet": null,
+      "userid": "DP555"
+    },
+    {
+      "emp_name": "YATHARTH BHATIA",
+      "edatetime": "2026-09-11 22:30:30.0",
+      "evtsourcedet": null,
+      "userid": "DP555"
+    },
+    {
+      "emp_name": "ABHI LALJIBHAI MAKWANA",
+      "edatetime": "2026-09-10 14:48:28.0",
+      "evtsourcedet": null,
+      "userid": "DP580"
+    },
+    {
+      "emp_name": "ABHI LALJIBHAI MAKWANA",
+      "edatetime": "2026-09-10 23:49:31.0",
+      "evtsourcedet": null,
+      "userid": "DP580"
+    },
+    {
+      "emp_name": "ABHI LALJIBHAI MAKWANA",
+      "edatetime": "2026-09-11 12:40:39.0",
+      "evtsourcedet": null,
+      "userid": "DP580"
+    },
+    {
+      "emp_name": "ABHI LALJIBHAI MAKWANA",
+      "edatetime": "2026-09-11 22:09:10.0",
+      "evtsourcedet": null,
+      "userid": "DP580"
+    },
+    {
+      "emp_name": "HARSHIT KHARADI",
+      "edatetime": "2026-09-10 19:07:39.0",
+      "evtsourcedet": null,
+      "userid": "DP574"
+    },
+    {
+      "emp_name": "HARSHIT KHARADI",
+      "edatetime": "2026-09-11 00:28:45.0",
+      "evtsourcedet": null,
+      "userid": "DP574"
+    },
+    {
+      "emp_name": "HARSHIT KHARADI",
+      "edatetime": "2026-09-11 15:06:22.0",
+      "evtsourcedet": null,
+      "userid": "DP574"
+    },
+    {
+      "emp_name": "MEET HEMANTKUMAR PARMAR",
+      "edatetime": "2026-09-10 13:46:00.0",
+      "evtsourcedet": null,
+      "userid": "DP578"
+    },
+    {
+      "emp_name": "MEET HEMANTKUMAR PARMAR",
+      "edatetime": "2026-09-10 23:24:03.0",
+      "evtsourcedet": null,
+      "userid": "DP578"
+    },
+    {
+      "emp_name": "MEET HEMANTKUMAR PARMAR",
+      "edatetime": "2026-09-11 13:47:47.0",
+      "evtsourcedet": null,
+      "userid": "DP578"
+    },
+    {
+      "emp_name": "MEET HEMANTKUMAR PARMAR",
+      "edatetime": "2026-09-11 23:18:22.0",
+      "evtsourcedet": null,
+      "userid": "DP578"
+    },
+    {
+      "emp_name": "JONGA KONA PURTY",
+      "edatetime": "2026-09-10 07:38:05.0",
+      "evtsourcedet": null,
+      "userid": "BA10"
+    },
+    {
+      "emp_name": "JONGA KONA PURTY",
+      "edatetime": "2026-09-10 08:52:18.0",
+      "evtsourcedet": null,
+      "userid": "BA10"
+    },
+    {
+      "emp_name": "JONGA KONA PURTY",
+      "edatetime": "2026-09-10 17:32:50.0",
+      "evtsourcedet": null,
+      "userid": "BA10"
+    },
+    {
+      "emp_name": "JONGA KONA PURTY",
+      "edatetime": "2026-09-11 07:33:56.0",
+      "evtsourcedet": null,
+      "userid": "BA10"
+    },
+    {
+      "emp_name": "JONGA KONA PURTY",
+      "edatetime": "2026-09-11 16:48:27.0",
+      "evtsourcedet": null,
+      "userid": "BA10"
+    },
+    {
+      "emp_name": "PINKI SUBHASH CHANDRA PINGUA",
+      "edatetime": "2026-09-10 12:10:03.0",
+      "evtsourcedet": null,
+      "userid": "BA16"
+    },
+    {
+      "emp_name": "PINKI SUBHASH CHANDRA PINGUA",
+      "edatetime": "2026-09-10 22:25:46.0",
+      "evtsourcedet": null,
+      "userid": "BA16"
+    },
+    {
+      "emp_name": "PINKI SUBHASH CHANDRA PINGUA",
+      "edatetime": "2026-09-11 11:57:22.0",
+      "evtsourcedet": null,
+      "userid": "BA16"
+    },
+    {
+      "emp_name": "PINKI SUBHASH CHANDRA PINGUA",
+      "edatetime": "2026-09-11 22:39:13.0",
+      "evtsourcedet": null,
+      "userid": "BA16"
+    },
+    {
+      "emp_name": "PURNAMI ARUN NAIK",
+      "edatetime": "2026-09-10 12:09:50.0",
+      "evtsourcedet": null,
+      "userid": "BA18"
+    },
+    {
+      "emp_name": "PURNAMI ARUN NAIK",
+      "edatetime": "2026-09-10 22:26:00.0",
+      "evtsourcedet": null,
+      "userid": "BA18"
+    },
+    {
+      "emp_name": "PURNAMI ARUN NAIK",
+      "edatetime": "2026-09-11 16:39:19.0",
+      "evtsourcedet": null,
+      "userid": "BA18"
+    },
+    {
+      "emp_name": "PURNAMI ARUN NAIK",
+      "edatetime": "2026-09-11 22:39:39.0",
+      "evtsourcedet": null,
+      "userid": "BA18"
+    },
+    {
+      "emp_name": "SONI KUMARI PACHU PRASAD MEHTA",
+      "edatetime": "2026-09-10 11:34:29.0",
+      "evtsourcedet": null,
+      "userid": "BA24"
+    },
+    {
+      "emp_name": "SONI KUMARI PACHU PRASAD MEHTA",
+      "edatetime": "2026-09-10 23:33:10.0",
+      "evtsourcedet": null,
+      "userid": "BA24"
+    },
+    {
+      "emp_name": "SONI KUMARI PACHU PRASAD MEHTA",
+      "edatetime": "2026-09-11 11:22:09.0",
+      "evtsourcedet": null,
+      "userid": "BA24"
+    },
+    {
+      "emp_name": "SONI KUMARI PACHU PRASAD MEHTA",
+      "edatetime": "2026-09-11 23:59:19.0",
+      "evtsourcedet": null,
+      "userid": "BA24"
+    },
+    {
+      "emp_name": "ANITA BABURAM HANSDA",
+      "edatetime": "2026-09-10 08:32:28.0",
+      "evtsourcedet": null,
+      "userid": "BA1"
+    },
+    {
+      "emp_name": "ANITA BABURAM HANSDA",
+      "edatetime": "2026-09-10 17:33:45.0",
+      "evtsourcedet": null,
+      "userid": "BA1"
+    },
+    {
+      "emp_name": "ANITA BABURAM HANSDA",
+      "edatetime": "2026-09-11 08:53:31.0",
+      "evtsourcedet": null,
+      "userid": "BA1"
+    },
+    {
+      "emp_name": "ANITA BABURAM HANSDA",
+      "edatetime": "2026-09-11 18:02:32.0",
+      "evtsourcedet": null,
+      "userid": "BA1"
+    },
+    {
+      "emp_name": "ANCHAL KUMARI SUNIL ORAONI",
+      "edatetime": "2026-09-10 12:17:49.0",
+      "evtsourcedet": null,
+      "userid": "BA2"
+    },
+    {
+      "emp_name": "ANCHAL KUMARI SUNIL ORAONI",
+      "edatetime": "2026-09-10 22:21:02.0",
+      "evtsourcedet": null,
+      "userid": "BA2"
+    },
+    {
+      "emp_name": "ANCHAL KUMARI SUNIL ORAONI",
+      "edatetime": "2026-09-11 22:20:15.0",
+      "evtsourcedet": null,
+      "userid": "BA2"
+    },
+    {
+      "emp_name": "ANURITIKA VIMAL TOPPO",
+      "edatetime": "2026-09-10 07:36:09.0",
+      "evtsourcedet": null,
+      "userid": "BA3"
+    },
+    {
+      "emp_name": "ANURITIKA VIMAL TOPPO",
+      "edatetime": "2026-09-10 17:33:06.0",
+      "evtsourcedet": null,
+      "userid": "BA3"
+    },
+    {
+      "emp_name": "ANURITIKA VIMAL TOPPO",
+      "edatetime": "2026-09-11 07:32:50.0",
+      "evtsourcedet": null,
+      "userid": "BA3"
+    },
+    {
+      "emp_name": "ANURITIKA VIMAL TOPPO",
+      "edatetime": "2026-09-11 16:45:52.0",
+      "evtsourcedet": null,
+      "userid": "BA3"
+    },
+    {
+      "emp_name": "BELESI MUNSHI TUDU",
+      "edatetime": "2026-09-10 13:00:35.0",
+      "evtsourcedet": null,
+      "userid": "BA4"
+    },
+    {
+      "emp_name": "BELESI MUNSHI TUDU",
+      "edatetime": "2026-09-10 23:02:45.0",
+      "evtsourcedet": null,
+      "userid": "BA4"
+    },
+    {
+      "emp_name": "BELESI MUNSHI TUDU",
+      "edatetime": "2026-09-11 11:47:15.0",
+      "evtsourcedet": null,
+      "userid": "BA4"
+    },
+    {
+      "emp_name": "BELESI MUNSHI TUDU",
+      "edatetime": "2026-09-11 22:50:08.0",
+      "evtsourcedet": null,
+      "userid": "BA4"
+    },
+    {
+      "emp_name": "GAYTRI SANTOSH KARUA",
+      "edatetime": "2026-09-10 14:37:26.0",
+      "evtsourcedet": null,
+      "userid": "BA5"
+    },
+    {
+      "emp_name": "GAYTRI SANTOSH KARUA",
+      "edatetime": "2026-09-10 23:28:12.0",
+      "evtsourcedet": null,
+      "userid": "BA5"
+    },
+    {
+      "emp_name": "GAYTRI SANTOSH KARUA",
+      "edatetime": "2026-09-11 14:05:28.0",
+      "evtsourcedet": null,
+      "userid": "BA5"
+    },
+    {
+      "emp_name": "GAYTRI SANTOSH KARUA",
+      "edatetime": "2026-09-11 23:49:50.0",
+      "evtsourcedet": null,
+      "userid": "BA5"
+    },
+    {
+      "emp_name": "SUKHMATI RUP SINGH PINGUA",
+      "edatetime": "2026-09-10 12:17:54.0",
+      "evtsourcedet": null,
+      "userid": "BA25"
+    },
+    {
+      "emp_name": "SUKHMATI RUP SINGH PINGUA",
+      "edatetime": "2026-09-10 22:22:24.0",
+      "evtsourcedet": null,
+      "userid": "BA25"
+    },
+    {
+      "emp_name": "SUKHMATI RUP SINGH PINGUA",
+      "edatetime": "2026-09-11 12:09:49.0",
+      "evtsourcedet": null,
+      "userid": "BA25"
+    },
+    {
+      "emp_name": "SUKHMATI RUP SINGH PINGUA",
+      "edatetime": "2026-09-11 22:16:24.0",
+      "evtsourcedet": null,
+      "userid": "BA25"
+    },
+    {
+      "emp_name": "SUMAN CHHOTA KALUNDIA",
+      "edatetime": "2026-09-10 07:35:52.0",
+      "evtsourcedet": null,
+      "userid": "BA26"
+    },
+    {
+      "emp_name": "SUMAN CHHOTA KALUNDIA",
+      "edatetime": "2026-09-10 17:33:18.0",
+      "evtsourcedet": null,
+      "userid": "BA26"
+    },
+    {
+      "emp_name": "SUMAN CHHOTA KALUNDIA",
+      "edatetime": "2026-09-11 07:32:35.0",
+      "evtsourcedet": null,
+      "userid": "BA26"
+    },
+    {
+      "emp_name": "SUMAN CHHOTA KALUNDIA",
+      "edatetime": "2026-09-11 16:45:57.0",
+      "evtsourcedet": null,
+      "userid": "BA26"
+    },
+    {
+      "emp_name": "SARITA BANRA",
+      "edatetime": "2026-09-10 07:36:14.0",
+      "evtsourcedet": null,
+      "userid": "BA31"
+    },
+    {
+      "emp_name": "SARITA BANRA",
+      "edatetime": "2026-09-10 17:32:28.0",
+      "evtsourcedet": null,
+      "userid": "BA31"
+    },
+    {
+      "emp_name": "SARITA BANRA",
+      "edatetime": "2026-09-11 07:32:46.0",
+      "evtsourcedet": null,
+      "userid": "BA31"
+    },
+    {
+      "emp_name": "SARITA BANRA",
+      "edatetime": "2026-09-11 16:48:15.0",
+      "evtsourcedet": null,
+      "userid": "BA31"
+    },
+    {
+      "emp_name": "UGRASEN RAJMOHAN NISAD",
+      "edatetime": "2026-09-10 14:42:28.0",
+      "evtsourcedet": null,
+      "userid": "DP507"
+    },
+    {
+      "emp_name": "UGRASEN RAJMOHAN NISAD",
+      "edatetime": "2026-09-10 14:42:29.0",
+      "evtsourcedet": null,
+      "userid": "DP507"
+    },
+    {
+      "emp_name": "UGRASEN RAJMOHAN NISAD",
+      "edatetime": "2026-09-10 15:04:52.0",
+      "evtsourcedet": null,
+      "userid": "DP507"
+    },
+    {
+      "emp_name": "UGRASEN RAJMOHAN NISAD",
+      "edatetime": "2026-09-10 15:04:53.0",
+      "evtsourcedet": null,
+      "userid": "DP507"
+    },
+    {
+      "emp_name": "UGRASEN RAJMOHAN NISAD",
+      "edatetime": "2026-09-10 15:41:00.0",
+      "evtsourcedet": null,
+      "userid": "DP507"
+    },
+    {
+      "emp_name": "ASRITA BIRSA KUJUR",
+      "edatetime": "2026-09-10 08:32:39.0",
+      "evtsourcedet": null,
+      "userid": "DP558"
+    },
+    {
+      "emp_name": "ASRITA BIRSA KUJUR",
+      "edatetime": "2026-09-10 17:33:48.0",
+      "evtsourcedet": null,
+      "userid": "DP558"
+    },
+    {
+      "emp_name": "ASRITA BIRSA KUJUR",
+      "edatetime": "2026-09-11 08:53:41.0",
+      "evtsourcedet": null,
+      "userid": "DP558"
+    },
+    {
+      "emp_name": "ASRITA BIRSA KUJUR",
+      "edatetime": "2026-09-11 08:53:43.0",
+      "evtsourcedet": null,
+      "userid": "DP558"
+    },
+    {
+      "emp_name": "ASRITA BIRSA KUJUR",
+      "edatetime": "2026-09-11 18:02:41.0",
+      "evtsourcedet": null,
+      "userid": "DP558"
+    },
+    {
+      "emp_name": "ASRITA BIRSA KUJUR",
+      "edatetime": "2026-09-11 18:02:44.0",
+      "evtsourcedet": null,
+      "userid": "DP558"
+    },
+    {
+      "emp_name": "ASRITA BIRSA KUJUR",
+      "edatetime": "2026-09-11 18:02:53.0",
+      "evtsourcedet": null,
+      "userid": "DP558"
+    },
+    {
+      "emp_name": "Shrawan Kumar Mahara",
+      "edatetime": "2026-09-10 11:59:30.0",
+      "evtsourcedet": null,
+      "userid": "OTH52"
+    },
+    {
+      "emp_name": "Shrawan Kumar Mahara",
+      "edatetime": "2026-09-10 21:29:39.0",
+      "evtsourcedet": null,
+      "userid": "OTH52"
+    },
+    {
+      "emp_name": "Shrawan Kumar Mahara",
+      "edatetime": "2026-09-11 15:03:31.0",
+      "evtsourcedet": null,
+      "userid": "OTH52"
+    },
+    {
+      "emp_name": "Shrawan Kumar Mahara",
+      "edatetime": "2026-09-11 23:55:32.0",
+      "evtsourcedet": null,
+      "userid": "OTH52"
+    },
+    {
+      "emp_name": "SHUBHAM ALPESH PATEL",
+      "edatetime": "2026-09-10 12:18:12.0",
+      "evtsourcedet": null,
+      "userid": "DP541"
+    },
+    {
+      "emp_name": "SHUBHAM ALPESH PATEL",
+      "edatetime": "2026-09-10 22:03:11.0",
+      "evtsourcedet": null,
+      "userid": "DP541"
+    },
+    {
+      "emp_name": "SHUBHAM ALPESH PATEL",
+      "edatetime": "2026-09-11 13:41:59.0",
+      "evtsourcedet": null,
+      "userid": "DP541"
+    },
+    {
+      "emp_name": "SHUBHAM ALPESH PATEL",
+      "edatetime": "2026-09-11 23:09:24.0",
+      "evtsourcedet": null,
+      "userid": "DP541"
+    },
+    {
+      "emp_name": "NIRAJ RAMBHAVAN KAHAR",
+      "edatetime": "2026-09-10 08:25:01.0",
+      "evtsourcedet": null,
+      "userid": "DP575"
+    },
+    {
+      "emp_name": "NIRAJ RAMBHAVAN KAHAR",
+      "edatetime": "2026-09-10 19:52:35.0",
+      "evtsourcedet": null,
+      "userid": "DP575"
+    },
+    {
+      "emp_name": "NIRAJ RAMBHAVAN KAHAR",
+      "edatetime": "2026-09-11 08:52:23.0",
+      "evtsourcedet": null,
+      "userid": "DP575"
+    },
+    {
+      "emp_name": "NIRAJ RAMBHAVAN KAHAR",
+      "edatetime": "2026-09-11 17:40:13.0",
+      "evtsourcedet": null,
+      "userid": "DP575"
+    },
+    {
+      "emp_name": "KRISHNA RAJUBHAI DAMOR",
+      "edatetime": "2026-09-10 14:30:52.0",
+      "evtsourcedet": null,
+      "userid": "DP576"
+    },
+    {
+      "emp_name": "KRISHNA RAJUBHAI DAMOR",
+      "edatetime": "2026-09-10 23:38:58.0",
+      "evtsourcedet": null,
+      "userid": "DP576"
+    },
+    {
+      "emp_name": "KRISHNA RAJUBHAI DAMOR",
+      "edatetime": "2026-09-11 14:25:28.0",
+      "evtsourcedet": null,
+      "userid": "DP576"
+    },
+    {
+      "emp_name": "KRISHNA RAJUBHAI DAMOR",
+      "edatetime": "2026-09-11 23:56:20.0",
+      "evtsourcedet": null,
+      "userid": "DP576"
+    },
+    {
+      "emp_name": "LALIT VANA KHAIRNAR",
+      "edatetime": "2026-09-10 00:03:55.0",
+      "evtsourcedet": null,
+      "userid": "DP577"
+    },
+    {
+      "emp_name": "LALIT VANA KHAIRNAR",
+      "edatetime": "2026-09-10 14:19:56.0",
+      "evtsourcedet": null,
+      "userid": "DP577"
+    },
+    {
+      "emp_name": "LALIT VANA KHAIRNAR",
+      "edatetime": "2026-09-10 14:55:55.0",
+      "evtsourcedet": null,
+      "userid": "DP577"
+    },
+    {
+      "emp_name": "LALIT VANA KHAIRNAR",
+      "edatetime": "2026-09-10 14:56:41.0",
+      "evtsourcedet": null,
+      "userid": "DP577"
+    },
+    {
+      "emp_name": "LALIT VANA KHAIRNAR",
+      "edatetime": "2026-09-10 23:57:28.0",
+      "evtsourcedet": null,
+      "userid": "DP577"
+    },
+    {
+      "emp_name": "LALIT VANA KHAIRNAR",
+      "edatetime": "2026-09-11 14:19:09.0",
+      "evtsourcedet": null,
+      "userid": "DP577"
+    },
+    {
+      "emp_name": "LALIT VANA KHAIRNAR",
+      "edatetime": "2026-09-11 14:21:48.0",
+      "evtsourcedet": null,
+      "userid": "DP577"
+    },
+    {
+      "emp_name": "VISHAL BHAGUBHAI PATEL",
+      "edatetime": "2026-09-11 09:05:03.0",
+      "evtsourcedet": null,
+      "userid": "DP579"
+    },
+    {
+      "emp_name": "VISHAL BHAGUBHAI PATEL",
+      "edatetime": "2026-09-11 18:34:08.0",
+      "evtsourcedet": null,
+      "userid": "DP579"
+    },
+    {
+      "emp_name": "Binay Soren",
+      "edatetime": "2026-09-10 00:16:37.0",
+      "evtsourcedet": null,
+      "userid": "OTH65"
+    },
+    {
+      "emp_name": "Binay Soren",
+      "edatetime": "2026-09-11 14:40:31.0",
+      "evtsourcedet": null,
+      "userid": "OTH65"
+    },
+    {
+      "emp_name": "sonu kumar",
+      "edatetime": "2026-09-11 14:37:33.0",
+      "evtsourcedet": null,
+      "userid": "LAL90"
+    },
+    {
+      "emp_name": "sonu kumar",
+      "edatetime": "2026-09-11 23:55:16.0",
+      "evtsourcedet": null,
+      "userid": "LAL90"
+    },
+    {
+      "emp_name": "ANKITA SINGH",
+      "edatetime": "2026-09-11 07:55:43.0",
+      "evtsourcedet": null,
+      "userid": "DP261"
+    },
+    {
+      "emp_name": "ANKITA SINGH",
+      "edatetime": "2026-09-11 17:24:13.0",
+      "evtsourcedet": null,
+      "userid": "DP261"
+    },
+    {
+      "emp_name": "AJAY CHETANBHAI BILWAL",
+      "edatetime": "2026-09-10 12:56:13.0",
+      "evtsourcedet": null,
+      "userid": "DP125"
+    },
+    {
+      "emp_name": "AJAY CHETANBHAI BILWAL",
+      "edatetime": "2026-09-10 22:37:31.0",
+      "evtsourcedet": null,
+      "userid": "DP125"
+    },
+    {
+      "emp_name": "AJAY CHETANBHAI BILWAL",
+      "edatetime": "2026-09-11 11:46:57.0",
+      "evtsourcedet": null,
+      "userid": "DP125"
+    },
+    {
+      "emp_name": "AJAY CHETANBHAI BILWAL",
+      "edatetime": "2026-09-11 21:56:48.0",
+      "evtsourcedet": null,
+      "userid": "DP125"
+    },
+    {
+      "emp_name": "PANKAJ PATIDAR",
+      "edatetime": "2026-09-10 12:44:20.0",
+      "evtsourcedet": null,
+      "userid": "DP183"
+    },
+    {
+      "emp_name": "PANKAJ PATIDAR",
+      "edatetime": "2026-09-11 00:11:38.0",
+      "evtsourcedet": null,
+      "userid": "DP183"
+    },
+    {
+      "emp_name": "PANKAJ PATIDAR",
+      "edatetime": "2026-09-11 14:58:33.0",
+      "evtsourcedet": null,
+      "userid": "DP183"
+    },
+    {
+      "emp_name": "KAKLOTAR VIVEK SURESHBHAI",
+      "edatetime": "2026-09-10 13:00:48.0",
+      "evtsourcedet": null,
+      "userid": "DP184"
+    },
+    {
+      "emp_name": "KAKLOTAR VIVEK SURESHBHAI",
+      "edatetime": "2026-09-10 21:46:58.0",
+      "evtsourcedet": null,
+      "userid": "DP184"
+    },
+    {
+      "emp_name": "KAKLOTAR VIVEK SURESHBHAI",
+      "edatetime": "2026-09-11 12:02:09.0",
+      "evtsourcedet": null,
+      "userid": "DP184"
+    },
+    {
+      "emp_name": "KAKLOTAR VIVEK SURESHBHAI",
+      "edatetime": "2026-09-11 20:52:12.0",
+      "evtsourcedet": null,
+      "userid": "DP184"
+    },
+    {
+      "emp_name": "DARSHNA SURESHBHAI JADAV",
+      "edatetime": "2026-09-10 10:21:03.0",
+      "evtsourcedet": null,
+      "userid": "DP197"
+    },
+    {
+      "emp_name": "DARSHNA SURESHBHAI JADAV",
+      "edatetime": "2026-09-10 18:51:28.0",
+      "evtsourcedet": null,
+      "userid": "DP197"
+    },
+    {
+      "emp_name": "DARSHNA SURESHBHAI JADAV",
+      "edatetime": "2026-09-11 10:25:09.0",
+      "evtsourcedet": null,
+      "userid": "DP197"
+    },
+    {
+      "emp_name": "DARSHNA SURESHBHAI JADAV",
+      "edatetime": "2026-09-11 18:54:26.0",
+      "evtsourcedet": null,
+      "userid": "DP197"
+    },
+    {
+      "emp_name": "AABHADEVI RAJEEV KUMAR SINGH",
+      "edatetime": "2026-09-10 09:07:49.0",
+      "evtsourcedet": null,
+      "userid": "DP199"
+    },
+    {
+      "emp_name": "AABHADEVI RAJEEV KUMAR SINGH",
+      "edatetime": "2026-09-10 18:14:59.0",
+      "evtsourcedet": null,
+      "userid": "DP199"
+    },
+    {
+      "emp_name": "AABHADEVI RAJEEV KUMAR SINGH",
+      "edatetime": "2026-09-11 09:03:45.0",
+      "evtsourcedet": null,
+      "userid": "DP199"
+    },
+    {
+      "emp_name": "AABHADEVI RAJEEV KUMAR SINGH",
+      "edatetime": "2026-09-11 18:19:33.0",
+      "evtsourcedet": null,
+      "userid": "DP199"
+    },
+    {
+      "emp_name": "BIPIN BHAMTIYABHAI VALVI",
+      "edatetime": "2026-09-10 13:42:08.0",
+      "evtsourcedet": null,
+      "userid": "DP201"
+    },
+    {
+      "emp_name": "BIPIN BHAMTIYABHAI VALVI",
+      "edatetime": "2026-09-10 23:26:37.0",
+      "evtsourcedet": null,
+      "userid": "DP201"
+    },
+    {
+      "emp_name": "BIPIN BHAMTIYABHAI VALVI",
+      "edatetime": "2026-09-11 12:47:24.0",
+      "evtsourcedet": null,
+      "userid": "DP201"
+    },
+    {
+      "emp_name": "BIPIN BHAMTIYABHAI VALVI",
+      "edatetime": "2026-09-11 22:11:23.0",
+      "evtsourcedet": null,
+      "userid": "DP201"
+    },
+    {
+      "emp_name": "KANIKA SARKAR",
+      "edatetime": "2026-09-10 08:10:14.0",
+      "evtsourcedet": null,
+      "userid": "DP254"
+    },
+    {
+      "emp_name": "KANIKA SARKAR",
+      "edatetime": "2026-09-10 17:08:22.0",
+      "evtsourcedet": null,
+      "userid": "DP254"
+    },
+    {
+      "emp_name": "KANIKA SARKAR",
+      "edatetime": "2026-09-11 08:04:59.0",
+      "evtsourcedet": null,
+      "userid": "DP254"
+    },
+    {
+      "emp_name": "KANIKA SARKAR",
+      "edatetime": "2026-09-11 17:25:17.0",
+      "evtsourcedet": null,
+      "userid": "DP254"
+    },
+    {
+      "emp_name": "DUBEY DEEPAK VINOD",
+      "edatetime": "2026-09-10 09:07:11.0",
+      "evtsourcedet": null,
+      "userid": "DP307"
+    },
+    {
+      "emp_name": "DUBEY DEEPAK VINOD",
+      "edatetime": "2026-09-10 09:07:11.0",
+      "evtsourcedet": null,
+      "userid": "DP307"
+    },
+    {
+      "emp_name": "DUBEY DEEPAK VINOD",
+      "edatetime": "2026-09-10 19:10:21.0",
+      "evtsourcedet": null,
+      "userid": "DP307"
+    },
+    {
+      "emp_name": "DUBEY DEEPAK VINOD",
+      "edatetime": "2026-09-10 19:10:53.0",
+      "evtsourcedet": null,
+      "userid": "DP307"
+    },
+    {
+      "emp_name": "DUBEY DEEPAK VINOD",
+      "edatetime": "2026-09-11 08:57:17.0",
+      "evtsourcedet": null,
+      "userid": "DP307"
+    },
+    {
+      "emp_name": "DUBEY DEEPAK VINOD",
+      "edatetime": "2026-09-11 19:14:14.0",
+      "evtsourcedet": null,
+      "userid": "DP307"
+    },
+    {
+      "emp_name": "PATEL MOHAMMAD MOIN SARFARAZ",
+      "edatetime": "2026-09-10 14:25:52.0",
+      "evtsourcedet": null,
+      "userid": "DP471"
+    },
+    {
+      "emp_name": "PATEL MOHAMMAD MOIN SARFARAZ",
+      "edatetime": "2026-09-10 23:35:03.0",
+      "evtsourcedet": null,
+      "userid": "DP471"
+    },
+    {
+      "emp_name": "PATEL MOHAMMAD MOIN SARFARAZ",
+      "edatetime": "2026-09-11 14:15:55.0",
+      "evtsourcedet": null,
+      "userid": "DP471"
+    },
+    {
+      "emp_name": "PATEL MOHAMMAD MOIN SARFARAZ",
+      "edatetime": "2026-09-11 23:36:07.0",
+      "evtsourcedet": null,
+      "userid": "DP471"
+    },
+    {
+      "emp_name": "THAKOR ANJANABEN RAMANBHAI",
+      "edatetime": "2026-09-10 00:16:26.0",
+      "evtsourcedet": null,
+      "userid": "DP336"
+    },
+    {
+      "emp_name": "THAKOR ANJANABEN RAMANBHAI",
+      "edatetime": "2026-09-10 13:20:50.0",
+      "evtsourcedet": null,
+      "userid": "DP336"
+    },
+    {
+      "emp_name": "THAKOR ANJANABEN RAMANBHAI",
+      "edatetime": "2026-09-10 22:37:13.0",
+      "evtsourcedet": null,
+      "userid": "DP336"
+    },
+    {
+      "emp_name": "THAKOR ANJANABEN RAMANBHAI",
+      "edatetime": "2026-09-11 12:45:21.0",
+      "evtsourcedet": null,
+      "userid": "DP336"
+    },
+    {
+      "emp_name": "THAKOR ANJANABEN RAMANBHAI",
+      "edatetime": "2026-09-11 22:06:06.0",
+      "evtsourcedet": null,
+      "userid": "DP336"
+    },
+    {
+      "emp_name": "CHANDNI SHIVNATH ORAON",
+      "edatetime": "2026-09-10 08:32:32.0",
+      "evtsourcedet": null,
+      "userid": "DP501"
+    },
+    {
+      "emp_name": "CHANDNI SHIVNATH ORAON",
+      "edatetime": "2026-09-10 08:32:32.0",
+      "evtsourcedet": null,
+      "userid": "DP501"
+    },
+    {
+      "emp_name": "CHANDNI SHIVNATH ORAON",
+      "edatetime": "2026-09-10 17:32:42.0",
+      "evtsourcedet": null,
+      "userid": "DP501"
+    },
+    {
+      "emp_name": "CHANDNI SHIVNATH ORAON",
+      "edatetime": "2026-09-11 08:53:46.0",
+      "evtsourcedet": null,
+      "userid": "DP501"
+    },
+    {
+      "emp_name": "CHANDNI SHIVNATH ORAON",
+      "edatetime": "2026-09-11 08:53:50.0",
+      "evtsourcedet": null,
+      "userid": "DP501"
+    },
+    {
+      "emp_name": "CHANDNI SHIVNATH ORAON",
+      "edatetime": "2026-09-11 18:04:23.0",
+      "evtsourcedet": null,
+      "userid": "DP501"
+    },
+    {
+      "emp_name": "BADRIRAM MAHARA",
+      "edatetime": "2026-09-10 12:18:06.0",
+      "evtsourcedet": null,
+      "userid": "LAL12"
+    },
+    {
+      "emp_name": "BADRIRAM MAHARA",
+      "edatetime": "2026-09-10 22:15:07.0",
+      "evtsourcedet": null,
+      "userid": "LAL12"
+    },
+    {
+      "emp_name": "BADRIRAM MAHARA",
+      "edatetime": "2026-09-11 12:11:07.0",
+      "evtsourcedet": null,
+      "userid": "LAL12"
+    },
+    {
+      "emp_name": "BADRIRAM MAHARA",
+      "edatetime": "2026-09-11 22:27:21.0",
+      "evtsourcedet": null,
+      "userid": "LAL12"
+    },
+    {
+      "emp_name": "BADRIRAM MAHARA",
+      "edatetime": "2026-09-11 22:27:31.0",
+      "evtsourcedet": null,
+      "userid": "LAL12"
+    },
+    {
+      "emp_name": "SANJIT KUMAR",
+      "edatetime": "2026-09-11 14:19:22.0",
+      "evtsourcedet": null,
+      "userid": "LAL36"
+    },
+    {
+      "emp_name": "CHAUDHARI AYUSH",
+      "edatetime": "2026-09-10 13:50:15.0",
+      "evtsourcedet": null,
+      "userid": "DP351"
+    },
+    {
+      "emp_name": "CHAUDHARI AYUSH",
+      "edatetime": "2026-09-10 23:13:15.0",
+      "evtsourcedet": null,
+      "userid": "DP351"
+    },
+    {
+      "emp_name": "CHAUDHARI AYUSH",
+      "edatetime": "2026-09-11 13:49:17.0",
+      "evtsourcedet": null,
+      "userid": "DP351"
+    },
+    {
+      "emp_name": "CHAUDHARI AYUSH",
+      "edatetime": "2026-09-11 23:08:46.0",
+      "evtsourcedet": null,
+      "userid": "DP351"
+    },
+    {
+      "emp_name": "KRISHNA KUMAR RAM",
+      "edatetime": "2026-09-10 12:08:52.0",
+      "evtsourcedet": null,
+      "userid": "LAL19"
+    },
+    {
+      "emp_name": "KRISHNA KUMAR RAM",
+      "edatetime": "2026-09-10 22:27:03.0",
+      "evtsourcedet": null,
+      "userid": "LAL19"
+    },
+    {
+      "emp_name": "KRISHNA KUMAR RAM",
+      "edatetime": "2026-09-10 22:27:07.0",
+      "evtsourcedet": null,
+      "userid": "LAL19"
+    },
+    {
+      "emp_name": "KRISHNA KUMAR RAM",
+      "edatetime": "2026-09-11 11:56:43.0",
+      "evtsourcedet": null,
+      "userid": "LAL19"
+    },
+    {
+      "emp_name": "KRISHNA KUMAR RAM",
+      "edatetime": "2026-09-11 22:39:18.0",
+      "evtsourcedet": null,
+      "userid": "LAL19"
+    },
+    {
+      "emp_name": "KRISHNA KUMAR RAM",
+      "edatetime": "2026-09-11 22:39:22.0",
+      "evtsourcedet": null,
+      "userid": "LAL19"
+    },
+    {
+      "emp_name": "ANITA GANESH RAM",
+      "edatetime": "2026-09-10 10:10:23.0",
+      "evtsourcedet": null,
+      "userid": "DP429"
+    },
+    {
+      "emp_name": "ANITA GANESH RAM",
+      "edatetime": "2026-09-10 19:10:30.0",
+      "evtsourcedet": null,
+      "userid": "DP429"
+    },
+    {
+      "emp_name": "ANITA GANESH RAM",
+      "edatetime": "2026-09-10 19:10:33.0",
+      "evtsourcedet": null,
+      "userid": "DP429"
+    },
+    {
+      "emp_name": "ANITA GANESH RAM",
+      "edatetime": "2026-09-10 19:10:44.0",
+      "evtsourcedet": null,
+      "userid": "DP429"
+    },
+    {
+      "emp_name": "ANITA GANESH RAM",
+      "edatetime": "2026-09-10 19:10:50.0",
+      "evtsourcedet": null,
+      "userid": "DP429"
+    },
+    {
+      "emp_name": "ANITA GANESH RAM",
+      "edatetime": "2026-09-10 19:10:52.0",
+      "evtsourcedet": null,
+      "userid": "DP429"
+    },
+    {
+      "emp_name": "ANITA GANESH RAM",
+      "edatetime": "2026-09-11 09:58:51.0",
+      "evtsourcedet": null,
+      "userid": "DP429"
+    },
+    {
+      "emp_name": "ANITA GANESH RAM",
+      "edatetime": "2026-09-11 19:42:53.0",
+      "evtsourcedet": null,
+      "userid": "DP429"
+    },
+    {
+      "emp_name": "FARHAN AKIL AHMAD",
+      "edatetime": "2026-09-10 06:55:01.0",
+      "evtsourcedet": null,
+      "userid": "DP431"
+    },
+    {
+      "emp_name": "FARHAN AKIL AHMAD",
+      "edatetime": "2026-09-10 15:50:47.0",
+      "evtsourcedet": null,
+      "userid": "DP431"
+    },
+    {
+      "emp_name": "FARHAN AKIL AHMAD",
+      "edatetime": "2026-09-11 11:43:18.0",
+      "evtsourcedet": null,
+      "userid": "DP431"
+    },
+    {
+      "emp_name": "FARHAN AKIL AHMAD",
+      "edatetime": "2026-09-11 21:06:36.0",
+      "evtsourcedet": null,
+      "userid": "DP431"
+    },
+    {
+      "emp_name": "DIMMAR VARUN KUMAR",
+      "edatetime": "2026-09-10 13:50:22.0",
+      "evtsourcedet": null,
+      "userid": "DP432"
+    },
+    {
+      "emp_name": "DIMMAR VARUN KUMAR",
+      "edatetime": "2026-09-10 23:02:38.0",
+      "evtsourcedet": null,
+      "userid": "DP432"
+    },
+    {
+      "emp_name": "DIMMAR VARUN KUMAR",
+      "edatetime": "2026-09-11 12:22:08.0",
+      "evtsourcedet": null,
+      "userid": "DP432"
+    },
+    {
+      "emp_name": "DIMMAR VARUN KUMAR",
+      "edatetime": "2026-09-11 21:57:18.0",
+      "evtsourcedet": null,
+      "userid": "DP432"
+    },
+    {
+      "emp_name": "VANDANA KUMARI RAVISHANKAR",
+      "edatetime": "2026-09-11 07:21:09.0",
+      "evtsourcedet": null,
+      "userid": "DP435"
+    },
+    {
+      "emp_name": "VANDANA KUMARI RAVISHANKAR",
+      "edatetime": "2026-09-11 19:01:53.0",
+      "evtsourcedet": null,
+      "userid": "DP435"
+    },
+    {
+      "emp_name": "JAYSHREE SUKHLAL PINGUA",
+      "edatetime": "2026-09-10 11:53:47.0",
+      "evtsourcedet": null,
+      "userid": "BA8"
+    },
+    {
+      "emp_name": "JAYSHREE SUKHLAL PINGUA",
+      "edatetime": "2026-09-11 11:39:56.0",
+      "evtsourcedet": null,
+      "userid": "BA8"
+    },
+    {
+      "emp_name": "JAYSHREE SUKHLAL PINGUA",
+      "edatetime": "2026-09-11 22:56:44.0",
+      "evtsourcedet": null,
+      "userid": "BA8"
+    },
+    {
+      "emp_name": "JEMA KITAMOHAN SINKU",
+      "edatetime": "2026-09-10 11:54:02.0",
+      "evtsourcedet": null,
+      "userid": "BA9"
+    },
+    {
+      "emp_name": "JEMA KITAMOHAN SINKU",
+      "edatetime": "2026-09-10 23:01:09.0",
+      "evtsourcedet": null,
+      "userid": "BA9"
+    },
+    {
+      "emp_name": "JEMA KITAMOHAN SINKU",
+      "edatetime": "2026-09-11 11:41:44.0",
+      "evtsourcedet": null,
+      "userid": "BA9"
+    },
+    {
+      "emp_name": "JEMA KITAMOHAN SINKU",
+      "edatetime": "2026-09-11 22:53:22.0",
+      "evtsourcedet": null,
+      "userid": "BA9"
+    },
+    {
+      "emp_name": "MANISHA RUPAI MURMU",
+      "edatetime": "2026-09-10 12:17:28.0",
+      "evtsourcedet": null,
+      "userid": "BA12"
+    },
+    {
+      "emp_name": "MANISHA RUPAI MURMU",
+      "edatetime": "2026-09-10 22:23:37.0",
+      "evtsourcedet": null,
+      "userid": "BA12"
+    },
+    {
+      "emp_name": "MANISHA RUPAI MURMU",
+      "edatetime": "2026-09-11 12:13:57.0",
+      "evtsourcedet": null,
+      "userid": "BA12"
+    },
+    {
+      "emp_name": "MANISHA RUPAI MURMU",
+      "edatetime": "2026-09-11 22:17:14.0",
+      "evtsourcedet": null,
+      "userid": "BA12"
+    },
+    {
+      "emp_name": "PAULINA MANOJ MURMU",
+      "edatetime": "2026-09-10 12:17:43.0",
+      "evtsourcedet": null,
+      "userid": "BA15"
+    },
+    {
+      "emp_name": "PAULINA MANOJ MURMU",
+      "edatetime": "2026-09-10 22:16:41.0",
+      "evtsourcedet": null,
+      "userid": "BA15"
+    },
+    {
+      "emp_name": "PAULINA MANOJ MURMU",
+      "edatetime": "2026-09-11 12:06:03.0",
+      "evtsourcedet": null,
+      "userid": "BA15"
+    },
+    {
+      "emp_name": "PAULINA MANOJ MURMU",
+      "edatetime": "2026-09-11 22:13:54.0",
+      "evtsourcedet": null,
+      "userid": "BA15"
+    },
+    {
+      "emp_name": "PRATIMA BHUVNESHWAR SOREN",
+      "edatetime": "2026-09-10 08:32:28.0",
+      "evtsourcedet": null,
+      "userid": "BA17"
+    },
+    {
+      "emp_name": "PRATIMA BHUVNESHWAR SOREN",
+      "edatetime": "2026-09-10 17:33:47.0",
+      "evtsourcedet": null,
+      "userid": "BA17"
+    },
+    {
+      "emp_name": "PRATIMA BHUVNESHWAR SOREN",
+      "edatetime": "2026-09-11 08:53:45.0",
+      "evtsourcedet": null,
+      "userid": "BA17"
+    },
+    {
+      "emp_name": "PRATIMA BHUVNESHWAR SOREN",
+      "edatetime": "2026-09-11 18:00:06.0",
+      "evtsourcedet": null,
+      "userid": "BA17"
+    },
+    {
+      "emp_name": "SHAKUNTALA GUMDI BARI",
+      "edatetime": "2026-09-10 08:32:29.0",
+      "evtsourcedet": null,
+      "userid": "BA19"
+    },
+    {
+      "emp_name": "SHAKUNTALA GUMDI BARI",
+      "edatetime": "2026-09-10 17:47:23.0",
+      "evtsourcedet": null,
+      "userid": "BA19"
+    },
+    {
+      "emp_name": "SHAKUNTALA GUMDI BARI",
+      "edatetime": "2026-09-11 08:53:54.0",
+      "evtsourcedet": null,
+      "userid": "BA19"
+    },
+    {
+      "emp_name": "SHAKUNTALA GUMDI BARI",
+      "edatetime": "2026-09-11 18:04:28.0",
+      "evtsourcedet": null,
+      "userid": "BA19"
+    },
+    {
+      "emp_name": "SHEELA BIMAL HANSDA",
+      "edatetime": "2026-09-10 08:32:12.0",
+      "evtsourcedet": null,
+      "userid": "BA20"
+    },
+    {
+      "emp_name": "SHEELA BIMAL HANSDA",
+      "edatetime": "2026-09-10 17:33:46.0",
+      "evtsourcedet": null,
+      "userid": "BA20"
+    },
+    {
+      "emp_name": "SHEELA BIMAL HANSDA",
+      "edatetime": "2026-09-11 08:53:26.0",
+      "evtsourcedet": null,
+      "userid": "BA20"
+    },
+    {
+      "emp_name": "SHEELA BIMAL HANSDA",
+      "edatetime": "2026-09-11 18:01:35.0",
+      "evtsourcedet": null,
+      "userid": "BA20"
+    },
+    {
+      "emp_name": "SOHAGINI KONDA LOHAR",
+      "edatetime": "2026-09-10 08:32:29.0",
+      "evtsourcedet": null,
+      "userid": "BA23"
+    },
+    {
+      "emp_name": "SOHAGINI KONDA LOHAR",
+      "edatetime": "2026-09-10 17:33:48.0",
+      "evtsourcedet": null,
+      "userid": "BA23"
+    },
+    {
+      "emp_name": "SOHAGINI KONDA LOHAR",
+      "edatetime": "2026-09-11 08:53:54.0",
+      "evtsourcedet": null,
+      "userid": "BA23"
+    },
+    {
+      "emp_name": "SOHAGINI KONDA LOHAR",
+      "edatetime": "2026-09-11 18:02:32.0",
+      "evtsourcedet": null,
+      "userid": "BA23"
+    },
+    {
+      "emp_name": "SUMI CHUNU SINKU",
+      "edatetime": "2026-09-10 11:53:41.0",
+      "evtsourcedet": null,
+      "userid": "BA27"
+    },
+    {
+      "emp_name": "SUMI CHUNU SINKU",
+      "edatetime": "2026-09-10 23:00:51.0",
+      "evtsourcedet": null,
+      "userid": "BA27"
+    },
+    {
+      "emp_name": "SUMI CHUNU SINKU",
+      "edatetime": "2026-09-11 11:39:40.0",
+      "evtsourcedet": null,
+      "userid": "BA27"
+    },
+    {
+      "emp_name": "SUMI CHUNU SINKU",
+      "edatetime": "2026-09-11 22:56:11.0",
+      "evtsourcedet": null,
+      "userid": "BA27"
+    },
+    {
+      "emp_name": "AAKASH SUNIL CHAVAN",
+      "edatetime": "2026-09-10 14:39:58.0",
+      "evtsourcedet": null,
+      "userid": "DP520"
+    },
+    {
+      "emp_name": "AAKASH SUNIL CHAVAN",
+      "edatetime": "2026-09-10 23:57:29.0",
+      "evtsourcedet": null,
+      "userid": "DP520"
+    },
+    {
+      "emp_name": "AAKASH SUNIL CHAVAN",
+      "edatetime": "2026-09-11 11:25:27.0",
+      "evtsourcedet": null,
+      "userid": "DP520"
+    },
+    {
+      "emp_name": "SUNITA BAGUN SINKU",
+      "edatetime": "2026-09-10 08:32:19.0",
+      "evtsourcedet": null,
+      "userid": "BA28"
+    },
+    {
+      "emp_name": "SUNITA BAGUN SINKU",
+      "edatetime": "2026-09-10 17:33:49.0",
+      "evtsourcedet": null,
+      "userid": "BA28"
+    },
+    {
+      "emp_name": "SUNITA BAGUN SINKU",
+      "edatetime": "2026-09-11 08:53:25.0",
+      "evtsourcedet": null,
+      "userid": "BA28"
+    },
+    {
+      "emp_name": "SUNITA BAGUN SINKU",
+      "edatetime": "2026-09-11 18:02:39.0",
+      "evtsourcedet": null,
+      "userid": "BA28"
+    },
+    {
+      "emp_name": "SUNITA BAGUN SINKU",
+      "edatetime": "2026-09-11 18:02:42.0",
+      "evtsourcedet": null,
+      "userid": "BA28"
+    },
+    {
+      "emp_name": "SUNITA BAGUN SINKU",
+      "edatetime": "2026-09-11 18:02:53.0",
+      "evtsourcedet": null,
+      "userid": "BA28"
+    },
+    {
+      "emp_name": "SURUJ MASHICHARAN KISKU",
+      "edatetime": "2026-09-10 08:32:33.0",
+      "evtsourcedet": null,
+      "userid": "BA29"
+    },
+    {
+      "emp_name": "SURUJ MASHICHARAN KISKU",
+      "edatetime": "2026-09-10 17:45:49.0",
+      "evtsourcedet": null,
+      "userid": "BA29"
+    },
+    {
+      "emp_name": "SURUJ MASHICHARAN KISKU",
+      "edatetime": "2026-09-11 08:53:48.0",
+      "evtsourcedet": null,
+      "userid": "BA29"
+    },
+    {
+      "emp_name": "SURUJ MASHICHARAN KISKU",
+      "edatetime": "2026-09-11 18:04:27.0",
+      "evtsourcedet": null,
+      "userid": "BA29"
+    },
+    {
+      "emp_name": "SURUJ MASHICHARAN KISKU",
+      "edatetime": "2026-09-11 18:04:27.0",
+      "evtsourcedet": null,
+      "userid": "BA29"
+    },
+    {
+      "emp_name": "ANJALI JEROM KUJUR",
+      "edatetime": "2026-09-10 12:09:44.0",
+      "evtsourcedet": null,
+      "userid": "BA30"
+    },
+    {
+      "emp_name": "ANJALI JEROM KUJUR",
+      "edatetime": "2026-09-10 22:26:06.0",
+      "evtsourcedet": null,
+      "userid": "BA30"
+    },
+    {
+      "emp_name": "ANJALI JEROM KUJUR",
+      "edatetime": "2026-09-11 11:57:04.0",
+      "evtsourcedet": null,
+      "userid": "BA30"
+    },
+    {
+      "emp_name": "ANJALI JEROM KUJUR",
+      "edatetime": "2026-09-11 22:39:28.0",
+      "evtsourcedet": null,
+      "userid": "BA30"
+    },
+    {
+      "emp_name": "PRAMILA SONARAM BIRULY",
+      "edatetime": "2026-09-10 08:50:36.0",
+      "evtsourcedet": null,
+      "userid": "BA32"
+    },
+    {
+      "emp_name": "PRAMILA SONARAM BIRULY",
+      "edatetime": "2026-09-10 17:33:02.0",
+      "evtsourcedet": null,
+      "userid": "BA32"
+    },
+    {
+      "emp_name": "PRAMILA SONARAM BIRULY",
+      "edatetime": "2026-09-11 07:32:30.0",
+      "evtsourcedet": null,
+      "userid": "BA32"
+    },
+    {
+      "emp_name": "PRAMILA SONARAM BIRULY",
+      "edatetime": "2026-09-11 16:45:40.0",
+      "evtsourcedet": null,
+      "userid": "BA32"
+    },
+    {
+      "emp_name": "SHUBHAM BHAVARLAL GARG",
+      "edatetime": "2026-09-10 17:34:34.0",
+      "evtsourcedet": null,
+      "userid": "DP514"
+    },
+    {
+      "emp_name": "SHUBHAM BHAVARLAL GARG",
+      "edatetime": "2026-09-11 00:14:14.0",
+      "evtsourcedet": null,
+      "userid": "DP514"
+    },
+    {
+      "emp_name": "SHUBHAM BHAVARLAL GARG",
+      "edatetime": "2026-09-11 14:43:57.0",
+      "evtsourcedet": null,
+      "userid": "DP514"
+    },
+    {
+      "emp_name": "KEYUR YOGESHKUMAR DARUWALA",
+      "edatetime": "2026-09-10 11:58:46.0",
+      "evtsourcedet": null,
+      "userid": "DP516"
+    },
+    {
+      "emp_name": "KEYUR YOGESHKUMAR DARUWALA",
+      "edatetime": "2026-09-10 21:33:23.0",
+      "evtsourcedet": null,
+      "userid": "DP516"
+    },
+    {
+      "emp_name": "KEYUR YOGESHKUMAR DARUWALA",
+      "edatetime": "2026-09-11 12:04:12.0",
+      "evtsourcedet": null,
+      "userid": "DP516"
+    },
+    {
+      "emp_name": "KEYUR YOGESHKUMAR DARUWALA",
+      "edatetime": "2026-09-11 21:28:07.0",
+      "evtsourcedet": null,
+      "userid": "DP516"
+    },
+    {
+      "emp_name": "Harshit Kharadi",
+      "edatetime": "2026-09-10 15:06:34.0",
+      "evtsourcedet": null,
+      "userid": "OTH44"
+    },
+    {
+      "emp_name": "SATVI HITESHBHAI SAVALIYA",
+      "edatetime": "2026-09-10 15:28:22.0",
+      "evtsourcedet": null,
+      "userid": "DP525"
+    },
+    {
+      "emp_name": "SATVI HITESHBHAI SAVALIYA",
+      "edatetime": "2026-09-11 00:03:11.0",
+      "evtsourcedet": null,
+      "userid": "DP525"
+    },
+    {
+      "emp_name": "SHIVKUMAR JINISH PASWAN",
+      "edatetime": "2026-09-10 15:06:39.0",
+      "evtsourcedet": null,
+      "userid": "DP526"
+    },
+    {
+      "emp_name": "SHIVKUMAR JINISH PASWAN",
+      "edatetime": "2026-09-11 00:18:12.0",
+      "evtsourcedet": null,
+      "userid": "DP526"
+    },
+    {
+      "emp_name": "SHIVKUMAR JINISH PASWAN",
+      "edatetime": "2026-09-11 15:05:03.0",
+      "evtsourcedet": null,
+      "userid": "DP526"
+    },
+    {
+      "emp_name": "SIDDHI HARSUKHBHAI KATHAD",
+      "edatetime": "2026-09-10 13:47:58.0",
+      "evtsourcedet": null,
+      "userid": "DP529"
+    },
+    {
+      "emp_name": "SIDDHI HARSUKHBHAI KATHAD",
+      "edatetime": "2026-09-10 22:06:26.0",
+      "evtsourcedet": null,
+      "userid": "DP529"
+    },
+    {
+      "emp_name": "SIDDHI HARSUKHBHAI KATHAD",
+      "edatetime": "2026-09-11 13:49:24.0",
+      "evtsourcedet": null,
+      "userid": "DP529"
+    },
+    {
+      "emp_name": "SIDDHI HARSUKHBHAI KATHAD",
+      "edatetime": "2026-09-11 22:54:11.0",
+      "evtsourcedet": null,
+      "userid": "DP529"
+    },
+    {
+      "emp_name": "DIVYANSHU DILEEPKUMAR MODANWAL",
+      "edatetime": "2026-09-10 11:59:52.0",
+      "evtsourcedet": null,
+      "userid": "DP481"
+    },
+    {
+      "emp_name": "DIVYANSHU DILEEPKUMAR MODANWAL",
+      "edatetime": "2026-09-10 21:10:10.0",
+      "evtsourcedet": null,
+      "userid": "DP481"
+    },
+    {
+      "emp_name": "DIVYANSHU DILEEPKUMAR MODANWAL",
+      "edatetime": "2026-09-11 11:53:59.0",
+      "evtsourcedet": null,
+      "userid": "DP481"
+    },
+    {
+      "emp_name": "DIVYANSHU DILEEPKUMAR MODANWAL",
+      "edatetime": "2026-09-11 21:09:31.0",
+      "evtsourcedet": null,
+      "userid": "DP481"
+    },
+    {
+      "emp_name": "SHAIKH MAHAMMADLUKMAN MAYUDDIN",
+      "edatetime": "2026-09-10 00:02:33.0",
+      "evtsourcedet": null,
+      "userid": "DP486"
+    },
+    {
+      "emp_name": "SHAIKH MAHAMMADLUKMAN MAYUDDIN",
+      "edatetime": "2026-09-10 15:27:25.0",
+      "evtsourcedet": null,
+      "userid": "DP486"
+    },
+    {
+      "emp_name": "SHAIKH MAHAMMADLUKMAN MAYUDDIN",
+      "edatetime": "2026-09-11 00:17:38.0",
+      "evtsourcedet": null,
+      "userid": "DP486"
+    },
+    {
+      "emp_name": "SHAIKH MAHAMMADLUKMAN MAYUDDIN",
+      "edatetime": "2026-09-11 14:40:29.0",
+      "evtsourcedet": null,
+      "userid": "DP486"
+    },
+    {
+      "emp_name": "YUG SANJAYKUMAR GAYAKWAD",
+      "edatetime": "2026-09-10 14:44:37.0",
+      "evtsourcedet": null,
+      "userid": "DP358"
+    },
+    {
+      "emp_name": "YUG SANJAYKUMAR GAYAKWAD",
+      "edatetime": "2026-09-11 00:12:05.0",
+      "evtsourcedet": null,
+      "userid": "DP358"
+    },
+    {
+      "emp_name": "YUG SANJAYKUMAR GAYAKWAD",
+      "edatetime": "2026-09-11 14:56:08.0",
+      "evtsourcedet": null,
+      "userid": "DP358"
+    },
+    {
+      "emp_name": "JAYKUMAR RAM",
+      "edatetime": "2026-09-10 00:28:11.0",
+      "evtsourcedet": null,
+      "userid": "LAL31"
+    },
+    {
+      "emp_name": "JAYKUMAR RAM",
+      "edatetime": "2026-09-10 15:00:53.0",
+      "evtsourcedet": null,
+      "userid": "LAL31"
+    },
+    {
+      "emp_name": "JAYKUMAR RAM",
+      "edatetime": "2026-09-11 00:27:00.0",
+      "evtsourcedet": null,
+      "userid": "LAL31"
+    },
+    {
+      "emp_name": "JAYKUMAR RAM",
+      "edatetime": "2026-09-11 14:58:38.0",
+      "evtsourcedet": null,
+      "userid": "LAL31"
+    },
+    {
+      "emp_name": "SUNIL HEMBROM",
+      "edatetime": "2026-09-10 15:23:07.0",
+      "evtsourcedet": null,
+      "userid": "LAL40"
+    },
+    {
+      "emp_name": "SUNIL HEMBROM",
+      "edatetime": "2026-09-10 23:53:28.0",
+      "evtsourcedet": null,
+      "userid": "LAL40"
+    },
+    {
+      "emp_name": "SUNIL HEMBROM",
+      "edatetime": "2026-09-11 12:05:55.0",
+      "evtsourcedet": null,
+      "userid": "LAL40"
+    },
+    {
+      "emp_name": "SUNIL HEMBROM",
+      "edatetime": "2026-09-11 22:15:43.0",
+      "evtsourcedet": null,
+      "userid": "LAL40"
+    },
+    {
+      "emp_name": "GUDDU PURAN RAY",
+      "edatetime": "2026-09-10 11:32:58.0",
+      "evtsourcedet": null,
+      "userid": "LAL02"
+    },
+    {
+      "emp_name": "VASIR MIDHA",
+      "edatetime": "2026-09-10 07:36:27.0",
+      "evtsourcedet": null,
+      "userid": "LAL20"
+    },
+    {
+      "emp_name": "VASIR MIDHA",
+      "edatetime": "2026-09-10 17:32:57.0",
+      "evtsourcedet": null,
+      "userid": "LAL20"
+    },
+    {
+      "emp_name": "VASIR MIDHA",
+      "edatetime": "2026-09-11 07:33:26.0",
+      "evtsourcedet": null,
+      "userid": "LAL20"
+    },
+    {
+      "emp_name": "VASIR MIDHA",
+      "edatetime": "2026-09-11 16:45:34.0",
+      "evtsourcedet": null,
+      "userid": "LAL20"
+    },
+    {
+      "emp_name": "RUPESH SHAH",
+      "edatetime": "2026-09-10 14:13:07.0",
+      "evtsourcedet": null,
+      "userid": "OTH05"
+    },
+    {
+      "emp_name": "RUPESH SHAH",
+      "edatetime": "2026-09-10 23:25:11.0",
+      "evtsourcedet": null,
+      "userid": "OTH05"
+    },
+    {
+      "emp_name": "RUPESH SHAH",
+      "edatetime": "2026-09-11 12:14:17.0",
+      "evtsourcedet": null,
+      "userid": "OTH05"
+    },
+    {
+      "emp_name": "RUPESH SHAH",
+      "edatetime": "2026-09-11 22:13:21.0",
+      "evtsourcedet": null,
+      "userid": "OTH05"
+    },
+    {
+      "emp_name": "SUSHILA DEVI",
+      "edatetime": "2026-09-10 07:51:30.0",
+      "evtsourcedet": null,
+      "userid": "DP242"
+    },
+    {
+      "emp_name": "SUSHILA DEVI",
+      "edatetime": "2026-09-10 17:13:02.0",
+      "evtsourcedet": null,
+      "userid": "DP242"
+    },
+    {
+      "emp_name": "SUSHILA DEVI",
+      "edatetime": "2026-09-11 07:53:09.0",
+      "evtsourcedet": null,
+      "userid": "DP242"
+    },
+    {
+      "emp_name": "SUSHILA DEVI",
+      "edatetime": "2026-09-11 17:08:57.0",
+      "evtsourcedet": null,
+      "userid": "DP242"
+    },
+    {
+      "emp_name": "SHAIKH MO. ABARAR MO. RAFIK",
+      "edatetime": "2026-09-11 13:10:09.0",
+      "evtsourcedet": null,
+      "userid": "DP135"
+    },
+    {
+      "emp_name": "SOHANLAL MAHENDRABHAI JOGSAN",
+      "edatetime": "2026-09-10 12:32:20.0",
+      "evtsourcedet": null,
+      "userid": "DP166"
+    },
+    {
+      "emp_name": "SOHANLAL MAHENDRABHAI JOGSAN",
+      "edatetime": "2026-09-10 21:35:33.0",
+      "evtsourcedet": null,
+      "userid": "DP166"
+    },
+    {
+      "emp_name": "SOHANLAL MAHENDRABHAI JOGSAN",
+      "edatetime": "2026-09-11 12:25:33.0",
+      "evtsourcedet": null,
+      "userid": "DP166"
+    },
+    {
+      "emp_name": "SOHANLAL MAHENDRABHAI JOGSAN",
+      "edatetime": "2026-09-11 21:31:56.0",
+      "evtsourcedet": null,
+      "userid": "DP166"
+    },
+    {
+      "emp_name": "SMITH RAJENDRA YAQUB",
+      "edatetime": "2026-09-10 11:50:07.0",
+      "evtsourcedet": null,
+      "userid": "DP16"
+    },
+    {
+      "emp_name": "SMITH RAJENDRA YAQUB",
+      "edatetime": "2026-09-10 19:10:14.0",
+      "evtsourcedet": null,
+      "userid": "DP16"
+    },
+    {
+      "emp_name": "SMITH RAJENDRA YAQUB",
+      "edatetime": "2026-09-10 19:10:19.0",
+      "evtsourcedet": null,
+      "userid": "DP16"
+    },
+    {
+      "emp_name": "SMITH RAJENDRA YAQUB",
+      "edatetime": "2026-09-10 19:10:25.0",
+      "evtsourcedet": null,
+      "userid": "DP16"
+    },
+    {
+      "emp_name": "SMITH RAJENDRA YAQUB",
+      "edatetime": "2026-09-10 19:10:27.0",
+      "evtsourcedet": null,
+      "userid": "DP16"
+    },
+    {
+      "emp_name": "SMITH RAJENDRA YAQUB",
+      "edatetime": "2026-09-10 19:10:55.0",
+      "evtsourcedet": null,
+      "userid": "DP16"
+    },
+    {
+      "emp_name": "SMITH RAJENDRA YAQUB",
+      "edatetime": "2026-09-11 11:01:30.0",
+      "evtsourcedet": null,
+      "userid": "DP16"
+    },
+    {
+      "emp_name": "SMITH RAJENDRA YAQUB",
+      "edatetime": "2026-09-11 19:14:14.0",
+      "evtsourcedet": null,
+      "userid": "DP16"
+    },
+    {
+      "emp_name": "RAHUL AMAR DAS",
+      "edatetime": "2026-09-10 07:35:57.0",
+      "evtsourcedet": null,
+      "userid": "DP96"
+    },
+    {
+      "emp_name": "RAHUL AMAR DAS",
+      "edatetime": "2026-09-10 18:00:32.0",
+      "evtsourcedet": null,
+      "userid": "DP96"
+    },
+    {
+      "emp_name": "RAHUL AMAR DAS",
+      "edatetime": "2026-09-11 07:22:13.0",
+      "evtsourcedet": null,
+      "userid": "DP96"
+    },
+    {
+      "emp_name": "RAHUL AMAR DAS",
+      "edatetime": "2026-09-11 19:06:27.0",
+      "evtsourcedet": null,
+      "userid": "DP96"
+    },
+    {
+      "emp_name": "KIRAN BEDI",
+      "edatetime": "2026-09-10 07:57:34.0",
+      "evtsourcedet": null,
+      "userid": "DP225"
+    },
+    {
+      "emp_name": "KIRAN BEDI",
+      "edatetime": "2026-09-10 17:14:10.0",
+      "evtsourcedet": null,
+      "userid": "DP225"
+    },
+    {
+      "emp_name": "KIRAN BEDI",
+      "edatetime": "2026-09-11 07:53:08.0",
+      "evtsourcedet": null,
+      "userid": "DP225"
+    },
+    {
+      "emp_name": "KIRAN BEDI",
+      "edatetime": "2026-09-11 17:48:54.0",
+      "evtsourcedet": null,
+      "userid": "DP225"
+    },
+    {
+      "emp_name": "VEGAD MOHITKUMAR DINESHBHAI",
+      "edatetime": "2026-09-10 10:27:43.0",
+      "evtsourcedet": null,
+      "userid": "DP315"
+    },
+    {
+      "emp_name": "VEGAD MOHITKUMAR DINESHBHAI",
+      "edatetime": "2026-09-10 11:59:09.0",
+      "evtsourcedet": null,
+      "userid": "DP315"
+    },
+    {
+      "emp_name": "VEGAD MOHITKUMAR DINESHBHAI",
+      "edatetime": "2026-09-10 11:59:10.0",
+      "evtsourcedet": null,
+      "userid": "DP315"
+    },
+    {
+      "emp_name": "VEGAD MOHITKUMAR DINESHBHAI",
+      "edatetime": "2026-09-10 11:59:10.0",
+      "evtsourcedet": null,
+      "userid": "DP315"
+    },
+    {
+      "emp_name": "VEGAD MOHITKUMAR DINESHBHAI",
+      "edatetime": "2026-09-10 17:17:31.0",
+      "evtsourcedet": null,
+      "userid": "DP315"
+    },
+    {
+      "emp_name": "VEGAD MOHITKUMAR DINESHBHAI",
+      "edatetime": "2026-09-10 19:35:40.0",
+      "evtsourcedet": null,
+      "userid": "DP315"
+    },
+    {
+      "emp_name": "VEGAD MOHITKUMAR DINESHBHAI",
+      "edatetime": "2026-09-10 20:49:53.0",
+      "evtsourcedet": null,
+      "userid": "DP315"
+    },
+    {
+      "emp_name": "VEGAD MOHITKUMAR DINESHBHAI",
+      "edatetime": "2026-09-11 11:38:58.0",
+      "evtsourcedet": null,
+      "userid": "DP315"
+    },
+    {
+      "emp_name": "VEGAD MOHITKUMAR DINESHBHAI",
+      "edatetime": "2026-09-11 14:41:31.0",
+      "evtsourcedet": null,
+      "userid": "DP315"
+    },
+    {
+      "emp_name": "VEGAD MOHITKUMAR DINESHBHAI",
+      "edatetime": "2026-09-11 16:50:48.0",
+      "evtsourcedet": null,
+      "userid": "DP315"
+    },
+    {
+      "emp_name": "VEGAD MOHITKUMAR DINESHBHAI",
+      "edatetime": "2026-09-11 18:54:29.0",
+      "evtsourcedet": "MobileApp",
+      "userid": "DP315"
+    },
+    {
+      "emp_name": "VEGAD MOHITKUMAR DINESHBHAI",
+      "edatetime": "2026-09-11 18:57:22.0",
+      "evtsourcedet": null,
+      "userid": "DP315"
+    },
+    {
+      "emp_name": "RAJIV DAS",
+      "edatetime": "2026-09-10 12:38:11.0",
+      "evtsourcedet": null,
+      "userid": "OTH21"
+    },
+    {
+      "emp_name": "RAJIV DAS",
+      "edatetime": "2026-09-10 21:59:40.0",
+      "evtsourcedet": null,
+      "userid": "OTH21"
+    },
+    {
+      "emp_name": "RAJIV DAS",
+      "edatetime": "2026-09-11 13:54:47.0",
+      "evtsourcedet": null,
+      "userid": "OTH21"
+    },
+    {
+      "emp_name": "RAJIV DAS",
+      "edatetime": "2026-09-11 23:09:00.0",
+      "evtsourcedet": null,
+      "userid": "OTH21"
+    },
+    {
+      "emp_name": "MOHIT JAYANTIBHAI VARIYA",
+      "edatetime": "2026-09-10 07:21:33.0",
+      "evtsourcedet": null,
+      "userid": "DP347"
+    },
+    {
+      "emp_name": "MOHIT JAYANTIBHAI VARIYA",
+      "edatetime": "2026-09-10 18:00:31.0",
+      "evtsourcedet": null,
+      "userid": "DP347"
+    },
+    {
+      "emp_name": "MOHIT JAYANTIBHAI VARIYA",
+      "edatetime": "2026-09-11 07:24:23.0",
+      "evtsourcedet": null,
+      "userid": "DP347"
+    },
+    {
+      "emp_name": "MOHIT JAYANTIBHAI VARIYA",
+      "edatetime": "2026-09-11 19:06:29.0",
+      "evtsourcedet": null,
+      "userid": "DP347"
+    },
+    {
+      "emp_name": "SOLANKI MIHIR CHANDUBHAI",
+      "edatetime": "2026-09-11 13:49:41.0",
+      "evtsourcedet": null,
+      "userid": "DP428"
+    },
+    {
+      "emp_name": "SOLANKI MIHIR CHANDUBHAI",
+      "edatetime": "2026-09-11 23:59:14.0",
+      "evtsourcedet": null,
+      "userid": "DP428"
+    },
+    {
+      "emp_name": "GRESI CHHAYA MODANWAL",
+      "edatetime": "2026-09-10 12:55:50.0",
+      "evtsourcedet": null,
+      "userid": "DP433"
+    },
+    {
+      "emp_name": "GRESI CHHAYA MODANWAL",
+      "edatetime": "2026-09-10 22:02:31.0",
+      "evtsourcedet": null,
+      "userid": "DP433"
+    },
+    {
+      "emp_name": "GRESI CHHAYA MODANWAL",
+      "edatetime": "2026-09-11 06:52:59.0",
+      "evtsourcedet": null,
+      "userid": "DP433"
+    },
+    {
+      "emp_name": "GRESI CHHAYA MODANWAL",
+      "edatetime": "2026-09-11 16:15:22.0",
+      "evtsourcedet": null,
+      "userid": "DP433"
+    },
+    {
+      "emp_name": "MOHAMMD RUSTOM",
+      "edatetime": "2026-09-10 00:19:12.0",
+      "evtsourcedet": null,
+      "userid": "LAL24"
+    },
+    {
+      "emp_name": "MOHAMMD RUSTOM",
+      "edatetime": "2026-09-10 14:38:52.0",
+      "evtsourcedet": null,
+      "userid": "LAL24"
+    },
+    {
+      "emp_name": "MOHAMMD RUSTOM",
+      "edatetime": "2026-09-11 00:18:25.0",
+      "evtsourcedet": null,
+      "userid": "LAL24"
+    },
+    {
+      "emp_name": "MOHAMMD RUSTOM",
+      "edatetime": "2026-09-11 14:40:40.0",
+      "evtsourcedet": null,
+      "userid": "LAL24"
+    },
+    {
+      "emp_name": "SAHIL JAYESHBHAI RANA",
+      "edatetime": "2026-09-10 06:58:58.0",
+      "evtsourcedet": null,
+      "userid": "DP454"
+    },
+    {
+      "emp_name": "SAHIL JAYESHBHAI RANA",
+      "edatetime": "2026-09-10 18:04:03.0",
+      "evtsourcedet": null,
+      "userid": "DP454"
+    },
+    {
+      "emp_name": "SAHIL JAYESHBHAI RANA",
+      "edatetime": "2026-09-11 07:05:47.0",
+      "evtsourcedet": null,
+      "userid": "DP454"
+    },
+    {
+      "emp_name": "SAHIL JAYESHBHAI RANA",
+      "edatetime": "2026-09-11 19:04:05.0",
+      "evtsourcedet": null,
+      "userid": "DP454"
+    },
+    {
+      "emp_name": "MEGHA KUMARI GOBRA ORAON",
+      "edatetime": "2026-09-10 12:09:58.0",
+      "evtsourcedet": null,
+      "userid": "BA13"
+    },
+    {
+      "emp_name": "MEGHA KUMARI GOBRA ORAON",
+      "edatetime": "2026-09-10 22:25:54.0",
+      "evtsourcedet": null,
+      "userid": "BA13"
+    },
+    {
+      "emp_name": "MEGHA KUMARI GOBRA ORAON",
+      "edatetime": "2026-09-11 11:57:10.0",
+      "evtsourcedet": null,
+      "userid": "BA13"
+    },
+    {
+      "emp_name": "MEGHA KUMARI GOBRA ORAON",
+      "edatetime": "2026-09-11 22:39:33.0",
+      "evtsourcedet": null,
+      "userid": "BA13"
+    },
+    {
+      "emp_name": "HRITIKRAJ JAISWAL RAJKUMAR",
+      "edatetime": "2026-09-10 10:45:31.0",
+      "evtsourcedet": null,
+      "userid": "DP482"
+    },
+    {
+      "emp_name": "HRITIKRAJ JAISWAL RAJKUMAR",
+      "edatetime": "2026-09-10 18:05:52.0",
+      "evtsourcedet": null,
+      "userid": "DP482"
+    },
+    {
+      "emp_name": "HRITIKRAJ JAISWAL RAJKUMAR",
+      "edatetime": "2026-09-11 11:06:22.0",
+      "evtsourcedet": null,
+      "userid": "DP482"
+    },
+    {
+      "emp_name": "HRITIKRAJ JAISWAL RAJKUMAR",
+      "edatetime": "2026-09-11 16:50:47.0",
+      "evtsourcedet": null,
+      "userid": "DP482"
+    },
+    {
+      "emp_name": "HRITIKRAJ JAISWAL RAJKUMAR",
+      "edatetime": "2026-09-11 18:36:06.0",
+      "evtsourcedet": null,
+      "userid": "DP482"
+    },
+    {
+      "emp_name": "AKASH ALPESHBHAI PRAJAPATI",
+      "edatetime": "2026-09-10 15:06:30.0",
+      "evtsourcedet": null,
+      "userid": "DP523"
+    },
+    {
+      "emp_name": "AKASH ALPESHBHAI PRAJAPATI",
+      "edatetime": "2026-09-11 00:17:55.0",
+      "evtsourcedet": null,
+      "userid": "DP523"
+    },
+    {
+      "emp_name": "AKASH ALPESHBHAI PRAJAPATI",
+      "edatetime": "2026-09-11 15:04:23.0",
+      "evtsourcedet": null,
+      "userid": "DP523"
+    },
+    {
+      "emp_name": "ROHAN SINGH BISHT",
+      "edatetime": "2026-09-10 13:56:31.0",
+      "evtsourcedet": null,
+      "userid": "DP318"
+    },
+    {
+      "emp_name": "ROHAN SINGH BISHT",
+      "edatetime": "2026-09-10 23:21:16.0",
+      "evtsourcedet": null,
+      "userid": "DP318"
+    },
+    {
+      "emp_name": "ROHAN SINGH BISHT",
+      "edatetime": "2026-09-11 12:58:16.0",
+      "evtsourcedet": null,
+      "userid": "DP318"
+    },
+    {
+      "emp_name": "ROHAN SINGH BISHT",
+      "edatetime": "2026-09-11 22:06:31.0",
+      "evtsourcedet": null,
+      "userid": "DP318"
+    },
+    {
+      "emp_name": "GAUD SHANKAR BHAJRAM",
+      "edatetime": "2026-09-11 18:33:26.0",
+      "evtsourcedet": null,
+      "userid": "DP317"
+    },
+    {
+      "emp_name": "AFTAB NADAF",
+      "edatetime": "2026-09-10 07:21:34.0",
+      "evtsourcedet": null,
+      "userid": "LAL28"
+    },
+    {
+      "emp_name": "AFTAB NADAF",
+      "edatetime": "2026-09-10 17:31:51.0",
+      "evtsourcedet": null,
+      "userid": "LAL28"
+    },
+    {
+      "emp_name": "SHUBHAM RAJENDRA RAJALE",
+      "edatetime": "2026-09-10 11:37:02.0",
+      "evtsourcedet": null,
+      "userid": "DP426"
+    },
+    {
+      "emp_name": "SHUBHAM RAJENDRA RAJALE",
+      "edatetime": "2026-09-10 11:37:03.0",
+      "evtsourcedet": null,
+      "userid": "DP426"
+    },
+    {
+      "emp_name": "SHUBHAM RAJENDRA RAJALE",
+      "edatetime": "2026-09-10 23:57:55.0",
+      "evtsourcedet": null,
+      "userid": "DP426"
+    },
+    {
+      "emp_name": "SHUBHAM RAJENDRA RAJALE",
+      "edatetime": "2026-09-11 13:28:41.0",
+      "evtsourcedet": null,
+      "userid": "DP426"
+    },
+    {
+      "emp_name": "UMRIGAR HARSH",
+      "edatetime": "2026-09-10 06:40:51.0",
+      "evtsourcedet": null,
+      "userid": "DP326"
+    },
+    {
+      "emp_name": "UMRIGAR HARSH",
+      "edatetime": "2026-09-10 15:11:14.0",
+      "evtsourcedet": null,
+      "userid": "DP326"
+    },
+    {
+      "emp_name": "UMRIGAR HARSH",
+      "edatetime": "2026-09-11 06:43:07.0",
+      "evtsourcedet": null,
+      "userid": "DP326"
+    },
+    {
+      "emp_name": "UMRIGAR HARSH",
+      "edatetime": "2026-09-11 18:26:30.0",
+      "evtsourcedet": null,
+      "userid": "DP326"
+    },
+    {
+      "emp_name": "UMRIGAR HARSH",
+      "edatetime": "2026-09-11 19:00:37.0",
+      "evtsourcedet": null,
+      "userid": "DP326"
+    },
+    {
+      "emp_name": "SAKEENA VIHAT",
+      "edatetime": "2026-09-10 07:36:21.0",
+      "evtsourcedet": null,
+      "userid": "DP356"
+    },
+    {
+      "emp_name": "SAKEENA VIHAT",
+      "edatetime": "2026-09-10 17:34:09.0",
+      "evtsourcedet": null,
+      "userid": "DP356"
+    },
+    {
+      "emp_name": "SAKEENA VIHAT",
+      "edatetime": "2026-09-11 07:32:25.0",
+      "evtsourcedet": null,
+      "userid": "DP356"
+    },
+    {
+      "emp_name": "SAKEENA VIHAT",
+      "edatetime": "2026-09-11 16:36:26.0",
+      "evtsourcedet": null,
+      "userid": "DP356"
+    },
+    {
+      "emp_name": "SHRAVAN BIPIN RAY",
+      "edatetime": "2026-09-11 07:10:15.0",
+      "evtsourcedet": null,
+      "userid": "DP357"
+    },
+    {
+      "emp_name": "SHRAVAN BIPIN RAY",
+      "edatetime": "2026-09-11 18:08:29.0",
+      "evtsourcedet": null,
+      "userid": "DP357"
+    },
+    {
+      "emp_name": "VISHESH TRIVEDI",
+      "edatetime": "2026-09-10 14:59:20.0",
+      "evtsourcedet": null,
+      "userid": "DP361"
+    },
+    {
+      "emp_name": "VISHESH TRIVEDI",
+      "edatetime": "2026-09-11 00:18:48.0",
+      "evtsourcedet": null,
+      "userid": "DP361"
+    },
+    {
+      "emp_name": "VISHESH TRIVEDI",
+      "edatetime": "2026-09-11 14:58:11.0",
+      "evtsourcedet": null,
+      "userid": "DP361"
+    },
+    {
+      "emp_name": "GAMIT MIHIRBHAI MANISHBHAI",
+      "edatetime": "2026-09-10 10:14:16.0",
+      "evtsourcedet": null,
+      "userid": "DP189"
+    },
+    {
+      "emp_name": "GAMIT MIHIRBHAI MANISHBHAI",
+      "edatetime": "2026-09-10 19:06:55.0",
+      "evtsourcedet": null,
+      "userid": "DP189"
+    },
+    {
+      "emp_name": "GAMIT MIHIRBHAI MANISHBHAI",
+      "edatetime": "2026-09-11 10:10:42.0",
+      "evtsourcedet": null,
+      "userid": "DP189"
+    },
+    {
+      "emp_name": "GAMIT MIHIRBHAI MANISHBHAI",
+      "edatetime": "2026-09-11 20:11:31.0",
+      "evtsourcedet": null,
+      "userid": "DP189"
+    },
+    {
+      "emp_name": "VIJAYBHAI KARSANBHAI PUROHIT",
+      "edatetime": "2026-09-10 09:13:56.0",
+      "evtsourcedet": null,
+      "userid": "DP369"
+    },
+    {
+      "emp_name": "VIJAYBHAI KARSANBHAI PUROHIT",
+      "edatetime": "2026-09-10 18:10:12.0",
+      "evtsourcedet": null,
+      "userid": "DP369"
+    },
+    {
+      "emp_name": "VIJAYBHAI KARSANBHAI PUROHIT",
+      "edatetime": "2026-09-11 09:06:52.0",
+      "evtsourcedet": null,
+      "userid": "DP369"
+    },
+    {
+      "emp_name": "VIJAYBHAI KARSANBHAI PUROHIT",
+      "edatetime": "2026-09-11 18:12:51.0",
+      "evtsourcedet": null,
+      "userid": "DP369"
+    }
+  ]
+}

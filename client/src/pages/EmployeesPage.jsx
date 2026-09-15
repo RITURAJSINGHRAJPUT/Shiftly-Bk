@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import api from '../api/client';
 import Modal from '../components/Modal';
+import DirectoryPicker from '../components/DirectoryPicker';
 import { useScope } from '../contexts/ScopeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { GLOBAL_SCOPE_ROLES, STATIONS, departmentHasStations, departmentsFor } from '../constants';
@@ -98,7 +99,16 @@ export default function EmployeesPage() {
     const t = setTimeout(async () => {
       try {
         const res = await api.get(`/employees/lookup?code=${encodeURIComponent(code)}`);
-        if (!cancelled) setCodeLookup(res);
+        if (cancelled) return;
+        setCodeLookup(res);
+        // Fill the name rather than offering a button for it: the code is
+        // typed precisely so the person does not have to be identified twice,
+        // and a free code with a known name has exactly one sensible answer.
+        // Only into an empty field — anything already typed was deliberate and
+        // is never overwritten.
+        if (res?.suggestedName && !res.takenBy) {
+          setFormData((prev) => (prev.name?.trim() ? prev : { ...prev, name: res.suggestedName }));
+        }
       } catch {
         // A role without the lookup capability, or an offline moment. The form
         // still works; it just stops offering the name.
@@ -152,7 +162,16 @@ export default function EmployeesPage() {
       addMode === 'management'
         ? { name: '', email: '', phone: '', role: 'HR', department: '', outletId: '', skills: [], employeeCode: '' }
         // The card already chose the outlet, so the form does not ask again.
-        : { name: '', email: '', phone: '', role: 'STAFF', department: 'KITCHEN', outletId: selectedGroupId, skills: [], employeeCode: '' }
+        // The department a department head actually owns, not a hard-coded
+        // KITCHEN. A Master of House is offered Service and Housekeeping only,
+        // so defaulting to KITCHEN left the select showing "Service" while the
+        // form still held KITCHEN — and the save came back 403 contradicting
+        // what was on screen.
+        : {
+          name: '', email: '', phone: '', role: 'STAFF',
+          department: ownedDepartments[0] || 'KITCHEN',
+          outletId: selectedGroupId, skills: [], employeeCode: '',
+        }
     );
     setIssued(null);
     setIsModalOpen(true);
@@ -727,17 +746,12 @@ export default function EmployeesPage() {
             )}
             {codeLookup?.suggestedName && !codeLookup.takenBy && (
               <p className="text-xs mt-1" style={{ color: 'var(--ink-good)' }}>
+                {/* Kept visible after the auto-fill so the name in the field is
+                    never a mystery — and so a wrong code is obvious from the
+                    name being wrong, which is the whole safeguard here. */}
                 Punch log says <strong>{codeLookup.suggestedName}</strong>
                 {codeLookup.punchCount ? ` · ${codeLookup.punchCount} punches` : ''}
-                {!formData.name?.trim() && (
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm ml-2"
-                    onClick={() => setFormData(prev => ({ ...prev, name: codeLookup.suggestedName }))}
-                  >
-                    Use this name
-                  </button>
-                )}
+                {formData.name?.trim() === codeLookup.suggestedName ? ' · filled in' : ''}
               </p>
             )}
             <p className="text-xs text-muted mt-1">
@@ -745,6 +759,21 @@ export default function EmployeesPage() {
                 ? 'How the attendance system identifies them. Matched exactly, so the case matters.'
                 : 'Links this person to their id in an external attendance system, if any.'}
             </p>
+            {/* For whoever knows the person but not their code, which is the
+                usual way round for a department head. */}
+            {!editingEmployee && (
+              <DirectoryPicker
+                onPick={({ userid, name }) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    employeeCode: userid,
+                    // The picked entry is the authority on the name, but a name
+                    // already typed stays — same rule as the auto-fill above.
+                    name: prev.name?.trim() ? prev.name : (name || prev.name),
+                  }))
+                }
+              />
+            )}
           </div>
 
           <div className="form-group">

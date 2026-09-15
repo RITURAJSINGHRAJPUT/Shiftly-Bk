@@ -58,6 +58,17 @@ export const CAPABILITIES = {
   EMPLOYEE_EDIT: {
     group: 'People', label: 'Edit an employee', minRole: 'HR',
   },
+  DIRECTORY_EDIT: {
+    group: 'People', label: 'Add or correct an entry in the punch directory', minRole: 'HR',
+    // Spelled out because the floor cannot say it: OUTLET_MANAGER shares HR's
+    // rank, so `minRole: 'HR'` alone would tick their column in ACCESS.md while
+    // requireGlobalScope() returns 403. These are exactly GLOBAL_SCOPE_ROLES.
+    roles: ['SUPER_ADMIN', 'ADMIN', 'HR'],
+    note: 'The directory is who the biometric feed knows about, and it is what the enrolment ' +
+      'form reads to turn a code into a name. Department heads read it; only head office writes ' +
+      'to it. Enforced with hasGlobalScope() rather than this floor, because OUTLET_MANAGER ' +
+      'shares HR\u2019s rank and would otherwise clear it.',
+  },
   EMPLOYEE_RESET_PW: {
     group: 'People', label: 'Issue a new one-time password', minRole: 'ADMIN',
     note: 'Higher than enrolment: this takes over an existing account rather than creating a new one. ' +

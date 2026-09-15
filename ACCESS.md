@@ -53,6 +53,7 @@ query parameter, so it cannot be widened by asking differently.
 | Enrol a staff member at your own restaurant | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
 | Enrol anyone, anywhere | ✅ | ✅ | ✅ | ✅ | — | — | — |
 | Edit an employee | ✅ | ✅ | ✅ | ✅ | — | — | — |
+| Add or correct an entry in the punch directory | ✅ | ✅ | ✅ | — | — | — | — |
 | Issue a new one-time password | ✅ | ✅ | — | — | — | — | — |
 | Deactivate an employee | ✅ | ✅ | — | — | — | — | — |
 | See what a staff wipe would delete | ✅ | — | — | — | — | — | — |
@@ -61,6 +62,8 @@ query parameter, so it cannot be widened by asking differently.
 > **Enrol a staff member at your own restaurant** — A department head knows who works for them and HR does not, so this floor is low on purpose — but it is narrow: their own restaurant, their own department (Head Chef → Kitchen, Master of House → Service and Housekeeping), and the Staff role only. The record is clock-in-only: identified by employee code, with no email and no sign-in.
 
 > **Enrol anyone, anywhere** — The unrestricted form of the above — any role, any restaurant, with a login. Checked inside the handler rather than guarding a route of its own, since one endpoint serves both and only the breadth differs.
+
+> **Add or correct an entry in the punch directory** — The directory is who the biometric feed knows about, and it is what the enrolment form reads to turn a code into a name. Department heads read it; only head office writes to it. Enforced with hasGlobalScope() rather than this floor, because OUTLET_MANAGER shares HR’s rank and would otherwise clear it.
 
 > **Issue a new one-time password** — Higher than enrolment: this takes over an existing account rather than creating a new one. Exception: an Outlet Manager may reset a password for staff at their own outlet.
 

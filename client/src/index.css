@@ -3962,3 +3962,35 @@ tbody tr:last-child td {
   border-color: var(--primary-500);
   box-shadow: var(--shadow-ring);
 }
+
+/* Punch-directory search inside the enrolment form. The results are a short
+   list of buttons rather than a native select, because each row shows a name,
+   a code and whether the person is already enrolled. */
+.directory-picker .form-input { flex: 1; }
+
+.directory-results {
+  max-height: 232px;
+  overflow-y: auto;
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-md);
+  padding-inline: var(--space-3);
+}
+
+.directory-result {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: 0;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.directory-result:hover:not(:disabled),
+.directory-result:focus-visible:not(:disabled) { color: var(--ink-strong); }
+
+.directory-result:disabled { cursor: not-allowed; opacity: 0.55; }

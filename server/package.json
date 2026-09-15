@@ -19,7 +19,8 @@
     "postinstall": "prisma generate",
     "migrate:structure": "node src/scripts/migrateStructure.js",
     "seed:crew": "node src/scripts/seedOutletCrew.js",
-    "sync:attendance": "node src/scripts/syncKgapiAttendance.js"
+    "sync:attendance": "node src/scripts/syncKgapiAttendance.js",
+    "directory:load": "node src/scripts/loadPunchDirectory.js"
   },
   "dependencies": {
     "@prisma/client": "^6.9.0",

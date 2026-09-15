@@ -18,6 +18,7 @@ import outletRoutes from './routes/outlet.routes.js';
 import shiftTemplateRoutes from './routes/shiftTemplate.routes.js';
 import transferRoutes from './routes/transfer.routes.js';
 import auditRoutes from './routes/audit.routes.js';
+import directoryRoutes from './routes/directory.routes.js';
 import publicRoutes from './routes/public.routes.js';
 import { apiLimiter } from './middleware/rateLimit.js';
 
@@ -104,6 +105,7 @@ app.use('/api/outlets', outletRoutes);
 app.use('/api/shift-templates', shiftTemplateRoutes);
 app.use('/api/transfers', transferRoutes);
 app.use('/api/audit-logs', auditRoutes);
+app.use('/api/directory', directoryRoutes);
 
 // The one namespace that is not JWT gated. Its own key check and its own rate
 // limit live on the router itself; apiLimiter above still applies as a backstop.

@@ -36,6 +36,18 @@ const LABELS = {
 
 const allows = (role, minRole) => ROLE_HIERARCHY[role] >= ROLE_HIERARCHY[minRole];
 
+/**
+ * Who actually holds a capability.
+ *
+ * Normally the rank floor answers this. It cannot always: HR and OUTLET_MANAGER
+ * share rank 4, so no floor selects one without the other, and a capability
+ * guarded by hasGlobalScope() excludes the outlet manager while `minRole: 'HR'`
+ * would tick their column. A capability may therefore name its roles outright,
+ * and this table is only as honest as that escape hatch makes it.
+ */
+const holders = (cap) =>
+  (role) => (Array.isArray(cap.roles) ? cap.roles.includes(role) : allows(role, cap.minRole));
+
 export function buildDoc() {
   const groups = new Map();
   for (const [key, cap] of Object.entries(CAPABILITIES)) {
@@ -48,7 +60,8 @@ export function buildDoc() {
 
   const sections = [...groups].map(([group, caps]) => {
     const rows = caps.map((c) => {
-      const cells = ROLES.map((r) => (allows(r, c.minRole) ? '✅' : '—'));
+      const held = holders(c);
+      const cells = ROLES.map((r) => (held(r) ? '✅' : '—'));
       return `| ${c.label} | ${cells.join(' | ')} |`;
     });
     // Separate blockquotes, not consecutive lines — adjacent `>` lines merge
