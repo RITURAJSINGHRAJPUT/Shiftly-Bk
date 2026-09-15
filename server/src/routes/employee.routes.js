@@ -2,8 +2,9 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { can, canOrOutletManager } from '../lib/capabilities.js';
-import { outletScope, outletInclude, GLOBAL_SCOPE_ROLES } from '../lib/scope.js';
+import { can, canOrOutletManager, holdsCapability } from '../lib/capabilities.js';
+import { outletScope, outletInclude, GLOBAL_SCOPE_ROLES, hasGlobalScope } from '../lib/scope.js';
+import { ownsDepartment, departmentsFor } from '../lib/departments.js';
 import { generateTemporaryPassword } from '../lib/passwords.js';
 import { logAudit } from '../lib/audit.js';
 
@@ -54,21 +55,63 @@ function readAssignment(role, { outletId, department, skills }, existing = {}) {
 }
 
 /**
- * HR/ADMIN/SUPER_ADMIN may assign any role to any outlet. An OUTLET_MANAGER
- * may only manage staff at their own outlet, and only into an outlet-level
- * role — not a global role or another Outlet Manager, mirroring the
- * HR-cannot-assign-management-roles rule below. Returns an error string, or
- * null when the write is allowed.
+ * Who may write this employee record. Returns an error string, or null when the
+ * write is allowed.
+ *
+ * - **HR/ADMIN/SUPER_ADMIN** — any role, any outlet.
+ * - **OUTLET_MANAGER** — their own outlet, and only into an outlet-level role:
+ *   not a global role and not another Outlet Manager, mirroring the
+ *   HR-cannot-assign-management-roles rule below.
+ * - **MASTER_OF_HOUSE / HEAD_CHEF** — their own outlet, their own department
+ *   (per departments.js), and STAFF only. They know who works for them; HR does
+ *   not, and routing every new kitchen porter through HR is what left 45 people
+ *   in the system against 343 in the punch log.
+ * - Anyone else — denied.
+ *
+ * The previous version opened `if (req.user.role !== 'OUTLET_MANAGER') return
+ * null`, so it was a no-op for every role but one. That was safe only because
+ * nothing below HR could reach the routes that call it; the moment a floor
+ * dropped, the caller inherited org-wide employee writes. This one closes by
+ * default instead.
+ *
+ * `hasGlobalScope` is keyed on the **actor**; the GLOBAL_SCOPE_ROLES checks in
+ * the handlers below are keyed on the **target role**. Two checks, same list,
+ * opposite subjects.
  */
-function outletManagerAssignmentDenied(req, { outletId, role }) {
-  if (req.user.role !== 'OUTLET_MANAGER') return null;
-  if (outletId !== req.user.outletId) {
-    return 'You can only manage employees at your own outlet';
+function assignmentDenied(req, { outletId, role, department }) {
+  if (hasGlobalScope(req.user)) return null;
+
+  if (req.user.role === 'OUTLET_MANAGER') {
+    if (outletId !== req.user.outletId) {
+      return 'You can only manage employees at your own outlet';
+    }
+    if (GLOBAL_SCOPE_ROLES.includes(role) || role === 'OUTLET_MANAGER') {
+      return 'You cannot assign that role';
+    }
+    return null;
   }
-  if (GLOBAL_SCOPE_ROLES.includes(role) || role === 'OUTLET_MANAGER') {
-    return 'You cannot assign that role';
+
+  if (req.user.role === 'MASTER_OF_HOUSE' || req.user.role === 'HEAD_CHEF') {
+    // Role first, deliberately: readAssignment() nulls outletId for a
+    // management target, so an outlet-first order would answer "you can only
+    // manage employees at your own outlet" when a head chef tries to create an
+    // admin — the right refusal with a misleading reason, and that string is
+    // what the client shows the user.
+    if (role !== 'STAFF') {
+      return 'You can only add staff members';
+    }
+    if (!ownsDepartment(req.user.role, department)) {
+      return 'You can only manage employees in your own department';
+    }
+    // A locked role with no resolvable outlet matches nothing on reads
+    // (scope.js MATCH_NOTHING); it must write nothing either.
+    if (!req.user.outletId || outletId !== req.user.outletId) {
+      return 'You can only manage employees at your own outlet';
+    }
+    return null;
   }
-  return null;
+
+  return 'You are not allowed to manage employees';
 }
 
 // GET /api/employees — list all employees (with filters)
@@ -108,6 +151,55 @@ router.get('/', authenticateToken, async (req, res) => {
     const sanitized = employees.map(({ password, ...emp }) => emp);
 
     res.json({ employees: sanitized, total, page: parseInt(page), limit: parseInt(limit) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/employees/lookup?code=DP443 — who does this employee code belong to?
+ *
+ * Two answers in one call, because they are the two things a manager needs at
+ * the moment they type a code. Either it is already someone's — in which case
+ * enrolling again would fail on the unique constraint with a message naming
+ * only the field — or the punch log knows a name for it, and the form can fill
+ * that in rather than relying on somebody typing it correctly from memory.
+ *
+ * A code held at another restaurant is reported without the name. The holder is
+ * outside the caller's scope everywhere else in the app, and a lookup that
+ * returned them would be a way to enumerate other outlets' staff.
+ *
+ * Declared before /:id, or "lookup" is read as an employee id.
+ */
+router.get('/lookup', authenticateToken, can('EMPLOYEE_ENROL'), async (req, res) => {
+  try {
+    const code = req.query.code?.trim();
+    if (!code) return res.status(400).json({ error: 'code is required' });
+
+    const [holder, identity] = await Promise.all([
+      prisma.employee.findUnique({
+        where: { employeeCode: code },
+        select: { id: true, name: true, isActive: true, outletId: true, department: true, outlet: { select: { name: true } } },
+      }),
+      prisma.punchIdentity.findUnique({ where: { userid: code } }),
+    ]);
+
+    // Deactivated people keep their code, and the directory hides them — so
+    // without this the constraint would refuse a code that appears unused.
+    const mine = holder && (hasGlobalScope(req.user) || holder.outletId === req.user.outletId);
+
+    res.json({
+      code,
+      takenBy: holder
+        ? (mine
+          ? { name: holder.name, outlet: holder.outlet?.name ?? null, department: holder.department, isActive: holder.isActive }
+          : { name: null, outlet: null, department: null, isActive: holder.isActive })
+        : null,
+      elsewhere: Boolean(holder && !mine),
+      suggestedName: identity?.name ?? null,
+      lastSeen: identity?.lastSeen ?? null,
+      punchCount: identity?.punchCount ?? 0,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -204,7 +296,7 @@ router.put('/codes', authenticateToken, can('EMPLOYEE_EDIT'), async (req, res) =
 
     const targets = await prisma.employee.findMany({
       where: { id: { in: applied.map((a) => a.id) } },
-      select: { id: true, outletId: true, role: true },
+      select: { id: true, outletId: true, role: true, department: true },
     });
     const targetById = new Map(targets.map((t) => [t.id, t]));
 
@@ -214,7 +306,7 @@ router.put('/codes', authenticateToken, can('EMPLOYEE_EDIT'), async (req, res) =
       if (!target) { conflicts.push({ ...a, reason: 'No such employee' }); continue; }
 
       // An outlet manager may only touch their own restaurant's people.
-      const denied = outletManagerAssignmentDenied(req, target);
+      const denied = assignmentDenied(req, target);
       if (denied) { conflicts.push({ ...a, reason: denied }); continue; }
 
       try {
@@ -246,13 +338,26 @@ router.put('/codes', authenticateToken, can('EMPLOYEE_EDIT'), async (req, res) =
 });
 
 // POST /api/employees — create employee
-router.post('/', authenticateToken, can('EMPLOYEE_CREATE'), async (req, res) => {
+router.post('/', authenticateToken, can('EMPLOYEE_ENROL'), async (req, res) => {
   try {
     const { name, email, phone, role, department, outletId, skills, employeeCode } = req.body;
 
     if (!name) return res.status(400).json({ error: 'name is required' });
-    if (!email) {
-      return res.status(400).json({ error: 'email is required — it is how they sign in' });
+
+    // Trimmed to null for the same reason employeeCode is, below: '' is not
+    // exempt from the unique constraint, so a second record with a blank email
+    // would collide with the first and report "that email is already in use".
+    const cleanEmail = email?.trim() || null;
+    const cleanCode = employeeCode?.trim() || null;
+
+    // One or the other. Email is how someone signs in; a code is how a punch
+    // finds them. Line staff who clock in on the reader and never open the app
+    // need only the second, and demanding an address they do not have was what
+    // made enrolling them an HR errand.
+    if (!cleanEmail && !cleanCode) {
+      return res.status(400).json({
+        error: 'Either an email (for signing in) or an employee code (for attendance) is required',
+      });
     }
 
     // Which fields are even asked for depends on the role: an HR account has no
@@ -264,10 +369,51 @@ router.post('/', authenticateToken, can('EMPLOYEE_CREATE'), async (req, res) => 
       return res.status(403).json({ error: 'HR cannot assign management roles' });
     }
 
-    const { data: assignment, error } = readAssignment(effectiveRole, { outletId, department, skills });
+    /**
+     * A department head enrolling into their own patch, rather than HR
+     * enrolling anyone anywhere. The floor on this route admits both, so the
+     * difference is drawn here — the same in-handler split the shift-pattern
+     * clear uses, rather than a second endpoint that would duplicate the whole
+     * create path.
+     */
+    const restricted = !holdsCapability(req.user, 'EMPLOYEE_CREATE');
+    let targetOutletId = outletId;
+    let targetDepartment = department;
+
+    if (restricted) {
+      // Pinned, not compared — the same way outletScope() applies the caller's
+      // outlet "instead of, not alongside, the requested scope". A form that
+      // still defaults an outlet field would otherwise produce puzzling 403s.
+      targetOutletId = req.user.outletId;
+
+      // Filled in when absent, never overridden. A head chef who explicitly
+      // asks for SERVICE should be refused, not silently given a KITCHEN
+      // record they did not ask for — assignmentDenied() below does the
+      // refusing, and it cannot if the value has already been rewritten.
+      const owned = departmentsFor(req.user.role);
+      if (!targetDepartment && owned.length === 1) targetDepartment = owned[0];
+
+      if (!cleanCode) {
+        return res.status(400).json({
+          error: 'An employee code is required — it is how their attendance is matched',
+        });
+      }
+      // Without this a head chef could mint a working login at their own
+      // restaurant and be handed its one-time password: an account that can
+      // file leave and accept cover, attributed to someone who does not exist.
+      if (cleanEmail) {
+        return res.status(400).json({
+          error: 'These records are clock-in only. Ask HR to add a sign-in address.',
+        });
+      }
+    }
+
+    const { data: assignment, error } = readAssignment(
+      effectiveRole, { outletId: targetOutletId, department: targetDepartment, skills }
+    );
     if (error) return res.status(400).json({ error });
 
-    const denied = outletManagerAssignmentDenied(req, { outletId: assignment.outletId, role: effectiveRole });
+    const denied = assignmentDenied(req, { outletId: assignment.outletId, role: effectiveRole, department: assignment.department });
     if (denied) return res.status(403).json({ error: denied });
 
     // Generated here, never supplied. The old `password || 'shiftly123'` meant
@@ -277,12 +423,10 @@ router.post('/', authenticateToken, can('EMPLOYEE_CREATE'), async (req, res) => 
     const employee = await prisma.employee.create({
       data: {
         name,
-        email,
+        email: cleanEmail,
         phone,
         role: effectiveRole,
-        // Empty string, not null, would still collide with the next empty
-        // string under the @unique constraint — only null is exempt from it.
-        employeeCode: employeeCode?.trim() || null,
+        employeeCode: cleanCode,
         ...assignment,
         password: await bcrypt.hash(temporaryPassword, 10),
         mustChangePassword: true,
@@ -292,9 +436,20 @@ router.post('/', authenticateToken, can('EMPLOYEE_CREATE'), async (req, res) => 
 
     const { password: _, ...sanitized } = employee;
 
-    logAudit({ action: 'EMPLOYEE_CREATE', entity: 'Employee', entityId: employee.id, actor: req.user, details: { employeeName: name, role: effectiveRole } });
+    logAudit({
+      action: 'EMPLOYEE_CREATE', entity: 'Employee', entityId: employee.id, actor: req.user,
+      details: {
+        employeeName: name, role: effectiveRole,
+        employeeCode: cleanCode, department: assignment.department, outletId: assignment.outletId,
+      },
+    });
 
-    res.status(201).json({ ...sanitized, temporaryPassword });
+    // The password is still generated and hashed even for a code-only record:
+    // leaving password:'' with mustChangePassword:false would mean that adding
+    // an email later produced a login with an empty hash that bcrypt can never
+    // match and that the holder cannot reset themselves. This way it degrades
+    // to "needs a password reset", which is already a supported action.
+    res.status(201).json({ ...sanitized, ...(cleanEmail ? { temporaryPassword } : {}) });
   } catch (err) {
     if (err.code === 'P2002') {
       const field = err.meta?.target?.[0] || 'value';
@@ -304,23 +459,64 @@ router.post('/', authenticateToken, can('EMPLOYEE_CREATE'), async (req, res) => 
   }
 });
 
-// PUT /api/employees/:id
-router.put('/:id', authenticateToken, can('EMPLOYEE_EDIT'), async (req, res) => {
+/**
+ * PUT /api/employees/:id
+ *
+ * Guarded at the enrolment floor rather than EMPLOYEE_EDIT, because a manager
+ * who can add someone has to be able to fix them: a mistyped employee code is
+ * the failure mode with teeth — the import silently drops that person's hours
+ * and reports an unmatched id to somebody else. assignmentDenied() then narrows
+ * a department head to their own outlet, their own department and Staff only,
+ * checked against both the record as it is and as it would become.
+ */
+router.put('/:id', authenticateToken, can('EMPLOYEE_ENROL'), async (req, res) => {
   try {
     const { name, email, phone, role, department, outletId, skills, isActive, employeeCode } = req.body;
 
     const existing = await prisma.employee.findUnique({
       where: { id: req.params.id },
-      select: { role: true, department: true, outletId: true, skills: true },
+      select: {
+        role: true, department: true, outletId: true, skills: true,
+        email: true, employeeCode: true,
+      },
     });
     if (!existing) return res.status(404).json({ error: 'Employee not found' });
 
+    /**
+     * A department head may correct their own staff — a name, a mistyped code —
+     * but never promote or move them.
+     *
+     * Refused rather than quietly pinned: the edit form posts the whole record,
+     * so an unchanged value arriving is normal and only a real difference is an
+     * attempt. Answering 200 to "make this person a head chef" while leaving
+     * them a staff member would be a lie the caller cannot see.
+     */
+    const restricted = !holdsCapability(req.user, 'EMPLOYEE_EDIT');
+    if (restricted) {
+      const attempted = [
+        [role, existing.role, "someone's role"],
+        [outletId, existing.outletId, 'which restaurant someone works at'],
+        [department, existing.department, "someone's department"],
+        [isActive, undefined, 'whether an account is active'],
+      ].find(([next, current]) => next !== undefined && next !== current);
+
+      if (attempted) {
+        return res.status(403).json({ error: `You cannot change ${attempted[2]}` });
+      }
+    }
+
+    const targetRole = restricted ? existing.role : role;
+    const targetOutletId = restricted ? existing.outletId : outletId;
+    const targetDepartment = restricted ? existing.department : department;
+
     const data = {};
     if (name !== undefined) data.name = name;
-    if (email !== undefined) data.email = email;
+    // Same trim-to-null as the create path: clearing the field in the form
+    // sends '', which is not exempt from the unique constraint.
+    if (email !== undefined) data.email = email?.trim() || null;
     if (phone !== undefined) data.phone = phone;
-    if (role !== undefined) data.role = role;
-    if (isActive !== undefined) data.isActive = isActive;
+    if (!restricted && role !== undefined) data.role = role;
+    if (!restricted && isActive !== undefined) data.isActive = isActive;
     // Empty string, not null, would still collide with the next empty string
     // under the @unique constraint — only null is exempt from it.
     if (employeeCode !== undefined) data.employeeCode = employeeCode?.trim() || null;
@@ -329,20 +525,32 @@ router.put('/:id', authenticateToken, can('EMPLOYEE_EDIT'), async (req, res) => 
     // request that changes only the role still has to move the assignment with
     // it — promoting a head chef to HR clears the outlet, and demoting an HR
     // back has to be given one rather than silently landing nowhere.
-    const effectiveRole = role ?? existing.role;
+    const effectiveRole = targetRole ?? existing.role;
 
     if (req.user.role === 'HR' && GLOBAL_SCOPE_ROLES.includes(effectiveRole)) {
       return res.status(403).json({ error: 'HR cannot assign management roles' });
     }
 
     const { data: assignment, error } = readAssignment(
-      effectiveRole, { outletId, department, skills }, existing
+      effectiveRole, { outletId: targetOutletId, department: targetDepartment, skills }, existing
     );
     if (error) return res.status(400).json({ error });
 
-    const denied = outletManagerAssignmentDenied(req, { outletId: assignment.outletId, role: effectiveRole })
-      || outletManagerAssignmentDenied(req, { outletId: existing.outletId, role: existing.role });
+    // Both the record as it will be and as it is: a manager must own the person
+    // they are editing as well as the result of the edit.
+    const denied = assignmentDenied(req, { outletId: assignment.outletId, role: effectiveRole, department: assignment.department })
+      || assignmentDenied(req, { outletId: existing.outletId, role: existing.role, department: existing.department });
     if (denied) return res.status(403).json({ error: denied });
+
+    // A record needs at least one identifier. Clearing both the email and the
+    // code would leave a row nobody can sign in as and no punch can ever reach.
+    const nextEmail = data.email !== undefined ? data.email : existing.email;
+    const nextCode = data.employeeCode !== undefined ? data.employeeCode : existing.employeeCode;
+    if (!nextEmail && !nextCode) {
+      return res.status(400).json({
+        error: 'Keep either an email or an employee code — a record with neither can never be reached',
+      });
+    }
 
     Object.assign(data, assignment);
 
@@ -382,11 +590,19 @@ router.post('/:id/reset-password', authenticateToken, canOrOutletManager('EMPLOY
   try {
     const employee = await prisma.employee.findUnique({
       where: { id: req.params.id },
-      select: { id: true, name: true, email: true, role: true, outletId: true },
+      select: { id: true, name: true, email: true, role: true, outletId: true, department: true },
     });
     if (!employee) return res.status(404).json({ error: 'Employee not found' });
 
-    const denied = outletManagerAssignmentDenied(req, { outletId: employee.outletId, role: employee.role });
+    // A clock-in-only record has no sign-in address, so a password for it could
+    // never be used — login looks accounts up by email.
+    if (!employee.email) {
+      return res.status(400).json({
+        error: 'This is a clock-in-only record — it has no sign-in address to reset. Add an email first.',
+      });
+    }
+
+    const denied = assignmentDenied(req, { outletId: employee.outletId, role: employee.role, department: employee.department });
     if (denied) return res.status(403).json({ error: denied });
 
     const temporaryPassword = generateTemporaryPassword();
@@ -419,10 +635,10 @@ router.delete('/:id', authenticateToken, canOrOutletManager('EMPLOYEE_DEACTIVATE
 
     const target = await prisma.employee.findUnique({
       where: { id },
-      select: { role: true, outletId: true },
+      select: { role: true, outletId: true, department: true },
     });
     if (!target) return res.status(404).json({ error: 'Employee not found' });
-    const denied = outletManagerAssignmentDenied(req, { outletId: target.outletId, role: target.role });
+    const denied = assignmentDenied(req, { outletId: target.outletId, role: target.role, department: target.department });
     if (denied) return res.status(403).json({ error: denied });
 
     const employee = await prisma.employee.update({

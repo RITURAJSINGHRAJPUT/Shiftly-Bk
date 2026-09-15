@@ -11,6 +11,7 @@ import {
   startOfLocalWeek, startOfLocalMonth,
 } from '../lib/dates.js';
 import { logAudit } from '../lib/audit.js';
+import { DEPARTMENT_APPROVERS } from '../lib/departments.js';
 
 const router = Router();
 
@@ -404,13 +405,6 @@ router.post('/sync-job', requireApiKey('ATTENDANCE_IMPORT_KEYS'), async (req, re
     sendSyncError(res, err);
   }
 });
-
-/** Who, besides HR/ADMIN/SUPER_ADMIN, owns approval for each department. */
-const DEPARTMENT_APPROVERS = {
-  KITCHEN: 'HEAD_CHEF',
-  SERVICE: 'MASTER_OF_HOUSE',
-  HOUSEKEEPING: 'MASTER_OF_HOUSE',
-};
 
 /**
  * Mirrors leaveApprovalDenied() in leave.routes.js — overtime is routed to the

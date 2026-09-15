@@ -51,7 +51,11 @@ export const NAV_SECTIONS = [
   {
     title: 'People',
     items: [
-      { path: '/employees', label: 'Employees', icon: Users, roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'OUTLET_MANAGER'] },
+      // Department heads too: they enrol their own staff by employee code, so
+      // the page has to be reachable for them. What they can do inside it is
+      // narrowed by EMPLOYEE_ENROL and assignmentDenied() on the server.
+      { path: '/employees', label: 'Employees', icon: Users,
+        roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'OUTLET_MANAGER', 'MASTER_OF_HOUSE', 'HEAD_CHEF'] },
       // Everyone: your own hours and overtime are always your own to see.
       { path: '/attendance', label: 'Attendance', icon: Clock, roles: 'all' },
       { path: '/leaves', label: 'Leaves', icon: TreePalm, roles: 'all' },

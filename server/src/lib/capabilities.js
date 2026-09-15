@@ -42,8 +42,18 @@ export const CAPABILITIES = {
       'Exception: an Outlet Manager may edit their own outlet — see canOrOutletManager() in this file.',
   },
 
+  EMPLOYEE_ENROL: {
+    group: 'People', label: 'Enrol a staff member at your own restaurant', minRole: 'HEAD_CHEF',
+    note: 'A department head knows who works for them and HR does not, so this floor is low on ' +
+      'purpose — but it is narrow: their own restaurant, their own department (Head Chef → Kitchen, ' +
+      'Master of House → Service and Housekeeping), and the Staff role only. The record is ' +
+      'clock-in-only: identified by employee code, with no email and no sign-in.',
+  },
   EMPLOYEE_CREATE: {
-    group: 'People', label: 'Enrol an employee', minRole: 'HR',
+    group: 'People', label: 'Enrol anyone, anywhere', minRole: 'HR',
+    note: 'The unrestricted form of the above — any role, any restaurant, with a login. ' +
+      'Checked inside the handler rather than guarding a route of its own, since one endpoint ' +
+      'serves both and only the breadth differs.',
   },
   EMPLOYEE_EDIT: {
     group: 'People', label: 'Edit an employee', minRole: 'HR',

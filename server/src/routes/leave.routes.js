@@ -6,15 +6,9 @@ import { processLeaveRequest, approveLeave, rejectLeave } from '../engine/leaveM
 import { requestEmergencyLeave, acceptEmergencyCover, autoAssignEmergency } from '../engine/emergencyLeave.js';
 import { employeeScope, hasGlobalScope } from '../lib/scope.js';
 import { logAudit } from '../lib/audit.js';
+import { DEPARTMENT_APPROVERS } from '../lib/departments.js';
 
 const router = Router();
-
-/** Who, besides HR/ADMIN/SUPER_ADMIN, owns approval for each department. */
-const DEPARTMENT_APPROVERS = {
-  KITCHEN: 'HEAD_CHEF',
-  SERVICE: 'MASTER_OF_HOUSE',
-  HOUSEKEEPING: 'MASTER_OF_HOUSE',
-};
 
 /**
  * HR/ADMIN/SUPER_ADMIN may act on any leave. An OUTLET_MANAGER may act on any

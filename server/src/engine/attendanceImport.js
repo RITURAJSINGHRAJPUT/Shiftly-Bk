@@ -97,6 +97,34 @@ export async function importPunches(prisma, punches, { source = 'external attend
       punchCount: punchCountByUserId.get(userid) || 0,
     }));
 
+  /**
+   * Remember who the feed says each code belongs to.
+   *
+   * These names were being read and discarded on every run, which left a
+   * manager typing a code with no way to confirm whose it was. Kept for every
+   * code, not only the unmatched ones, so the same lookup can also answer
+   * "this code is already someone's".
+   */
+  const lastSeenByUserId = new Map();
+  for (const { userId, punches: ps } of byEmployeeDay.values()) {
+    const latest = ps.reduce((a, b) => (a.time > b.time ? a : b)).time;
+    if (!lastSeenByUserId.has(userId) || latest > lastSeenByUserId.get(userId)) {
+      lastSeenByUserId.set(userId, latest);
+    }
+  }
+  for (const userid of userIds) {
+    const identity = {
+      name: nameByUserId.get(userid) || null,
+      punchCount: punchCountByUserId.get(userid) || 0,
+      lastSeen: lastSeenByUserId.get(userid) || new Date(),
+    };
+    await prisma.punchIdentity.upsert({
+      where: { userid },
+      update: identity,
+      create: { userid, ...identity },
+    });
+  }
+
   // Everything the loop needs, in two queries rather than two per employee-day.
   const days = [...byEmployeeDay.values()].map((e) => e.day);
   const employeeIds = employees.map((e) => e.id);

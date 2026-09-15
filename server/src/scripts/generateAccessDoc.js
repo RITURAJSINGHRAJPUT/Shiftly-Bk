@@ -98,13 +98,18 @@ ${sections.join('\n\n')}
 
 ## How accounts are issued
 
-- Enrolling someone needs **${floor('EMPLOYEE_CREATE')}** or above. Issuing a
-  replacement password or deactivating an account needs
-  **${floor('EMPLOYEE_RESET_PW')}** or above — taking over an existing account is
-  a bigger step than creating a new one.
-- A new account receives a one-time password, shown once, and can reach nothing
-  until it sets its own — the restriction travels in the signed token, so it
-  cannot be skipped by avoiding the screen.
+- Enrolling anyone into any role at any restaurant needs
+  **${floor('EMPLOYEE_CREATE')}** or above. A department head
+  (**${floor('EMPLOYEE_ENROL')}** or above) may enrol Staff at their own
+  restaurant, in their own department, and nothing else. Issuing a replacement
+  password or deactivating an account needs **${floor('EMPLOYEE_RESET_PW')}** or
+  above — taking over an existing account is a bigger step than creating one.
+- An account with a sign-in address receives a one-time password, shown once, and
+  can reach nothing until it sets its own — the restriction travels in the signed
+  token, so it cannot be skipped by avoiding the screen.
+- A clock-in-only record has no email and no password. It exists so the
+  attendance import can attribute punches to a person; it cannot sign in, and a
+  password reset against one is refused rather than silently issued.
 - **Super Admin**, **Admin** and **HR** belong to no restaurant. The other three
   are pinned to one and see only that.
 `;

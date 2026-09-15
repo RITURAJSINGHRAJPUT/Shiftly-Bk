@@ -194,6 +194,25 @@ model Shift {
   @@index([date, outletId])
 }
 
+/// Who the punch log says each employee code belongs to.
+///
+/// The feed carries a name alongside every punch, but nothing kept it: the
+/// importer reported the codes it could not match and threw the names away. So
+/// a manager enrolling someone had the code in front of them and no way to
+/// check whose it was — which is how a mistyped code gets saved, after which
+/// that person's hours silently go nowhere.
+///
+/// Deliberately not a relation to Employee. These are people the punch log
+/// knows about and Shiftly may not, which is the entire point.
+model PunchIdentity {
+  /// The code as the feed sends it, matched exactly — see attendanceImport.js.
+  userid     String   @id
+  name       String?
+  punchCount Int      @default(0)
+  lastSeen   DateTime
+  updatedAt  DateTime @updatedAt
+}
+
 model Attendance {
   id          String           @id @default(uuid())
   employeeId  String

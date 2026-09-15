@@ -5,12 +5,7 @@ import Modal from '../components/Modal';
 import CountdownTimer from '../components/CountdownTimer';
 import { format } from 'date-fns';
 import { PlaneTakeoff, Plus, CheckCircle, XCircle, AlertTriangle, Users } from 'lucide-react';
-import { GLOBAL_SCOPE_ROLES } from '../constants';
-
-// Mirrors DEPARTMENT_APPROVERS in server/src/routes/leave.routes.js — a
-// locked manager only acts on their own department's leaves; HR/ADMIN/
-// SUPER_ADMIN act on any of them.
-const DEPARTMENT_APPROVERS = { KITCHEN: 'HEAD_CHEF', SERVICE: 'MASTER_OF_HOUSE', HOUSEKEEPING: 'MASTER_OF_HOUSE' };
+import { GLOBAL_SCOPE_ROLES, DEPARTMENT_APPROVERS } from '../constants';
 
 export default function LeavesPage() {
   const { user, isManager } = useAuth();

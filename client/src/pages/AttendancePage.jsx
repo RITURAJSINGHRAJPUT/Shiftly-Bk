@@ -29,8 +29,8 @@ const VIEWS = [
 ];
 
 /** How far back each view can reach, in its own unit. */
-const SPANS = { daily: [7, 14, 30], weekly: [4, 8, 12], monthly: [3, 6, 12] };
-const UNIT_SUFFIX = { daily: 'D', weekly: 'W', monthly: 'M' };
+/** How far back each view reaches, in its own unit. Was a per-view picker; now fixed. */
+const SPAN = { daily: 14, weekly: 8, monthly: 6 };
 
 /** Minutes from first punch to last, or null while the day is still open. */
 function workedMinutes(rec) {
@@ -85,18 +85,14 @@ export default function AttendancePage() {
   const [syncResult, setSyncResult] = useState(null);
 
   const [view, setView] = useState('daily');
-  // How far back each view reaches, in its own unit. Kept per view so
-  // switching to Monthly and back does not leave "30" meaning months.
-  const [span, setSpan] = useState({ daily: 14, weekly: 8, monthly: 6 });
-
   const range = useMemo(() => {
     const end = new Date();
-    const n = span[view];
+    const n = SPAN[view];
     const start = view === 'daily' ? subDays(end, n - 1)
       : view === 'weekly' ? startOfWeek(subWeeks(end, n - 1), { weekStartsOn: 1 })
       : startOfMonth(subMonths(end, n - 1));
     return { startDate: dayKey(start), endDate: dayKey(end) };
-  }, [view, span]);
+  }, [view]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -312,24 +308,13 @@ export default function AttendancePage() {
             onChange={setView}
             options={VIEWS}
           />
-          <div className="flex gap-1">
-            {SPANS[view].map((n) => (
-              <button
-                key={n}
-                className={`btn btn-sm ${span[view] === n ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => setSpan((prev) => ({ ...prev, [view]: n }))}
-              >
-                {n}{UNIT_SUFFIX[view]}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
       {view !== 'daily' ? (
         summary.length === 0 ? (
           <div className="card text-center text-muted">
-            Nothing recorded in the last {span[view]} {view === 'weekly' ? 'weeks' : 'months'}.
+            Nothing recorded in the last {SPAN[view]} {view === 'weekly' ? 'weeks' : 'months'}.
           </div>
         ) : (
           <div className="table-container mobile-cards">
@@ -393,7 +378,7 @@ export default function AttendancePage() {
         )
       ) : records.length === 0 ? (
         <div className="card text-center text-muted">
-          No attendance recorded in the last {span.daily} days.
+          No attendance recorded in the last {SPAN.daily} days.
         </div>
       ) : (
         <div className="table-container mobile-cards">

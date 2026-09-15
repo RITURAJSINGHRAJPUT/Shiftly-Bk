@@ -3,7 +3,7 @@ import api from '../api/client';
 import Modal from '../components/Modal';
 import { useScope } from '../contexts/ScopeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { GLOBAL_SCOPE_ROLES, STATIONS, departmentHasStations } from '../constants';
+import { GLOBAL_SCOPE_ROLES, STATIONS, departmentHasStations, departmentsFor } from '../constants';
 import { Plus, Search, Filter, Edit, Trash2, Store, ShieldCheck, Users, KeyRound, Copy, Check, Hash } from 'lucide-react';
 
 /**
@@ -29,6 +29,17 @@ export default function EmployeesPage() {
   // HR and Outlet Manager both administer outlet-level accounts only — neither
   // can see/assign SUPER_ADMIN/ADMIN/HR/OUTLET_MANAGER accounts.
   const isOutletScopedAdmin = ['HR', 'OUTLET_MANAGER'].includes(user?.role);
+
+  /**
+   * A department head enrolling into their own patch.
+   *
+   * The narrowest tier: their own restaurant, the departments their role owns,
+   * Staff only, and a clock-in-only record with no sign-in. Mirrors
+   * EMPLOYEE_ENROL and assignmentDenied() on the server, which enforce all of
+   * it regardless — this decides what is worth putting on screen.
+   */
+  const isDepartmentHead = ['MASTER_OF_HOUSE', 'HEAD_CHEF'].includes(user?.role);
+  const ownedDepartments = departmentsFor(user?.role);
 
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +74,39 @@ export default function EmployeesPage() {
   const [codeDrafts, setCodeDrafts] = useState({});
   const [savingCodes, setSavingCodes] = useState(false);
   const [codeResult, setCodeResult] = useState(null);
+
+  /**
+   * What the punch log knows about the code being typed.
+   *
+   * Debounced rather than fired per keystroke: a code is 4-6 characters, so
+   * without it every enrolment would make half a dozen round trips. The result
+   * is advisory — the server refuses a duplicate regardless — but it turns a
+   * blind entry into a confirmation.
+   */
+  const [codeLookup, setCodeLookup] = useState(null);
+
+  useEffect(() => {
+    const code = formData.employeeCode?.trim();
+    // Editing someone keeps their own code, which would always report "belongs
+    // to" themselves.
+    if (!code || code === editingEmployee?.employeeCode) {
+      setCodeLookup(null);
+      return;
+    }
+    let cancelled = false;
+    setCodeLookup({ loading: true });
+    const t = setTimeout(async () => {
+      try {
+        const res = await api.get(`/employees/lookup?code=${encodeURIComponent(code)}`);
+        if (!cancelled) setCodeLookup(res);
+      } catch {
+        // A role without the lookup capability, or an offline moment. The form
+        // still works; it just stops offering the name.
+        if (!cancelled) setCodeLookup(null);
+      }
+    }, 400);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [formData.employeeCode, editingEmployee]);
 
   // "Copied" feedback for the one-time-password reveal's Copy button.
   const [copied, setCopied] = useState(false);
@@ -138,9 +182,16 @@ export default function EmployeesPage() {
         setIsModalOpen(false);
       } else {
         const created = await api.post('/employees', formData);
-        // The modal stays open on the reveal: closing it would throw away the
-        // only copy of the password that will ever exist.
-        setIssued({ name: created.name, email: created.email, password: created.temporaryPassword });
+        if (created.temporaryPassword) {
+          // The modal stays open on the reveal: closing it would throw away the
+          // only copy of the password that will ever exist.
+          setIssued({ name: created.name, email: created.email, password: created.temporaryPassword });
+        } else {
+          // A clock-in-only record has no sign-in, so there is nothing to
+          // reveal — showing the panel anyway printed "undefined" as both the
+          // address and the password, and copied that to the clipboard.
+          setIsModalOpen(false);
+        }
       }
       loadData();
     } catch (err) {
@@ -208,8 +259,12 @@ export default function EmployeesPage() {
   };
 
   const filtered = employees.filter(emp => {
-    const matchesSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (emp.email && emp.email.toLowerCase().includes(searchTerm.toLowerCase()));
+    const q = searchTerm.toLowerCase();
+    const matchesSearch = emp.name.toLowerCase().includes(q) ||
+      (emp.email && emp.email.toLowerCase().includes(q)) ||
+      // Their code is the identifier a clock-in-only record actually has, and
+      // it is what the attendance import reports when it cannot match someone.
+      (emp.employeeCode && emp.employeeCode.toLowerCase().includes(q));
     // Outlet scoping happens server-side, from the caller's role.
     const matchesDept = !filterDept || emp.department === filterDept;
     return matchesSearch && matchesDept;
@@ -239,7 +294,7 @@ export default function EmployeesPage() {
     }
 
     const rows = [
-      ...(!isOutletScopedAdmin ? [{ id: '__management__', name: 'Management', brand: null, isManagement: true, people: management }] : []),
+      ...(!isOutletScopedAdmin && !isDepartmentHead ? [{ id: '__management__', name: 'Management', brand: null, isManagement: true, people: management }] : []),
       ...outlets.map(o => ({
         id: o.id,
         name: o.name,
@@ -364,7 +419,7 @@ export default function EmployeesPage() {
             <Search className="search-icon" size={18} />
             <input
               type="text"
-              placeholder="Search by name or email..."
+              placeholder="Search by name, email or code..."
               style={{ width: '100%' }}
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
@@ -472,7 +527,9 @@ export default function EmployeesPage() {
                         <tr key={emp.id}>
                           <td>
                             <div className="font-semibold" style={{ color: 'var(--ink-strong)' }}>{emp.name}</div>
-                            <div className="text-xs text-muted">{emp.email}</div>
+                            <div className="text-xs text-muted">
+                              {emp.email || (emp.employeeCode ? 'Clock-in only' : '—')}
+                            </div>
                           </td>
                           <td>
                             {/* Visible because attendance will not reach anyone
@@ -515,6 +572,12 @@ export default function EmployeesPage() {
                               >
                                 <Edit size={14} />
                               </button>
+                              {/* Both are Admin/Outlet Manager actions, so for
+                                  a department head they would 403 on click. A
+                                  head can correct their own staff; taking over
+                                  or locking out an account is not theirs. */}
+                              {!isDepartmentHead && (
+                              <>
                               <button
                                 className="btn btn-ghost btn-icon btn-sm"
                                 onClick={() => handleResetPassword(emp)}
@@ -530,6 +593,8 @@ export default function EmployeesPage() {
                               >
                                 <Trash2 size={14} />
                               </button>
+                              </>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -605,16 +670,22 @@ export default function EmployeesPage() {
           </div>
 
           <div className="form-row">
+            {!isDepartmentHead && (
             <div className="form-group">
-              <label className="form-label">Email</label>
+              <label className="form-label">
+                Email {formData.employeeCode?.trim() && <span className="text-muted">(optional)</span>}
+              </label>
               <input
                 type="email"
                 className="form-input"
                 value={formData.email}
                 onChange={e => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                required
+                /* One identifier is enough: an email to sign in with, or a code
+                   for the punch log to find them by. */
+                required={!formData.employeeCode?.trim()}
               />
             </div>
+            )}
             <div className="form-group">
               <label className="form-label">Contact</label>
               <input
@@ -627,16 +698,52 @@ export default function EmployeesPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Employee Code (optional)</label>
+            <label className="form-label">
+              Employee Code {isDepartmentHead ? '' : '(optional)'}
+            </label>
             <input
               type="text"
               className="form-input"
               placeholder="e.g. DP443"
               value={formData.employeeCode}
               onChange={e => setFormData(prev => ({ ...prev, employeeCode: e.target.value }))}
+              required={isDepartmentHead}
             />
+            {/* What the punch log says this code belongs to, looked up as it is
+                typed. A mistyped code is the failure with teeth: the import
+                drops that person's hours and reports the id to somebody else,
+                so confirming the name here is the whole point. */}
+            {codeLookup?.loading && <p className="text-xs text-muted mt-1">Checking…</p>}
+            {codeLookup?.elsewhere && (
+              <p className="text-xs mt-1" style={{ color: 'var(--ink-crit)' }}>
+                Already used at another restaurant — ask HR.
+              </p>
+            )}
+            {codeLookup?.takenBy?.name && (
+              <p className="text-xs mt-1" style={{ color: 'var(--ink-crit)' }}>
+                Belongs to {codeLookup.takenBy.name}
+                {codeLookup.takenBy.isActive ? '' : ' (deactivated)'}.
+              </p>
+            )}
+            {codeLookup?.suggestedName && !codeLookup.takenBy && (
+              <p className="text-xs mt-1" style={{ color: 'var(--ink-good)' }}>
+                Punch log says <strong>{codeLookup.suggestedName}</strong>
+                {codeLookup.punchCount ? ` · ${codeLookup.punchCount} punches` : ''}
+                {!formData.name?.trim() && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm ml-2"
+                    onClick={() => setFormData(prev => ({ ...prev, name: codeLookup.suggestedName }))}
+                  >
+                    Use this name
+                  </button>
+                )}
+              </p>
+            )}
             <p className="text-xs text-muted mt-1">
-              Links this person to their id in an external attendance system, if any.
+              {isDepartmentHead
+                ? 'How the attendance system identifies them. Matched exactly, so the case matters.'
+                : 'Links this person to their id in an external attendance system, if any.'}
             </p>
           </div>
 
@@ -663,13 +770,15 @@ export default function EmployeesPage() {
                 }));
               }}
             >
-              {(isOutletScopedAdmin
-                ? OUTLET_ROLES_RESTRICTED
-                : managementForm
-                  ? MANAGEMENT_ROLES
-                  : OUTLET_ROLES
+              {(isDepartmentHead
+                ? [['STAFF', 'Staff Member']]
+                : isOutletScopedAdmin
+                  ? OUTLET_ROLES_RESTRICTED
+                  : managementForm
+                    ? MANAGEMENT_ROLES
+                    : OUTLET_ROLES
               ).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-              {!isOutletScopedAdmin && (
+              {!isOutletScopedAdmin && !isDepartmentHead && (
               <optgroup label={managementForm ? 'Move to an outlet' : 'Move to management'}>
                 {(managementForm ? OUTLET_ROLES : MANAGEMENT_ROLES)
                   .map(([value, label]) => <option key={value} value={value}>{label}</option>)}
@@ -699,12 +808,23 @@ export default function EmployeesPage() {
                   skills: departmentHasStations(e.target.value) ? prev.skills : [],
                 }))}
               >
-                <option value="KITCHEN">Kitchen</option>
-                <option value="SERVICE">Service</option>
-                <option value="HOUSEKEEPING">Housekeeping</option>
+                {/* A department head sees only what their role owns — a Head
+                    Chef Kitchen, a Master of House Service and Housekeeping.
+                    Taken from the role, never from their own department field:
+                    a Master of House is stored as SERVICE yet owns both. */}
+                {(isDepartmentHead
+                  ? ownedDepartments
+                  : ['KITCHEN', 'SERVICE', 'HOUSEKEEPING']
+                ).map(d => (
+                  <option key={d} value={d}>{d.charAt(0) + d.slice(1).toLowerCase()}</option>
+                ))}
               </select>
             </div>
             )}
+            {/* Not offered to a department head: the server pins the record to
+                their own restaurant whatever is sent, so a select here could
+                only mislead. */}
+            {!isDepartmentHead && (
             <div className="form-group">
               <label className="form-label">Outlet</label>
               <select
@@ -717,6 +837,7 @@ export default function EmployeesPage() {
                 ))}
               </select>
             </div>
+            )}
           </div>
           )}
 

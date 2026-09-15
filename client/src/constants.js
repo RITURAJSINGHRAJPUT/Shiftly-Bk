@@ -76,15 +76,29 @@ export const ATTENDANCE_VIEW_ALL_ROLES = [
 export const ATTENDANCE_SYNC_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'OUTLET_MANAGER'];
 
 /**
- * Mirrors DEPARTMENT_APPROVERS in server/src/routes/attendance.routes.js (and
- * leave.routes.js, which routes the same way). A locked manager acts only on
- * their own department; global roles act on any.
+ * Mirrors server/src/lib/departments.js. A locked manager acts only on their
+ * own department; global roles act on any.
+ *
+ * The client is a separate package with no shared alias, so this is a copy by
+ * necessity — but there is now one copy on each side rather than two.
  */
 export const DEPARTMENT_APPROVERS = {
   KITCHEN: 'HEAD_CHEF',
   SERVICE: 'MASTER_OF_HOUSE',
   HOUSEKEEPING: 'MASTER_OF_HOUSE',
 };
+
+/**
+ * The inverse: which departments a role may enrol into.
+ *
+ * Derived from the role, never from the manager's own `department` field — a
+ * Master of House is stored as SERVICE but owns HOUSEKEEPING too.
+ */
+export function departmentsFor(role) {
+  return Object.entries(DEPARTMENT_APPROVERS)
+    .filter(([, owner]) => owner === role)
+    .map(([department]) => department);
+}
 
 /** The standard working day, in minutes. Mirrors WORKDAY_MINUTES on the server. */
 export const WORKDAY_MINUTES = 9 * 60;

@@ -50,12 +50,17 @@ query parameter, so it cannot be widened by asking differently.
 
 | Action | Super Admin | Admin | HR | Outlet Manager | Master of House | Head Chef | Staff |
 |---|---|---|---|---|---|---|---|
-| Enrol an employee | ✅ | ✅ | ✅ | ✅ | — | — | — |
+| Enrol a staff member at your own restaurant | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Enrol anyone, anywhere | ✅ | ✅ | ✅ | ✅ | — | — | — |
 | Edit an employee | ✅ | ✅ | ✅ | ✅ | — | — | — |
 | Issue a new one-time password | ✅ | ✅ | — | — | — | — | — |
 | Deactivate an employee | ✅ | ✅ | — | — | — | — | — |
 | See what a staff wipe would delete | ✅ | — | — | — | — | — | — |
 | Delete every staff account and their history | ✅ | — | — | — | — | — | — |
+
+> **Enrol a staff member at your own restaurant** — A department head knows who works for them and HR does not, so this floor is low on purpose — but it is narrow: their own restaurant, their own department (Head Chef → Kitchen, Master of House → Service and Housekeeping), and the Staff role only. The record is clock-in-only: identified by employee code, with no email and no sign-in.
+
+> **Enrol anyone, anywhere** — The unrestricted form of the above — any role, any restaurant, with a login. Checked inside the handler rather than guarding a route of its own, since one endpoint serves both and only the breadth differs.
 
 > **Issue a new one-time password** — Higher than enrolment: this takes over an existing account rather than creating a new one. Exception: an Outlet Manager may reset a password for staff at their own outlet.
 
@@ -130,12 +135,17 @@ query parameter, so it cannot be widened by asking differently.
 
 ## How accounts are issued
 
-- Enrolling someone needs **HR** or above. Issuing a
-  replacement password or deactivating an account needs
-  **Admin** or above — taking over an existing account is
-  a bigger step than creating a new one.
-- A new account receives a one-time password, shown once, and can reach nothing
-  until it sets its own — the restriction travels in the signed token, so it
-  cannot be skipped by avoiding the screen.
+- Enrolling anyone into any role at any restaurant needs
+  **HR** or above. A department head
+  (**Head Chef** or above) may enrol Staff at their own
+  restaurant, in their own department, and nothing else. Issuing a replacement
+  password or deactivating an account needs **Admin** or
+  above — taking over an existing account is a bigger step than creating one.
+- An account with a sign-in address receives a one-time password, shown once, and
+  can reach nothing until it sets its own — the restriction travels in the signed
+  token, so it cannot be skipped by avoiding the screen.
+- A clock-in-only record has no email and no password. It exists so the
+  attendance import can attribute punches to a person; it cannot sign in, and a
+  password reset against one is refused rather than silently issued.
 - **Super Admin**, **Admin** and **HR** belong to no restaurant. The other three
   are pinned to one and see only that.

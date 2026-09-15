@@ -71,7 +71,7 @@ Current seeded scale: **1 organization → 2 brands → 6 outlets → 196 employ
 
 | Enum | Values |
 |---|---|
-| `Role` | `SUPER_ADMIN` `ADMIN` `HR` `MASTER_OF_HOUSE` `HEAD_CHEF` `STAFF` |
+| `Role` | `SUPER_ADMIN` `ADMIN` `HR` `OUTLET_MANAGER` `MASTER_OF_HOUSE` `HEAD_CHEF` `STAFF` |
 | `Department` | `KITCHEN` `SERVICE` `HOUSEKEEPING` |
 | `ShiftStatus` | `ASSIGNED` `COMPLETED` `MISSED` `SWAPPED` `CANCELLED` |
 | `AttendanceStatus` | `CHECKED_IN` `CHECKED_OUT` `ABSENT` `LATE` `ON_LEAVE` |
@@ -171,7 +171,8 @@ without it is a silent privilege escalation rather than an error.
 
 | Action | Minimum role |
 |---|---|
-| Create / edit employee | `HR` |
+| Enrol/edit your own department's staff at your own restaurant | `HEAD_CHEF` |
+| Create / edit any employee, anywhere | `HR` |
 | Deactivate employee, delete shift, edit outlet/brand/org | `ADMIN` |
 | Create shift, auto-allocate, approve/reject leave, manage shift patterns | `HEAD_CHEF` |
 | View attendance beyond your own, approve/reject overtime | `HEAD_CHEF` |
