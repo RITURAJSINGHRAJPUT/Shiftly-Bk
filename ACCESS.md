@@ -54,7 +54,7 @@ query parameter, so it cannot be widened by asking differently.
 | Enrol anyone, anywhere | ✅ | ✅ | ✅ | ✅ | — | — | — |
 | Edit an employee | ✅ | ✅ | ✅ | ✅ | — | — | — |
 | Add or correct an entry in the punch directory | ✅ | ✅ | ✅ | — | — | — | — |
-| Issue a new one-time password | ✅ | ✅ | — | — | — | — | — |
+| Issue a new one-time password | ✅ | ✅ | ✅ | ✅ | — | — | — |
 | Deactivate an employee | ✅ | ✅ | — | — | — | — | — |
 | See what a staff wipe would delete | ✅ | — | — | — | — | — | — |
 | Delete every staff account and their history | ✅ | — | — | — | — | — | — |
@@ -65,7 +65,7 @@ query parameter, so it cannot be widened by asking differently.
 
 > **Add or correct an entry in the punch directory** — The directory is who the biometric feed knows about, and it is what the enrolment form reads to turn a code into a name. Department heads read it; only head office writes to it. Enforced with hasGlobalScope() rather than this floor, because OUTLET_MANAGER shares HR’s rank and would otherwise clear it.
 
-> **Issue a new one-time password** — Higher than enrolment: this takes over an existing account rather than creating a new one. Exception: an Outlet Manager may reset a password for staff at their own outlet.
+> **Issue a new one-time password** — The same floor as enrolment, because it is the same act from the other end: HR issues the first one-time password when they enrol someone, and a lost password is simply that again. Holding this above enrolment meant the role that creates accounts could not help the person whose password it had handed them. A department head still cannot — they enrol clock-in-only records, which have no sign-in to take over. Exception: an Outlet Manager may reset a password for staff at their own outlet.
 
 > **Deactivate an employee** — Deactivation is a real lockout — the login handler refuses an inactive account. Exception: an Outlet Manager may deactivate staff at their own outlet.
 
@@ -144,7 +144,7 @@ query parameter, so it cannot be widened by asking differently.
   **HR** or above. A department head
   (**Head Chef** or above) may enrol Staff at their own
   restaurant, in their own department, and nothing else. Issuing a replacement
-  password or deactivating an account needs **Admin** or
+  password or deactivating an account needs **HR** or
   above — taking over an existing account is a bigger step than creating one.
 - An account with a sign-in address receives a one-time password, shown once, and
   can reach nothing until it sets its own — the restriction travels in the signed

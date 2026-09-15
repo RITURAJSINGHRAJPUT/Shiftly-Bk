@@ -174,6 +174,7 @@ without it is a silent privilege escalation rather than an error.
 | Enrol/edit your own department's staff at your own restaurant | `HEAD_CHEF` |
 | Create / edit any employee, anywhere | `HR` |
 | Deactivate employee, delete shift, edit outlet/brand/org | `ADMIN` |
+| Issue a replacement one-time password | `HR` |
 | Create shift, auto-allocate, approve/reject leave, manage shift patterns | `HEAD_CHEF` |
 | View attendance beyond your own (own department), approve/reject overtime | `HEAD_CHEF` |
 | Pull attendance from the punch log | `HR` |

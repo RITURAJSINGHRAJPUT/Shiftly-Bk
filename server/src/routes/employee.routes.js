@@ -584,6 +584,29 @@ router.put('/:id', authenticateToken, can('EMPLOYEE_ENROL'), async (req, res) =>
 
     Object.assign(data, assignment);
 
+    /**
+     * Giving a clock-in-only record an email is the moment it becomes an
+     * account, so it gets its first password here.
+     *
+     * Enrolment by a department head produces someone with a code and no
+     * sign-in. The obvious way to give them one — add an email, then press the
+     * key icon — meant two steps, and the second was refused until the first
+     * had been saved, which reads as a bug rather than a sequence. Doing it in
+     * the same write removes the gap where the account exists but cannot be
+     * signed into and nobody has been told.
+     *
+     * Only on the transition. Editing someone who already has an email leaves
+     * their password alone, or correcting a typo in an address would silently
+     * lock them out.
+     */
+    const gainsLogin = !existing.email && Boolean(data.email);
+    let temporaryPassword = null;
+    if (gainsLogin && holdsCapability(req.user, 'EMPLOYEE_RESET_PW')) {
+      temporaryPassword = generateTemporaryPassword();
+      data.password = await bcrypt.hash(temporaryPassword, 10);
+      data.mustChangePassword = true;
+    }
+
     const employee = await prisma.employee.update({
       where: { id: req.params.id },
       data,
@@ -592,9 +615,12 @@ router.put('/:id', authenticateToken, can('EMPLOYEE_ENROL'), async (req, res) =>
 
     const { password, ...sanitized } = employee;
 
-    logAudit({ action: 'EMPLOYEE_EDIT', entity: 'Employee', entityId: employee.id, actor: req.user, details: { employeeName: employee.name } });
+    logAudit({
+      action: 'EMPLOYEE_EDIT', entity: 'Employee', entityId: employee.id, actor: req.user,
+      details: { employeeName: employee.name, ...(temporaryPassword ? { issuedLogin: true } : {}) },
+    });
 
-    res.json(sanitized);
+    res.json({ ...sanitized, ...(temporaryPassword ? { temporaryPassword } : {}) });
   } catch (err) {
     // Both were mapped on POST but not here, so renaming onto a taken email or
     // editing a row deleted underneath you surfaced as a bare 500.

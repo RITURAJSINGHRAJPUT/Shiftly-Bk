@@ -232,8 +232,16 @@ export default function EmployeesPage() {
     e.preventDefault();
     try {
       if (editingEmployee) {
-        await api.put(`/employees/${editingEmployee.id}`, formData);
-        setIsModalOpen(false);
+        const updated = await api.put(`/employees/${editingEmployee.id}`, formData);
+        // Giving a clock-in-only person an email turns them into an account, and
+        // the server issues their first password in that same write. It is shown
+        // once, so the modal has to stay open on it.
+        if (updated.temporaryPassword) {
+          setEditingEmployee(null);
+          setIssued({ name: updated.name, email: updated.email, password: updated.temporaryPassword });
+        } else {
+          setIsModalOpen(false);
+        }
       } else {
         const created = await api.post('/employees', formData);
         if (created.temporaryPassword) {
@@ -632,11 +640,18 @@ export default function EmployeesPage() {
                                   or locking out an account is not theirs. */}
                               {!isDepartmentHead && (
                               <>
+                              {/* A clock-in-only record has no sign-in address,
+                                  so there is no password to reissue — the server
+                                  refuses it. Give them an email on the edit form
+                                  and one is issued in that same save. */}
                               <button
                                 className="btn btn-ghost btn-icon btn-sm"
                                 onClick={() => handleResetPassword(emp)}
+                                disabled={!emp.email}
                                 aria-label={`Reset password for ${emp.name}`}
-                                title="Issue a new one-time password"
+                                title={emp.email
+                                  ? 'Issue a new one-time password'
+                                  : 'Clock-in only — add an email to give them a sign-in'}
                               >
                                 <KeyRound size={14} />
                               </button>

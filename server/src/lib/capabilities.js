@@ -70,9 +70,13 @@ export const CAPABILITIES = {
       'shares HR\u2019s rank and would otherwise clear it.',
   },
   EMPLOYEE_RESET_PW: {
-    group: 'People', label: 'Issue a new one-time password', minRole: 'ADMIN',
-    note: 'Higher than enrolment: this takes over an existing account rather than creating a new one. ' +
-      'Exception: an Outlet Manager may reset a password for staff at their own outlet.',
+    group: 'People', label: 'Issue a new one-time password', minRole: 'HR',
+    note: 'The same floor as enrolment, because it is the same act from the other end: HR issues the ' +
+      'first one-time password when they enrol someone, and a lost password is simply that again. ' +
+      'Holding this above enrolment meant the role that creates accounts could not help the person ' +
+      'whose password it had handed them. A department head still cannot — they enrol clock-in-only ' +
+      'records, which have no sign-in to take over. Exception: an Outlet Manager may reset a password ' +
+      'for staff at their own outlet.',
   },
   EMPLOYEE_DEACTIVATE: {
     group: 'People', label: 'Deactivate an employee', minRole: 'ADMIN',
