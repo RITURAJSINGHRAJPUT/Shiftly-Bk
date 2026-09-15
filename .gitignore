@@ -15,3 +15,15 @@ api/
 
 # Staff import sheets — real names and ids, not for version control.
 staff/
+
+# Raw punch exports from the biometric feed. These carry real employee names
+# alongside timestamped clock-ins for named individuals, and this repository is
+# public. Load one with `npm --prefix server run directory:load -- <path>` and
+# leave the file on disk.
+#
+# Note this does NOT cover assets/emplist.txt, which is already tracked — an
+# ignore rule has no effect on a file git is already following. Untrack it with
+# `git rm --cached assets/emplist.txt` if you want future exports to stop being
+# committed under that name.
+assets/emplist*.txt
+assets/*punches*.json
