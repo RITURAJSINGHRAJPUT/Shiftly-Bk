@@ -64,6 +64,32 @@ export function gridRows(brandStations = []) {
 export const GLOBAL_SCOPE_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR'];
 
 /**
+ * Mirrors the ATTENDANCE_VIEW_ALL capability (server/src/lib/capabilities.js).
+ * Everyone else sees only their own record, which the server enforces
+ * regardless — this only decides which view to render.
+ */
+export const ATTENDANCE_VIEW_ALL_ROLES = [
+  'SUPER_ADMIN', 'ADMIN', 'HR', 'OUTLET_MANAGER', 'MASTER_OF_HOUSE', 'HEAD_CHEF',
+];
+
+/** Mirrors ATTENDANCE_SYNC — the pull is org-wide, so it sits higher. */
+export const ATTENDANCE_SYNC_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'OUTLET_MANAGER'];
+
+/**
+ * Mirrors DEPARTMENT_APPROVERS in server/src/routes/attendance.routes.js (and
+ * leave.routes.js, which routes the same way). A locked manager acts only on
+ * their own department; global roles act on any.
+ */
+export const DEPARTMENT_APPROVERS = {
+  KITCHEN: 'HEAD_CHEF',
+  SERVICE: 'MASTER_OF_HOUSE',
+  HOUSEKEEPING: 'MASTER_OF_HOUSE',
+};
+
+/** The standard working day, in minutes. Mirrors WORKDAY_MINUTES on the server. */
+export const WORKDAY_MINUTES = 9 * 60;
+
+/**
  * Weekday numbering matches `Date.getDay()` — Sunday is 0 — which is what the
  * server stores on ShiftTemplate.daysOfWeek and what both the allocator and the
  * week grid already hold dates in, so nothing converts anywhere.

@@ -54,6 +54,23 @@ export function employeeScope(req) {
   return Object.keys(scope).length ? { employee: scope } : {};
 }
 
+/**
+ * Employee-level filter for "people who actually clock in", outlet-scoped.
+ *
+ * Administration roles (GLOBAL_SCOPE_ROLES) belong to no restaurant and never
+ * punch a clock, so their rows are noise in an attendance list and silently
+ * inflate any headcount denominator built from Employee.
+ *
+ * Returned flat, for use either as an Employee `where` or as the *value* of an
+ * `employee` key on Attendance. It must be spread into that nested object
+ * rather than alongside it: `{ ...employeeScope(req), employee: {...} }` looks
+ * right but overwrites the key employeeScope() put the outlet pin in, and a
+ * head chef would then see every outlet in the org.
+ */
+export function clockingEmployeeFilter(req) {
+  return { ...outletScope(req), role: { notIn: GLOBAL_SCOPE_ROLES } };
+}
+
 /** Standard include for returning an outlet with its brand and org attached. */
 export const outletInclude = {
   outlet: {

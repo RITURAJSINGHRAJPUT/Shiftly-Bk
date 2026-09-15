@@ -81,8 +81,10 @@ Current seeded scale: **1 organization → 2 brands → 6 outlets → 196 employ
 
 ### Key models
 
-**`Outlet`** — one restaurant. Carries the geofence used by attendance:
-`latitude`, `longitude`, `radius` (metres, default 100).
+**`Outlet`** — one restaurant. Carries `latitude`, `longitude` and `radius`
+(metres, default 100). These fed the geofenced check-in, which is retired; they
+are kept because the engine still exists and the coordinates describe where the
+restaurant is.
 
 **`Employee`** — `role`, `department`, `outletId`, and `skills String[]`. The
 skills array is what the allocator's station matching keys off, e.g.
@@ -114,9 +116,23 @@ additive, so it is safe against a live database.
 **`Shift`** — one actual assignment: `date`, `startTime`, `endTime`, `section`,
 `status`, `employeeId`, `outletId`.
 
-**`Attendance`** — `@@unique([employeeId, date])`, so one row per person per day,
-upserted by check-in. Holds `checkIn`/`checkOut` plus the lat/lng of each and
-`withinRange`.
+**`Attendance`** — `@@unique([employeeId, date])`, so one row per person per
+*working* day, written by the punch-log import. Holds
+`checkIn`/`checkOut` plus the lat/lng of each, `withinRange`, `status` and
+`notes`.
+
+Overtime lives here too (`overtimeMinutes`, `overtimeStatus`,
+`overtimeMinutesAtDecision`, `overtimeApprovedBy`, `overtimeDecidedAt`) rather
+than in a table of its own: it is a pure function of `checkIn`/`checkOut`, and a
+separate row could drift from the record it was derived from. The day is nine
+hours whatever time it starts; everything past that is overtime, signed off by
+the department head. `overtimeMinutesAtDecision` is what was actually approved,
+so a re-import can tell a changed punch from an unchanged one and only reopen a
+decision in the first case.
+
+The working day need not begin at midnight — `ATTENDANCE_DAY_CUTOFF_HOUR` moves
+the boundary so a shift running past it stays one row. See
+`attendanceDayFor()` in `server/src/lib/dates.js`.
 
 **`Leave`** — includes `isEmergency`, `coveredById` and `expiresAt`, which drive
 the 30-minute emergency-cover window.
@@ -158,7 +174,8 @@ without it is a silent privilege escalation rather than an error.
 | Create / edit employee | `HR` |
 | Deactivate employee, delete shift, edit outlet/brand/org | `ADMIN` |
 | Create shift, auto-allocate, approve/reject leave, manage shift patterns | `HEAD_CHEF` |
-| View attendance beyond your own | `MASTER_OF_HOUSE` |
+| View attendance beyond your own, approve/reject overtime | `HEAD_CHEF` |
+| Pull attendance from the punch log | `HR` |
 
 ### Token versioning
 
@@ -253,11 +270,19 @@ same deletion and so needs the same role.
 ### Attendance
 | Method | Path |
 |---|---|
-| `POST` | `/api/attendance/check-in` — `{ latitude, longitude }` |
-| `POST` | `/api/attendance/check-out` |
 | `GET` | `/api/attendance/today` |
-| `GET` | `/api/attendance?date=&startDate=&endDate=&employee=&status=` |
+| `GET` | `/api/attendance?date=&startDate=&endDate=&employee=&status=&overtimeStatus=` |
+| `GET` | `/api/attendance/summary?period=week\|month&startDate=&endDate=` |
 | `GET` | `/api/attendance/stats` |
+| `POST` | `/api/attendance/import` — API key; raw punch array |
+| `POST` | `/api/attendance/sync` — pull from the punch database (`HR`) |
+| `POST` | `/api/attendance/sync-job` — the same pull, for a scheduler (API key) |
+| `POST` | `/api/attendance/:id/overtime/approve` — `HEAD_CHEF` + own department |
+| `POST` | `/api/attendance/:id/overtime/reject` — `HEAD_CHEF` + own department |
+
+Administration roles are excluded from the attendance list: they never clock in,
+so their rows are noise and they inflate any headcount built from `Employee`.
+They still see their own record.
 
 ### Leave
 | Method | Path | Guard |
@@ -320,12 +345,27 @@ every slot group that could not be filled, with a reason — under-staffing is
 reported, not hidden. An outlet with no patterns returns an explicit message
 rather than falling back to a generic set.
 
-### Geofenced attendance — [engine/geoAttendance.js](server/src/engine/geoAttendance.js)
+### Attendance — [engine/attendanceImport.js](server/src/engine/attendanceImport.js)
 
-Haversine distance from the outlet's coordinates; `withinRange` is
-`distance <= outlet.radius`. Check-in is marked `LATE` when more than 15 minutes
-after the shift start. Out-of-range check-ins are **recorded and flagged**, not
-rejected.
+Hours come from the punch log in the attendance database, not from anyone
+pressing a button. Each person's punches for a working day collapse to one row —
+earliest to `checkIn`, latest to `checkOut` — with taps within 120 seconds
+treated as one, since a double-registered reader would otherwise produce a
+"complete" zero-minute day. A day is marked `LATE` when the first punch is more
+than 15 minutes after the shift it was rostered against.
+
+`geoAttendance.js` still holds the Haversine geofence and the `processCheckIn` /
+`processCheckOut` pair, but **nothing calls them**: self-check-in was retired so
+that one source writes each row. Its `statusFor()` is still used, by the
+importer, to decide lateness.
+
+### Overtime — [engine/overtime.js](server/src/engine/overtime.js)
+
+A pure function, no database. Nine hours is the day; `max(0, worked - 540)` is
+the overtime. Exempt: the two department heads (they are the approvers) and the
+administration roles. A day only reaches an approval queue once it is over, is
+under a 16-hour implausibility ceiling, and falls on or after
+`OVERTIME_EFFECTIVE_FROM`.
 
 ### Leave — [engine/leaveManager.js](server/src/engine/leaveManager.js)
 

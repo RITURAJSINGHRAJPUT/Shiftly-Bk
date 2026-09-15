@@ -2,6 +2,7 @@
  * Geofenced Attendance Engine
  * Uses Haversine formula to validate check-in/out within outlet radius
  */
+import { attendanceDayFor } from '../lib/dates.js';
 
 /**
  * Calculate distance between two points using Haversine formula
@@ -50,6 +51,21 @@ export async function determineAttendanceStatus(prisma, employeeId, date, checkI
     where: { employeeId, date, status: 'ASSIGNED' },
   });
 
+  return statusFor(dayShift, date, checkInTime, hasCheckOut);
+}
+
+/**
+ * The same decision with the shift already in hand.
+ *
+ * Split out for the importer, which processes thousands of employee-days in one
+ * run: looking each shift up individually made the loop two sequential round
+ * trips per day, which is minutes of wall clock over a month and long enough to
+ * time out the browser. It prefetches the window's shifts in one query and
+ * calls this instead. The live check-in path above is unchanged.
+ */
+export function statusFor(dayShift, date, checkInTime, hasCheckOut = false) {
+  if (hasCheckOut) return 'CHECKED_OUT';
+
   if (dayShift) {
     const [sh, sm] = dayShift.startTime.split(':').map(Number);
     const shiftStart = new Date(date);
@@ -74,8 +90,12 @@ export async function processCheckIn(prisma, employeeId, latitude, longitude) {
   if (!employee) throw new Error('Employee not found');
 
   const geoResult = isWithinGeofence(latitude, longitude, employee.outlet);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Which working day this counts as, not which calendar day it is — the same
+  // boundary the importer uses. If these two disagreed, a night worker who taps
+  // the app at 02:00 and the biometric reader at 02:05 would get two Attendance
+  // rows for one shift, and the unique constraint could not catch it because
+  // the dates would genuinely differ.
+  const today = attendanceDayFor(new Date());
 
   // Check if already checked in today
   const existing = await prisma.attendance.findUnique({
@@ -131,8 +151,9 @@ export async function processCheckOut(prisma, employeeId, latitude, longitude) {
   if (!employee) throw new Error('Employee not found');
 
   const geoResult = isWithinGeofence(latitude, longitude, employee.outlet);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Same working-day boundary as the check-in above, so a shift that runs past
+  // midnight closes the row it opened.
+  const today = attendanceDayFor(new Date());
 
   const existing = await prisma.attendance.findUnique({
     where: {

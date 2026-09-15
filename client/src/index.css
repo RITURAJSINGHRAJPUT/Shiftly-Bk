@@ -3404,7 +3404,7 @@ tbody tr:last-child td {
   .leave-cards td:nth-child(6) .badge {
     width: 100%;
     justify-content: center;
-    /* The tag carries an ml-1 for the side-by-side desktop row. */
+    /* The tag carries an ml-2 for the side-by-side desktop row. */
     margin-left: 0;
   }
   .leave-cards td:nth-child(7) { grid-area: actions; justify-self: end; }

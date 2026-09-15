@@ -116,6 +116,27 @@ export const CAPABILITIES = {
     group: 'Shift patterns', label: 'See what clearing would delete', minRole: 'HEAD_CHEF',
   },
 
+  ATTENDANCE_VIEW_ALL: {
+    group: 'Attendance', label: "See other people's attendance", minRole: 'HEAD_CHEF',
+    note: 'Everyone can always see their own record. This is the whole restaurant, ' +
+      'every department — the same reach a head chef already has over leave requests. ' +
+      'Administration roles never clock in, so their rows are hidden from the list.',
+  },
+
+  ATTENDANCE_SYNC: {
+    group: 'Attendance', label: 'Pull attendance from the punch log', minRole: 'HR',
+    note: 'Higher than viewing it: the pull is organisation-wide by nature, so it ' +
+      'writes every restaurant\'s rows, not just the caller\'s own.',
+  },
+  OVERTIME_APPROVE: {
+    group: 'Attendance', label: 'Approve overtime', minRole: 'HEAD_CHEF',
+    note: 'Only for your own department, at your own restaurant, and never your own ' +
+      'overtime — enforced per record, the same way leave approval is.',
+  },
+  OVERTIME_REJECT: {
+    group: 'Attendance', label: 'Reject overtime', minRole: 'HEAD_CHEF',
+  },
+
   LEAVE_APPROVE: {
     group: 'Leave', label: 'Approve a leave request', minRole: 'HEAD_CHEF',
   },

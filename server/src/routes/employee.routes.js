@@ -86,6 +86,10 @@ router.get('/', authenticateToken, async (req, res) => {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
+        // Searchable because the attendance import reports the codes it could
+        // not match, and the only way to act on one was to open records until
+        // you found it.
+        { employeeCode: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -150,6 +154,96 @@ function readStations(skills, department) {
     skills.map((s) => String(s).trim().toLowerCase()).filter(Boolean)
   )];
 }
+
+/**
+ * PUT /api/employees/codes — assign employee codes in bulk.
+ *
+ * The code is how a punch in the attendance log finds its way to a person, and
+ * the import reports every id it could not match. Setting them one modal at a
+ * time made that report unusable for a roster of any size.
+ *
+ * Declared before PUT /:id, or "codes" would be read as an employee id.
+ *
+ * Deliberately not one transaction: a single duplicate would abort the whole
+ * batch, and the shared P2002 handler would report the *field* rather than
+ * which row caused it — so a page of forty assignments would fail with one
+ * unhelpful message. Each row is applied on its own and the failures come back
+ * named, so the caller can fix those and keep the rest.
+ */
+router.put('/codes', authenticateToken, can('EMPLOYEE_EDIT'), async (req, res) => {
+  try {
+    const { assignments } = req.body;
+    if (!Array.isArray(assignments) || assignments.length === 0) {
+      return res.status(400).json({ error: 'assignments must be a non-empty array' });
+    }
+    if (assignments.length > 500) {
+      return res.status(400).json({ error: 'At most 500 assignments at a time' });
+    }
+
+    const normalised = assignments.map((a) => ({
+      id: a.id,
+      employeeCode: a.employeeCode?.trim() || null,
+    }));
+
+    const conflicts = [];
+    const applied = [];
+
+    // Caught here rather than by the unique constraint, which would otherwise
+    // apply the first of a duplicated pair and reject the second, leaving the
+    // caller to guess which.
+    const seen = new Map();
+    for (const a of normalised) {
+      if (!a.id) { conflicts.push({ ...a, reason: 'Missing employee id' }); continue; }
+      if (a.employeeCode && seen.has(a.employeeCode)) {
+        conflicts.push({ ...a, reason: 'Listed twice in this request' });
+        continue;
+      }
+      if (a.employeeCode) seen.set(a.employeeCode, a.id);
+      applied.push(a);
+    }
+
+    const targets = await prisma.employee.findMany({
+      where: { id: { in: applied.map((a) => a.id) } },
+      select: { id: true, outletId: true, role: true },
+    });
+    const targetById = new Map(targets.map((t) => [t.id, t]));
+
+    let updated = 0;
+    for (const a of applied) {
+      const target = targetById.get(a.id);
+      if (!target) { conflicts.push({ ...a, reason: 'No such employee' }); continue; }
+
+      // An outlet manager may only touch their own restaurant's people.
+      const denied = outletManagerAssignmentDenied(req, target);
+      if (denied) { conflicts.push({ ...a, reason: denied }); continue; }
+
+      try {
+        await prisma.employee.update({ where: { id: a.id }, data: { employeeCode: a.employeeCode } });
+        updated++;
+      } catch (err) {
+        conflicts.push({
+          ...a,
+          reason: err.code === 'P2002'
+            ? 'That code is already used by another employee'
+            : err.message,
+        });
+      }
+    }
+
+    if (updated > 0) {
+      logAudit({
+        action: 'EMPLOYEE_EDIT',
+        entity: 'Employee',
+        actor: req.user,
+        details: { bulkCodes: updated, conflicts: conflicts.length },
+      });
+    }
+
+    res.json({ updated, conflicts });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // POST /api/employees — create employee
 router.post('/', authenticateToken, can('EMPLOYEE_CREATE'), async (req, res) => {

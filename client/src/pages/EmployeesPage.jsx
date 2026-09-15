@@ -4,7 +4,7 @@ import Modal from '../components/Modal';
 import { useScope } from '../contexts/ScopeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { GLOBAL_SCOPE_ROLES, STATIONS, departmentHasStations } from '../constants';
-import { Plus, Search, Filter, Edit, Trash2, Store, ShieldCheck, Users, KeyRound, Copy, Check } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Trash2, Store, ShieldCheck, Users, KeyRound, Copy, Check, Hash } from 'lucide-react';
 
 /**
  * Role options for the Add/Edit modal, split by which "side" of the
@@ -51,6 +51,18 @@ export default function EmployeesPage() {
    * a lost one needs a reset, which is why it is surfaced this deliberately.
    */
   const [issued, setIssued] = useState(null);
+
+  /**
+   * Bulk employee-code assignment.
+   *
+   * Attendance punches find their way to a person by employee code, so a roster
+   * with none imports nothing. Setting them one modal at a time is the only way
+   * there was, which does not survive a restaurant's worth of staff.
+   */
+  const [codesOpen, setCodesOpen] = useState(false);
+  const [codeDrafts, setCodeDrafts] = useState({});
+  const [savingCodes, setSavingCodes] = useState(false);
+  const [codeResult, setCodeResult] = useState(null);
 
   // "Copied" feedback for the one-time-password reveal's Copy button.
   const [copied, setCopied] = useState(false);
@@ -278,6 +290,42 @@ export default function EmployeesPage() {
     if (firstHit) setSelectedGroupId(firstHit.id);
   }, [isFiltering, groups, selectedGroupId]);
 
+  const openCodes = () => {
+    setCodeResult(null);
+    setCodeDrafts(Object.fromEntries(
+      (selected?.people || []).map((e) => [e.id, e.employeeCode || ''])
+    ));
+    setCodesOpen(true);
+  };
+
+  const saveCodes = async () => {
+    setSavingCodes(true);
+    setCodeResult(null);
+    try {
+      // Only what actually changed — resending an unchanged code would collide
+      // with itself on the unique constraint and report a false conflict.
+      const assignments = Object.entries(codeDrafts)
+        .filter(([id, code]) => {
+          const current = selected.people.find((p) => p.id === id)?.employeeCode || '';
+          return code.trim() !== current;
+        })
+        .map(([id, employeeCode]) => ({ id, employeeCode }));
+
+      if (assignments.length === 0) {
+        setCodeResult({ updated: 0, conflicts: [], nothing: true });
+        return;
+      }
+
+      const res = await api.put('/employees/codes', { assignments });
+      setCodeResult(res);
+      loadData();
+    } catch (err) {
+      setCodeResult({ error: err.message || 'Could not save codes' });
+    } finally {
+      setSavingCodes(false);
+    }
+  };
+
   return (
     <div className="page-content animate-in">
       <div className="page-header">
@@ -285,21 +333,29 @@ export default function EmployeesPage() {
           <h1 className="page-title">Employee Directory</h1>
           <p className="page-subtitle">Manage profiles, departments, outlet assignments and kitchen stations</p>
         </div>
-        {/* Disabled until a card is picked: without one there is no outlet to
-            put someone in, and no way to know which of the two forms to show. */}
-        <button
-          className="btn btn-primary"
-          onClick={handleOpenAdd}
-          disabled={!addMode}
-          title={addMode ? undefined : 'Pick Management or an outlet first'}
-        >
-          <Plus size={16} />
-          <span>
-            {addMode === 'management' ? 'Add Management User'
-              : addMode === 'staff' ? `Add Employee to ${selected.name}`
-              : 'Add Employee'}
-          </span>
-        </button>
+        <div className="flex gap-2">
+          {/* Disabled until a card is picked: without one there is no outlet to
+              put someone in, and no way to know which of the two forms to show. */}
+          <button
+            className="btn btn-primary"
+            onClick={handleOpenAdd}
+            disabled={!addMode}
+            title={addMode ? undefined : 'Pick Management or an outlet first'}
+          >
+            <Plus size={16} />
+            <span>
+              {addMode === 'management' ? 'Add Management User'
+                : addMode === 'staff' ? `Add Employee to ${selected.name}`
+                : 'Add Employee'}
+            </span>
+          </button>
+          {selected?.people?.length > 0 && (
+            <button className="btn btn-ghost" onClick={openCodes}>
+              <Hash size={16} />
+              <span>Assign Codes</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="card mb-4">
@@ -404,6 +460,7 @@ export default function EmployeesPage() {
                     <thead>
                       <tr>
                         <th>Name</th>
+                        <th>Code</th>
                         <th>Department</th>
                         <th>Role</th>
                         <th>Stations</th>
@@ -416,6 +473,14 @@ export default function EmployeesPage() {
                           <td>
                             <div className="font-semibold" style={{ color: 'var(--ink-strong)' }}>{emp.name}</div>
                             <div className="text-xs text-muted">{emp.email}</div>
+                          </td>
+                          <td>
+                            {/* Visible because attendance will not reach anyone
+                                without it, and a missing one is invisible
+                                otherwise until their hours never appear. */}
+                            {emp.employeeCode
+                              ? <span className="badge badge-ghost">{emp.employeeCode}</span>
+                              : <span className="text-xs text-muted">— not set</span>}
                           </td>
                           <td>
                             {/* Management accounts have none — a dash rather
@@ -701,6 +766,70 @@ export default function EmployeesPage() {
           </div>
         </form>
         )}
+      </Modal>
+
+      <Modal
+        isOpen={codesOpen}
+        onClose={() => setCodesOpen(false)}
+        title={`Employee codes · ${selected?.name || ''}`}
+        wide
+      >
+        <p className="text-sm text-secondary">
+          The id each person has in the attendance system. Punches are matched on
+          this, so anyone without one records no hours. Blank clears it.
+        </p>
+
+        {codeResult && (
+          <div className={`card mt-3 ${codeResult.error || codeResult.conflicts?.length ? 'card--alert-warn' : 'card--alert-good'}`}>
+            <p className="text-sm font-semibold" style={{ color: codeResult.error ? 'var(--ink-crit)' : 'var(--ink-strong)' }}>
+              {codeResult.error
+                || (codeResult.nothing ? 'Nothing changed.' : `${codeResult.updated} code(s) saved.`)}
+            </p>
+            {/* Named per row: a batch that reports only "a code is in use"
+                leaves you guessing which of forty it was. */}
+            {codeResult.conflicts?.length > 0 && (
+              <div className="divided-list mt-2">
+                {codeResult.conflicts.map((c) => (
+                  <div key={c.id} className="flex items-center gap-2 text-xs">
+                    <span className="font-semibold text-strong">
+                      {selected?.people?.find((p) => p.id === c.id)?.name || c.id}
+                    </span>
+                    <span className="badge badge-ghost">{c.employeeCode || '—'}</span>
+                    <span className="text-secondary" style={{ marginLeft: 'auto' }}>{c.reason}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="divided-list mt-3" style={{ maxHeight: '46vh', overflowY: 'auto' }}>
+          {(selected?.people || []).map((emp) => (
+            <div key={emp.id} className="flex items-center gap-3">
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="text-sm font-semibold text-strong">{emp.name}</div>
+                <div className="text-xs text-muted">{emp.department || emp.role.replace(/_/g, ' ')}</div>
+              </div>
+              <input
+                type="text"
+                className="form-input"
+                style={{ maxWidth: 160 }}
+                placeholder="e.g. DP443"
+                value={codeDrafts[emp.id] ?? ''}
+                onChange={(e) => setCodeDrafts((prev) => ({ ...prev, [emp.id]: e.target.value }))}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="modal-footer" style={{ padding: 0, marginTop: '16px' }}>
+          <button type="button" className="btn btn-ghost" onClick={() => setCodesOpen(false)} disabled={savingCodes}>
+            Close
+          </button>
+          <button type="button" className="btn btn-primary" onClick={saveCodes} disabled={savingCodes}>
+            {savingCodes ? 'Saving…' : 'Save codes'}
+          </button>
+        </div>
       </Modal>
     </div>
   );

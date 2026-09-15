@@ -92,6 +92,21 @@ query parameter, so it cannot be widened by asking differently.
 
 > **Add one pattern across several restaurants** — Each restaurant is checked separately, so a head chef can only reach their own.
 
+### Attendance
+
+| Action | Super Admin | Admin | HR | Outlet Manager | Master of House | Head Chef | Staff |
+|---|---|---|---|---|---|---|---|
+| See other people's attendance | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Pull attendance from the punch log | ✅ | ✅ | ✅ | ✅ | — | — | — |
+| Approve overtime | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Reject overtime | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+
+> **See other people's attendance** — Everyone can always see their own record. This is the whole restaurant, every department — the same reach a head chef already has over leave requests. Administration roles never clock in, so their rows are hidden from the list.
+
+> **Pull attendance from the punch log** — Higher than viewing it: the pull is organisation-wide by nature, so it writes every restaurant's rows, not just the caller's own.
+
+> **Approve overtime** — Only for your own department, at your own restaurant, and never your own overtime — enforced per record, the same way leave approval is.
+
 ### Leave
 
 | Action | Super Admin | Admin | HR | Outlet Manager | Master of House | Head Chef | Staff |

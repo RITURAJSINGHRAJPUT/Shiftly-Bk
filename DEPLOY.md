@@ -200,12 +200,21 @@ Nothing secret goes with it: `.env` and `dist/` are gitignored, and
 | Instance Type | **Free** — switch to Starter when you go live |
 | Health Check Path | `/api/health` — under **Advanced** |
 
-Then **Environment** → add two variables:
+Then **Environment** → add three variables:
 
 | Key | Value |
 |---|---|
 | `DATABASE_URL` | `<POOLER-URL>` |
 | `JWT_SECRET` | click **Generate** |
+| `TZ` | `Asia/Kolkata` |
+
+> **`TZ` is not optional.** Render's containers run on **UTC**, and every date
+> helper in this app means *server*-local time — which day a shift belongs to,
+> which day a punch counts towards, when a working day starts. Left unset, the
+> day boundary falls at 05:30 IST and imported check-in times display five and a
+> half hours late. It is invisible until hours are counted against a nine-hour
+> day and signed off as overtime, at which point it is a payroll error. Setting
+> it later re-buckets existing rows, so set it now.
 
 **Create Web Service.**
 

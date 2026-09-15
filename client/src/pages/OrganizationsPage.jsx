@@ -193,7 +193,7 @@ export default function OrganizationsPage() {
               <h3 className="card-title">Location Geofences</h3>
             </div>
             <span className="text-xs text-muted">
-              Attendance check-in is validated against these coordinates
+              Recorded for the restaurant's location. Attendance itself comes from the punch log, not from these coordinates
             </span>
           </div>
 

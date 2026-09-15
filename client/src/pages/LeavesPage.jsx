@@ -222,7 +222,7 @@ export default function LeavesPage() {
                       {l.status.replace(/_/g, ' ')}
                     </span>
                     {l.status === 'APPROVED' && !l.approvedBy && (
-                      <span className="badge badge-ghost ml-1" style={{ fontSize: '0.65rem' }}>Auto</span>
+                      <span className="badge badge-ghost ml-2" style={{ fontSize: '0.65rem' }}>Auto</span>
                     )}
                   </td>
                   {isManager && (

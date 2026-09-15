@@ -46,7 +46,7 @@ const SOLUTIONS = [
   },
   {
     title: 'Geofenced attendance',
-    body: 'GPS check-in validated against each outlet’s own radius, with late arrivals and out-of-range flagged.',
+    body: 'Hours imported from the biometric punch log, with late arrivals flagged against the shift they were rostered on.',
     live: true,
   },
 ];
@@ -67,7 +67,7 @@ const FEATURES = [
   {
     icon: MapPin,
     title: 'Smart Attendance',
-    body: 'Haversine distance against the outlet geofence. Out-of-range check-ins are recorded and flagged, not silently rejected.',
+    body: 'A nine-hour day however it falls. Every minute past it is overtime, routed to the department head who owns that section to approve or reject.',
     live: true,
   },
   {
@@ -103,7 +103,7 @@ const ROLES = [
   { icon: Briefcase, title: 'Admin & HR', body: 'Group-wide employee records, reports and outlet configuration.' },
   { icon: UserCog, title: 'Master of House', body: 'Front-of-house cover for their own venue, with attendance oversight.' },
   { icon: ChefHat, title: 'Head Chef', body: 'Kitchen stations, shift patterns and rostering for their own venue.' },
-  { icon: User, title: 'Staff', body: 'Own shifts, geofenced check-in, leave requests and emergency cover.' },
+  { icon: User, title: 'Staff', body: 'Own shifts, recorded hours and overtime, leave requests and emergency cover.' },
 ];
 
 /** Marks a capability that is designed but has nothing behind it yet. */

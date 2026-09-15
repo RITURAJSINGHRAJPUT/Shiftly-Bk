@@ -18,6 +18,10 @@ const ACTION_COLORS = {
   SHIFT_RESET: 'crit',
   LEAVE_APPROVE: 'good',
   LEAVE_REJECT: 'crit',
+  ATTENDANCE_IMPORT: 'brand',
+  OVERTIME_APPROVE: 'good',
+  OVERTIME_REJECT: 'crit',
+  OVERTIME_RECOMPUTED: 'warn',
   OUTLET_CREATE: 'good',
   OUTLET_EDIT: 'info',
   BRAND_CREATE: 'good',
@@ -31,12 +35,13 @@ const ACTION_OPTIONS = [
   'EMPLOYEE_CREATE', 'EMPLOYEE_EDIT', 'EMPLOYEE_DELETE', 'STAFF_WIPE',
   'SHIFT_CREATE', 'SHIFT_ALLOCATE', 'SHIFT_DELETE', 'SHIFT_RESET',
   'LEAVE_APPROVE', 'LEAVE_REJECT',
+  'ATTENDANCE_IMPORT', 'OVERTIME_APPROVE', 'OVERTIME_REJECT', 'OVERTIME_RECOMPUTED',
   'OUTLET_CREATE', 'OUTLET_EDIT',
   'BRAND_CREATE', 'BRAND_EDIT',
   'PATTERN_CREATE', 'PATTERN_CLEAR',
 ];
 
-const ENTITY_OPTIONS = ['Employee', 'Shift', 'Leave', 'Outlet', 'Brand', 'ShiftTemplate', 'Auth'];
+const ENTITY_OPTIONS = ['Employee', 'Shift', 'Leave', 'Attendance', 'Outlet', 'Brand', 'ShiftTemplate', 'Auth'];
 
 function summarise(log) {
   const d = log.details;

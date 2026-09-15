@@ -1,0 +1,62 @@
+# Nightly attendance pull.
+#
+# Runs here rather than inside the server because Render's free instance sleeps
+# after 15 minutes idle, and a suspended process fires no timers — a setInterval
+# schedule would simply never run on an evening nobody used the app. This
+# request also wakes the instance, which is the point.
+#
+# Set two repository secrets (Settings → Secrets and variables → Actions):
+#   SHIFTLY_URL                 https://your-service.onrender.com
+#   ATTENDANCE_IMPORT_KEY       one value from ATTENDANCE_IMPORT_KEYS on Render
+name: Sync attendance
+
+on:
+  schedule:
+    # 03:30 UTC = 09:00 IST, after the night shift has closed out. GitHub's
+    # scheduler is best-effort and can drift by 15 minutes or so; nothing here
+    # depends on the exact minute.
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull punches into Shiftly
+        env:
+          SHIFTLY_URL: ${{ secrets.SHIFTLY_URL }}
+          ATTENDANCE_IMPORT_KEY: ${{ secrets.ATTENDANCE_IMPORT_KEY }}
+        run: |
+          set -euo pipefail
+
+          # A sleeping free instance cold-starts in around a minute, so the
+          # first attempt is given room and retried once rather than failing
+          # the run on a timeout that means nothing.
+          for attempt in 1 2; do
+            code=$(curl -sS -o /tmp/out.json -w '%{http_code}' \
+              --max-time 180 \
+              -X POST "$SHIFTLY_URL/api/attendance/sync-job" \
+              -H "X-API-Key: $ATTENDANCE_IMPORT_KEY" \
+              -H 'Content-Type: application/json' \
+              -d '{}') && break || true
+            echo "attempt $attempt failed, retrying after cold start…"
+            sleep 30
+          done
+
+          cat /tmp/out.json
+          echo
+
+          if [ "${code:-000}" != "200" ]; then
+            echo "::error::sync returned HTTP ${code:-no response}"
+            exit 1
+          fi
+
+          # Surface unmatched punch ids in the run summary — they are the only
+          # thing about a successful sync that needs a person to act.
+          python3 - <<'PY'
+          import json
+          d = json.load(open('/tmp/out.json'))
+          print(f"{d.get('daysWritten', 0)} day(s) written from {d.get('processed', 0)} punches")
+          for u in d.get('unmatched', []):
+              print(f"  unmatched: {u['userid']}  {u.get('name') or '(no name)'}  {u['punchCount']} punches")
+          PY

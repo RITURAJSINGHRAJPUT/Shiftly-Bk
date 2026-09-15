@@ -31,6 +31,12 @@ enum ShiftStatus {
   CANCELLED
 }
 
+enum OvertimeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum AttendanceStatus {
   CHECKED_IN
   CHECKED_OUT
@@ -205,9 +211,30 @@ model Attendance {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
+  /// Minutes worked beyond the standard nine-hour day, from the first punch to
+  /// the last. Columns on Attendance rather than a table of its own, because
+  /// overtime here is a pure function of checkIn/checkOut rather than a record
+  /// anyone authors: a separate row derived from fields that two engines
+  /// blind-upsert could drift from its own source, and this cannot.
+  overtimeMinutes           Int             @default(0)
+  /// Null when there is nothing to decide — under nine hours, an exempt role,
+  /// a day still in progress, or a span so long it needs a human to look
+  /// before it reaches anyone's queue.
+  overtimeStatus            OvertimeStatus?
+  /// What the approver actually signed off. Kept so a later re-import can tell
+  /// "the punches changed" from "the punches are the same", and only reopen a
+  /// decision in the first case.
+  overtimeMinutesAtDecision Int?
+  /// Employee id of whoever decided. No FK, matching Leave.approvedBy.
+  overtimeApprovedBy        String?
+  overtimeDecidedAt         DateTime?
+
   @@unique([employeeId, date])
   @@index([date])
   @@index([employeeId])
+  /// The approval queue is "everything PENDING, newest first", across every
+  /// employee — a scan of the largest table in the schema without this.
+  @@index([overtimeStatus, date])
 }
 
 model Leave {

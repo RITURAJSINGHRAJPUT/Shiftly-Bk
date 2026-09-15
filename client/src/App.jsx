@@ -13,8 +13,7 @@ import DashboardPage from './pages/DashboardPage';
 import EmployeesPage from './pages/EmployeesPage';
 import ShiftsPage from './pages/ShiftsPage';
 import ShiftMasterPage from './pages/ShiftMasterPage';
-// Attendance page not in use currently — kept for possible future use.
-// import AttendancePage from './pages/AttendancePage';
+import AttendancePage from './pages/AttendancePage';
 import LeavesPage from './pages/LeavesPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
@@ -100,8 +99,7 @@ function Layout() {
           <Route path="/brands" element={<Navigate to="/outlets" replace />} />
           <Route path="/outlets" element={<OutletsPage />} />
           <Route path="/employees" element={<EmployeesPage />} />
-          {/* Attendance page not in use currently — kept for possible future use. */}
-          {/* <Route path="/attendance" element={<AttendancePage />} /> */}
+          <Route path="/attendance" element={<AttendancePage />} />
           <Route path="/leaves" element={<LeavesPage />} />
           <Route path="/shifts" element={<ShiftsPage />} />
           <Route path="/shift-master" element={<ShiftMasterPage />} />

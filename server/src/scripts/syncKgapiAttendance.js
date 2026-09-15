@@ -101,11 +101,14 @@ async function main() {
   }
 
   console.log(`Imported: ${summary.daysWritten} employee-days written from ${summary.processed} punches.`);
-  if (summary.unmatchedUserIds?.length) {
+  if (summary.unmatched?.length) {
     console.warn(
-      `${summary.unmatchedUserIds.length} KGAPI userid(s) have no matching employeeCode in Shiftly — ` +
-      `set it on their profile to pick them up next run: ${summary.unmatchedUserIds.join(', ')}`
+      `${summary.unmatched.length} userid(s) have no matching employeeCode in Shiftly — ` +
+      'set it on their profile to pick them up next run:'
     );
+    for (const u of summary.unmatched) {
+      console.warn(`  ${u.userid}  ${u.name || '(no name in feed)'}  ${u.punchCount} punches`);
+    }
   }
 }
 

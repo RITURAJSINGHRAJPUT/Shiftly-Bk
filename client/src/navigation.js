@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Building2, Store, Users, TreePalm,
+  LayoutDashboard, Building2, Store, Users, TreePalm, Clock,
   CalendarClock, Layers, BrainCircuit, ArrowLeftRight, BarChart3, LineChart,
   Settings, ScrollText, UserCog,
 } from 'lucide-react';
@@ -52,8 +52,8 @@ export const NAV_SECTIONS = [
     title: 'People',
     items: [
       { path: '/employees', label: 'Employees', icon: Users, roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'OUTLET_MANAGER'] },
-      // Attendance page not in use currently — kept for possible future use.
-      // { path: '/attendance', label: 'Attendance', icon: MapPin, roles: 'all' },
+      // Everyone: your own hours and overtime are always your own to see.
+      { path: '/attendance', label: 'Attendance', icon: Clock, roles: 'all' },
       { path: '/leaves', label: 'Leaves', icon: TreePalm, roles: 'all' },
     ],
   },
