@@ -107,7 +107,7 @@ additive, so it is safe against a live database.
 | Field | Purpose |
 |---|---|
 | `outletId` | Patterns are per restaurant, not global |
-| `department` | Which pool can fill it |
+| `department` | Which pool can fill it — plus the department head whose role owns it, who covers only when that pool cannot |
 | `section` | Station — `Pizza`, `Pasta`… `null` means general |
 | `startTime` / `endTime` | Wall-clock strings, `"12:00"` |
 | `headcount` | **How many people it needs** |
@@ -539,5 +539,10 @@ fidelity and route to a page that names what each would require.
 
 **Known open bugs:** the overnight-shift overlap gap described above, and
 `findBestReplacement` in `leaveManager.js` filters by outlet but **not**
-department, so approving a chef's leave can hand a kitchen station to a
-housekeeper.
+department — nor by `ROSTERABLE_ROLES` — so approving a chef's leave can hand a
+kitchen station to a housekeeper, or to an admin.
+
+Not to be confused with the allocator's deliberate version of that: a department
+head may fill a slot in a department their role owns, but only on a second pass,
+after everyone whose department it actually is has been tried and found
+unavailable. That one is scoped, ordered and reported; this one is neither.

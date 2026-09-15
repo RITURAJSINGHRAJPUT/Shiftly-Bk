@@ -123,6 +123,8 @@ query parameter, so it cannot be widened by asking differently.
 | Reject a leave request | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
 | Auto-assign cover for emergency leave | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
 
+> **Approve a leave request** — Your own department, at your own restaurant, and never your own request — enforced per record. A single quiet weekday off still auto-approves on submission without passing through this at all.
+
 ### Transfers
 
 | Action | Super Admin | Admin | HR | Outlet Manager | Master of House | Head Chef | Staff |

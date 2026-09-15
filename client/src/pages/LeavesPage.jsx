@@ -9,10 +9,16 @@ import { GLOBAL_SCOPE_ROLES, DEPARTMENT_APPROVERS } from '../constants';
 
 export default function LeavesPage() {
   const { user, isManager } = useAuth();
-  const canActOn = (leave) =>
-    GLOBAL_SCOPE_ROLES.includes(user?.role) ||
-    user?.role === 'OUTLET_MANAGER' ||
-    DEPARTMENT_APPROVERS[leave.employee.department] === user?.role;
+  const canActOn = (leave) => {
+    // Global roles keep this, matching leaveApprovalDenied() — their own request
+    // has nobody above them to send it to.
+    if (GLOBAL_SCOPE_ROLES.includes(user?.role)) return true;
+    // Nobody else signs off their own. Without this the Approve and Reject
+    // icons render on a manager's own row and 403 on click.
+    if (leave.employee?.id === user?.id) return false;
+    if (user?.role === 'OUTLET_MANAGER') return true;
+    return DEPARTMENT_APPROVERS[leave.employee.department] === user?.role;
+  };
   const [leaves, setLeaves] = useState([]);
   const [pendingEmergencies, setPendingEmergencies] = useState([]);
   const [loading, setLoading] = useState(true);

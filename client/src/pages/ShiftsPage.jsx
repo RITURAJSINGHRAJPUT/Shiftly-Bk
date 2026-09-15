@@ -226,9 +226,22 @@ export default function ShiftsPage() {
 
     const unmatched = [];
     for (const s of dayShifts) {
-      const bucket = buckets.get(
+      let bucket = buckets.get(
         slotKey(s.startTime, s.endTime, s.section, s.employee?.department)
       );
+      // A shift carries no department of its own — it is inferred from whoever
+      // works it. That breaks for a department head covering outside the
+      // section they personally work: a Master of House stored Service filling
+      // a Housekeeping slot produced a key matching no bucket, so the row read
+      // "0/2 unfilled" while the allocation banner above said it was filled.
+      // Widened only for the departments their role owns, so two same-time
+      // same-section patterns in different departments still cannot merge.
+      if (!bucket) {
+        for (const d of departmentsFor(s.employee?.role)) {
+          bucket = buckets.get(slotKey(s.startTime, s.endTime, s.section, d));
+          if (bucket) break;
+        }
+      }
       if (bucket) bucket.shifts.push(s);
       else unmatched.push(s);
     }
@@ -673,7 +686,10 @@ export default function ShiftsPage() {
                     {(() => {
                       const groups = new Map();
                       for (const s of dShifts) {
-                        const key = slotKey(s.startTime, s.endTime, s.section, s.employee?.department);
+                        // Grouped by the slot itself, not by who is filling it —
+                        // a head covering another department would otherwise
+                        // split one slot into two blocks in the same cell.
+                        const key = slotKey(s.startTime, s.endTime, s.section, '');
                         if (!groups.has(key)) {
                           groups.set(key, { section: s.section, startTime: s.startTime, endTime: s.endTime, shifts: [] });
                         }

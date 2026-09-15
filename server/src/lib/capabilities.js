@@ -160,6 +160,9 @@ export const CAPABILITIES = {
 
   LEAVE_APPROVE: {
     group: 'Leave', label: 'Approve a leave request', minRole: 'HEAD_CHEF',
+    note: 'Your own department, at your own restaurant, and never your own request — ' +
+      'enforced per record. A single quiet weekday off still auto-approves on submission ' +
+      'without passing through this at all.',
   },
   LEAVE_REJECT: {
     group: 'Leave', label: 'Reject a leave request', minRole: 'HEAD_CHEF',

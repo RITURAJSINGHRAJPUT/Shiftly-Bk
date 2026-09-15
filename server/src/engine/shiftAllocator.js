@@ -1,4 +1,5 @@
 import { startOfLocalDay, localDateKey, localDateRange } from '../lib/dates.js';
+import { departmentsFor } from '../lib/departments.js';
 
 /**
  * Shift Allocation Engine
@@ -142,6 +143,12 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
 
   // One fragment, spread into every query below, so a scoped run cannot read
   // one set of people and delete another.
+  //
+  // Deliberately NOT widened to include the heads a two-pass fill may stretch:
+  // employeeIds derived from this drives the shift and leave deleteMany calls
+  // below, so a Housekeeping-scoped run would delete a Master of House's
+  // Service shifts and their weekly off. A head stretching into a department is
+  // a placement decision, not a scoping one.
   const departmentScope = departments?.length ? { department: { in: departments } } : {};
 
   const employees = await prisma.employee.findMany({
@@ -244,6 +251,22 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
 
     // Track which department+day combos are taken so no two
     // same-department employees share an off-day.
+    /**
+     * Which departments an employee's day off has to be coordinated with.
+     *
+     * Their own, plus any their role lets them cover. A Master of House whose
+     * off-day was only booked against Service could land on the same day as the
+     * sole housekeeper's — and an auto-off is an APPROVED leave, a hard -1000,
+     * so the cover the two-pass fill exists to provide would be unavailable
+     * exactly when it is needed.
+     *
+     * The cost is that one head's day off now blocks that day in two
+     * departments rather than one. At a small restaurant the
+     * `freeDays.length ? freeDays : weekDays` fallback below absorbs it.
+     */
+    const coordinatedDepartments = (emp) =>
+      [...new Set([emp.department, ...departmentsFor(emp.role)])].filter(Boolean);
+
     const deptDayTaken = new Set();
 
     // Seed from existing approved leaves
@@ -253,7 +276,7 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
         for (const wd of weekDays) {
           const d = startOfLocalDay(wd);
           if (d >= new Date(l.startDate) && d <= new Date(l.endDate)) {
-            deptDayTaken.add(`${emp.department}:${wd}`);
+            for (const d of coordinatedDepartments(emp)) deptDayTaken.add(`${d}:${wd}`);
             dayCount.set(wd, (dayCount.get(wd) || 0) + 1);
           }
         }
@@ -273,7 +296,9 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
       if (hasOff) continue;
 
       // Prefer days where no same-department colleague is off
-      const freeDays = weekDays.filter(wd => !deptDayTaken.has(`${emp.department}:${wd}`));
+      const freeDays = weekDays.filter(
+        wd => !coordinatedDepartments(emp).some(d => deptDayTaken.has(`${d}:${wd}`))
+      );
       const candidates = freeDays.length > 0 ? freeDays : weekDays;
 
       // Pick the day with the fewest total leaves — evens out the spread
@@ -284,7 +309,7 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
         if (c < lowest) { lowest = c; bestDay = wd; }
       }
 
-      deptDayTaken.add(`${emp.department}:${bestDay}`);
+      for (const d of coordinatedDepartments(emp)) deptDayTaken.add(`${d}:${bestDay}`);
       dayCount.set(bestDay, (dayCount.get(bestDay) || 0) + 1);
 
       const offDate = startOfLocalDay(bestDay);
@@ -321,8 +346,29 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
 
       requested += template.headcount;
 
+      /**
+       * Two pools, tried in order.
+       *
+       * The first is everyone whose own department is this one — exactly the
+       * old behaviour, so a restaurant with enough staff rosters identically.
+       * The second is the department heads whose *role* owns it: a Master of
+       * House covers Service and Housekeeping, so they can fill a Housekeeping
+       * slot nobody else can.
+       *
+       * Two passes rather than one widened filter, because scoreEmployee() has
+       * no home-department term to break the tie with. Outside the kitchen
+       * nobody earns the station bonus, so the decider is hours-balance — and a
+       * head spread across two departments always starts the week with the
+       * fewest hours. A single pool would hand them shifts ahead of the people
+       * whose department it actually is.
+       */
       const deptEmployees = employees.filter(e => e.department === template.department);
-      if (deptEmployees.length === 0) {
+      const stretchEmployees = employees.filter(
+        e => e.department !== template.department
+          && departmentsFor(e.role).includes(template.department)
+      );
+
+      if (deptEmployees.length === 0 && stretchEmployees.length === 0) {
         shortfalls.push({
           date,
           template: template.name,
@@ -330,7 +376,7 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
           section: template.section,
           needed: template.headcount,
           filled: 0,
-          reason: 'no active staff in this department',
+          reason: 'no active staff in this department, and no department head who could cover it',
         });
         continue;
       }
@@ -348,18 +394,25 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
       for (let i = 0; i < template.headcount; i++) {
         const pool = [...keptShifts, ...newShifts];
 
-        let best = null;
-        let bestScore = -Infinity;
-        for (const emp of deptEmployees) {
-          const score = scoreEmployee(emp, slot, pool, allAttendance);
-          if (score > bestScore) {
-            bestScore = score;
-            best = emp;
+        const pick = (candidates) => {
+          let best = null;
+          let bestScore = -Infinity;
+          for (const emp of candidates) {
+            const score = scoreEmployee(emp, slot, pool, allAttendance);
+            if (score > bestScore) {
+              bestScore = score;
+              best = emp;
+            }
           }
-        }
+          return best && bestScore > -1000 ? best : null;
+        };
+
+        // The department's own people first; a head only stretches when nobody
+        // else can take it.
+        const best = pick(deptEmployees) || pick(stretchEmployees);
 
         // Everyone left is on leave, already working, or short of rest.
-        if (!best || bestScore <= -1000) break;
+        if (!best) break;
 
         newShifts.push({
           // Local midnight, matching the seeder, manual creation and the
@@ -384,7 +437,8 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
           section: template.section,
           needed: template.headcount,
           filled,
-          reason: 'no eligible staff left (leave, rest period, or already scheduled)',
+          reason: 'no eligible staff left (leave, rest period, or already scheduled)'
+            + (deptEmployees.length === 0 ? ' — only a department head was available, and they could not take it' : ''),
         });
       }
     }

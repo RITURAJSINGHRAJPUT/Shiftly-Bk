@@ -18,6 +18,9 @@ const router = Router();
  */
 const isManagementRole = (role) => GLOBAL_SCOPE_ROLES.includes(role);
 
+/** The Department enum, mirrored so a bad value fails as a 400 not a 500. */
+const DEPARTMENTS = ['KITCHEN', 'SERVICE', 'HOUSEKEEPING'];
+
 /**
  * The assignment fields for a role. Returns `{ data }` or `{ error }`.
  *
@@ -44,6 +47,33 @@ function readAssignment(role, { outletId, department, skills }, existing = {}) {
 
   const nextDepartment = department !== undefined ? department : existing.department;
   if (!nextDepartment) return { error: 'department is required for this role' };
+
+  // Checked here rather than left to Prisma, which answers an unknown value with
+  // a raw 500 through the generic error handler.
+  if (!DEPARTMENTS.includes(nextDepartment)) {
+    return { error: `department must be one of ${DEPARTMENTS.join(', ')}` };
+  }
+
+  /**
+   * A department head works one of the departments their role owns.
+   *
+   * Their stored department is not what they *manage* — that comes from the
+   * role and covers both for a Master of House. It is the section they
+   * personally work: which shifts the allocator puts them on, and who signs off
+   * their own leave. A Master of House stored KITCHEN was therefore rostered
+   * onto kitchen shifts and had their leave routed to the Head Chef, and the
+   * form's old default made that the value you got by not touching the field.
+   *
+   * Note this fires *before* assignmentDenied, so a head chef attempting to
+   * create a Master of House now hears about departments rather than roles.
+   * The coarser refusal would read better; the stricter one is cheaper to
+   * reason about here, and both refuse.
+   */
+  const owned = departmentsFor(role);
+  if (owned.length && !owned.includes(nextDepartment)) {
+    const label = role.replace(/_/g, ' ').toLowerCase();
+    return { error: `A ${label} works ${owned.join(' or ').toLowerCase()}, not ${nextDepartment.toLowerCase()}` };
+  }
 
   return {
     data: {

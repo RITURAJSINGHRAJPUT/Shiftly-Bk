@@ -38,6 +38,17 @@ export async function processLeaveRequest(prisma, employeeId, leaveData) {
 
   if (overlapping) throw new Error('Overlapping leave request exists');
 
+  /**
+   * A single quiet weekday off approves itself, on the theory that Mon–Thu with
+   * nobody else away and no shift rostered needs no human.
+   *
+   * Worth being explicit that **this path never consults leaveApprovalDenied()**,
+   * so the "nobody signs off their own leave" rule in leave.routes.js does not
+   * reach it: a department head filing a single Wednesday is still approved
+   * without review. That is the existing bargain, not an oversight of the
+   * guard — but the guard reads as complete and is not, which is exactly the
+   * kind of gap worth writing down rather than discovering later.
+   */
   const isSingleDay = start.toDateString() === end.toDateString();
   const dayOfWeek = start.getDay();
   let autoApprove = isSingleDay && dayOfWeek >= 1 && dayOfWeek <= 4;

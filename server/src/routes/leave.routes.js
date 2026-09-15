@@ -14,11 +14,25 @@ const router = Router();
  * HR/ADMIN/SUPER_ADMIN may act on any leave. An OUTLET_MANAGER may act on any
  * department's leave, but only at their own outlet. A department manager
  * (HEAD_CHEF, MASTER_OF_HOUSE) may only act on their own outlet's leaves, and
- * only for the department they own per DEPARTMENT_APPROVERS. Returns an error
- * string, or null when the action is allowed.
+ * only for the department they own per DEPARTMENT_APPROVERS. **Nobody signs off
+ * their own.** Returns an error string, or null when the action is allowed.
+ *
+ * The self-check sits *after* the global-scope return, unlike the overtime twin
+ * where it comes first. Overtime can afford to bind admins because they never
+ * accrue any — OVERTIME_EXEMPT_ROLES covers them — but leave has no such
+ * exemption, and a first-position check would leave a lone super admin's own
+ * request unapprovable by anyone in the system.
+ *
+ * `allowSelf` is for emergency auto-assign: the requester pressing it is the
+ * normal case, not an abuse, and autoAssignEmergency already refuses to pick
+ * them as their own cover.
  */
-function leaveApprovalDenied(req, leave) {
+function leaveApprovalDenied(req, leave, { allowSelf = false } = {}) {
   if (hasGlobalScope(req.user)) return null;
+  if (!allowSelf && leave.employeeId === req.user.id) {
+    // "act on", not "approve" — the same string is returned to /reject.
+    return 'You cannot act on your own leave request';
+  }
   if (leave.employee.outletId !== req.user.outletId) {
     return 'You can only act on leave requests for your own outlet';
   }
@@ -90,7 +104,7 @@ router.post('/:id/approve', authenticateToken, can('LEAVE_APPROVE'), async (req,
   try {
     const leave = await prisma.leave.findUnique({
       where: { id: req.params.id },
-      select: { employee: { select: { outletId: true, department: true } } },
+      select: { employeeId: true, employee: { select: { outletId: true, department: true } } },
     });
     if (!leave) return res.status(404).json({ error: 'Leave not found' });
     const denied = leaveApprovalDenied(req, leave);
@@ -111,7 +125,7 @@ router.post('/:id/reject', authenticateToken, can('LEAVE_REJECT'), async (req, r
   try {
     const leave = await prisma.leave.findUnique({
       where: { id: req.params.id },
-      select: { employee: { select: { outletId: true, department: true } } },
+      select: { employeeId: true, employee: { select: { outletId: true, department: true } } },
     });
     if (!leave) return res.status(404).json({ error: 'Leave not found' });
     const denied = leaveApprovalDenied(req, leave);
@@ -152,10 +166,10 @@ router.post('/emergency/:leaveId/auto-assign', authenticateToken, can('LEAVE_AUT
   try {
     const leave = await prisma.leave.findUnique({
       where: { id: req.params.leaveId },
-      select: { employee: { select: { outletId: true, department: true } } },
+      select: { employeeId: true, employee: { select: { outletId: true, department: true } } },
     });
     if (!leave) return res.status(404).json({ error: 'Leave not found' });
-    const denied = leaveApprovalDenied(req, leave);
+    const denied = leaveApprovalDenied(req, leave, { allowSelf: true });
     if (denied) return res.status(403).json({ error: denied });
 
     const result = await autoAssignEmergency(prisma, req.params.leaveId);

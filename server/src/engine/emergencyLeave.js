@@ -145,6 +145,30 @@ export async function acceptEmergencyCover(prisma, volunteerId, leaveId) {
     throw new Error('This emergency request has already been handled');
   }
 
+  /**
+   * Volunteering is the one action in this file with no capability guarding it —
+   * by design, since any colleague may offer to cover. That left two holes.
+   *
+   * Covering yourself reassigned your own shift back to you and marked the leave
+   * approved with `coveredById` pointing at the person who asked for it: a
+   * self-approval wearing a volunteer's clothes.
+   *
+   * And the route takes a leave id with no scope check, so anyone could accept
+   * an emergency at a restaurant they have nothing to do with and be handed that
+   * outlet's shift. The pending list is outlet-scoped, but the id is guessable.
+   */
+  if (volunteerId === leave.employeeId) {
+    throw new Error('You cannot cover your own shift');
+  }
+
+  const coveringEmployee = await prisma.employee.findUnique({
+    where: { id: volunteerId },
+    select: { outletId: true },
+  });
+  if (!coveringEmployee || coveringEmployee.outletId !== leave.employee.outletId) {
+    throw new Error('You can only cover shifts at your own outlet');
+  }
+
   // Check if still within 30-min window
   if (leave.expiresAt && new Date() > leave.expiresAt) {
     throw new Error('The 30-minute acceptance window has expired');
