@@ -52,12 +52,13 @@ export default function EmployeesPage() {
    * Intersecting the two would produce an empty list: a department head's role
    * select is locked to Staff, and Staff owns no departments at all.
    */
+  const ownedDepartments = departmentsFor(user?.role);
+
   const departmentOptionsFor = useCallback((targetRole) => {
     const targetOwned = departmentsFor(targetRole);
     if (targetOwned.length) return targetOwned;
     return isDepartmentHead ? ownedDepartments : ALL_DEPARTMENTS;
   }, [isDepartmentHead, ownedDepartments]);
-  const ownedDepartments = departmentsFor(user?.role);
 
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
