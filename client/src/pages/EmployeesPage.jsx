@@ -4,7 +4,7 @@ import Modal from '../components/Modal';
 import DirectoryPicker from '../components/DirectoryPicker';
 import { useScope } from '../contexts/ScopeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { GLOBAL_SCOPE_ROLES, STATIONS, departmentHasStations, departmentsFor } from '../constants';
+import { GLOBAL_SCOPE_ROLES, STATIONS, DEPARTMENTS as ALL_DEPARTMENTS, departmentHasStations, departmentsFor } from '../constants';
 import { Plus, Search, Filter, Edit, Trash2, Store, ShieldCheck, Users, KeyRound, Copy, Check, Hash } from 'lucide-react';
 
 /**
@@ -40,6 +40,23 @@ export default function EmployeesPage() {
    * it regardless — this decides what is worth putting on screen.
    */
   const isDepartmentHead = ['MASTER_OF_HOUSE', 'HEAD_CHEF'].includes(user?.role);
+
+  /**
+   * Which departments a given target role may be put in.
+   *
+   * A two-level fallback, not an intersection. A role that owns departments is
+   * constrained by that and nothing else — a Master of House works Service or
+   * Housekeeping, never Kitchen. Everything else (Staff, mainly) falls back to
+   * what the *actor* owns, so a Head Chef enrolling staff sees only Kitchen.
+   *
+   * Intersecting the two would produce an empty list: a department head's role
+   * select is locked to Staff, and Staff owns no departments at all.
+   */
+  const departmentOptionsFor = useCallback((targetRole) => {
+    const targetOwned = departmentsFor(targetRole);
+    if (targetOwned.length) return targetOwned;
+    return isDepartmentHead ? ownedDepartments : ALL_DEPARTMENTS;
+  }, [isDepartmentHead, ownedDepartments]);
   const ownedDepartments = departmentsFor(user?.role);
 
   const [employees, setEmployees] = useState([]);
@@ -109,10 +126,13 @@ export default function EmployeesPage() {
         if (res?.suggestedName && !res.takenBy) {
           setFormData((prev) => (prev.name?.trim() ? prev : { ...prev, name: res.suggestedName }));
         }
-      } catch {
-        // A role without the lookup capability, or an offline moment. The form
-        // still works; it just stops offering the name.
-        if (!cancelled) setCodeLookup(null);
+      } catch (err) {
+        // Say so rather than going quiet. Rendering nothing made a broken
+        // directory indistinguishable from a working one with no match, which
+        // is how an unmigrated database went unnoticed: every keystroke 500'd
+        // and the form simply never offered a name. The field still works
+        // either way — this only explains why no name arrived.
+        if (!cancelled) setCodeLookup({ failed: true, reason: err?.message });
       }
     }, 400);
     return () => { cancelled = true; clearTimeout(t); };
@@ -177,6 +197,13 @@ export default function EmployeesPage() {
     setIsModalOpen(true);
   };
 
+  /** Keeps a department within what the role may hold; '' for roles with none. */
+  const normaliseDepartment = useCallback((role, department) => {
+    if (GLOBAL_SCOPE_ROLES.includes(role) || role === 'OUTLET_MANAGER') return '';
+    const options = departmentOptionsFor(role);
+    return options.includes(department) ? department : (options[0] || '');
+  }, [departmentOptionsFor]);
+
   const handleOpenEdit = (emp) => {
     setEditingEmployee(emp);
     setFormData({
@@ -185,7 +212,14 @@ export default function EmployeesPage() {
       phone: emp.phone || '',
       role: emp.role,
       // Null for management accounts, and the selects need a string.
-      department: emp.department || '',
+      //
+      // Normalised to something the role can actually hold: a Master of House
+      // saved as Kitchen (which an older default allowed) would otherwise open
+      // with a select whose value matches no option — the browser shows
+      // "Service" while the form still holds KITCHEN, and saving is refused
+      // with a message about a value nobody chose. Opening and saving such a
+      // record is what repairs it.
+      department: normaliseDepartment(emp.role, emp.department),
       outletId: emp.outletId || '',
       skills: emp.skills || [],
       employeeCode: emp.employeeCode || ''
@@ -733,6 +767,20 @@ export default function EmployeesPage() {
                 drops that person's hours and reports the id to somebody else,
                 so confirming the name here is the whole point. */}
             {codeLookup?.loading && <p className="text-xs text-muted mt-1">Checking…</p>}
+            {codeLookup?.failed && (
+              <p className="text-xs mt-1" style={{ color: 'var(--ink-warn)' }}>
+                Couldn't check the staff directory. Type the name yourself — the code still saves.
+              </p>
+            )}
+            {/* A code the punch log has never seen. Worth saying: it usually
+                means a typo, and a typo'd code silently loses that person's
+                hours at the next attendance import. */}
+            {codeLookup && !codeLookup.loading && !codeLookup.failed
+              && !codeLookup.suggestedName && !codeLookup.takenBy && (
+              <p className="text-xs text-muted mt-1">
+                Not in the punch directory yet. Check the code, or type the name to continue.
+              </p>
+            )}
             {codeLookup?.elsewhere && (
               <p className="text-xs mt-1" style={{ color: 'var(--ink-crit)' }}>
                 Already used at another restaurant — ask HR.
@@ -787,16 +835,26 @@ export default function EmployeesPage() {
                 // An Outlet Manager needs an outlet but no single department —
                 // they oversee the whole restaurant, not one section of it.
                 const toOutletManager = role === 'OUTLET_MANAGER';
-                setFormData(prev => ({
-                  ...prev,
-                  role,
-                  // The assignment moves with the role. Promoting someone clears
-                  // the restaurant they no longer belong to; demoting them has to
-                  // land somewhere, so it falls back to the group in view.
-                  outletId: toManagement ? '' : (prev.outletId || selectedGroupId || outlets[0]?.id || ''),
-                  department: (toManagement || toOutletManager) ? '' : (prev.department || 'KITCHEN'),
-                  skills: (toManagement || toOutletManager) ? [] : prev.skills,
-                }));
+                setFormData(prev => {
+                  // Normalised against the *new* role, so switching to Master of
+                  // House cannot leave Kitchen behind in the form.
+                  const department = (toManagement || toOutletManager)
+                    ? ''
+                    : normaliseDepartment(role, prev.department || departmentOptionsFor(role)[0]);
+                  return {
+                    ...prev,
+                    role,
+                    // The assignment moves with the role. Promoting someone clears
+                    // the restaurant they no longer belong to; demoting them has to
+                    // land somewhere, so it falls back to the group in view.
+                    outletId: toManagement ? '' : (prev.outletId || selectedGroupId || outlets[0]?.id || ''),
+                    department,
+                    // Stations are a kitchen concept. Promoting a Kitchen staffer
+                    // would otherwise leave the boxes ticked against a department
+                    // that has none, and post them.
+                    skills: departmentHasStations(department) ? prev.skills : [],
+                  };
+                });
               }}
             >
               {(isDepartmentHead
@@ -837,14 +895,11 @@ export default function EmployeesPage() {
                   skills: departmentHasStations(e.target.value) ? prev.skills : [],
                 }))}
               >
-                {/* A department head sees only what their role owns — a Head
-                    Chef Kitchen, a Master of House Service and Housekeeping.
-                    Taken from the role, never from their own department field:
-                    a Master of House is stored as SERVICE yet owns both. */}
-                {(isDepartmentHead
-                  ? ownedDepartments
-                  : ['KITCHEN', 'SERVICE', 'HOUSEKEEPING']
-                ).map(d => (
+                {/* Keyed on the role being assigned, not on who is filling the
+                    form in. A Master of House works Service or Housekeeping and
+                    never Kitchen — which the old actor-keyed version happily
+                    offered, and the server happily stored. */}
+                {departmentOptionsFor(formData.role).map(d => (
                   <option key={d} value={d}>{d.charAt(0) + d.slice(1).toLowerCase()}</option>
                 ))}
               </select>
