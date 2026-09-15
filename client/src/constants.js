@@ -47,8 +47,8 @@ export const slotsUpTo = (n) => Array.from({ length: n }, (_, i) => i + 1);
  * `key` is what the grid's state is keyed by, so it has to survive a station
  * being renamed away and back — department plus section is exactly identifying.
  */
-export function gridRows(brandStations = []) {
-  return [
+export function gridRows(brandStations = [], departments = null) {
+  const all = [
     ...brandStations.map((section) => ({
       key: `KITCHEN|${section}`,
       label: section,
@@ -58,6 +58,15 @@ export function gridRows(brandStations = []) {
     { key: 'SERVICE|Service', label: 'Service', department: 'SERVICE', section: 'Service' },
     { key: 'HOUSEKEEPING|Housekeeping', label: 'House Keeping', department: 'HOUSEKEEPING', section: 'Housekeeping' },
   ];
+
+  // `departments` null means every row — a global role or an outlet manager.
+  // A department head gets only what they own, otherwise the sheet shows rows
+  // the server will refuse on save. That was most obvious at a brand with no
+  // kitchen stations: the Kitchen rows come from the station list, so a head
+  // chef there saw Service and House Keeping and nothing else — exactly the two
+  // departments they may not touch.
+  if (!departments?.length) return all;
+  return all.filter((r) => departments.includes(r.department));
 }
 
 /** Roles that can see data across every outlet rather than just their own. */

@@ -9,7 +9,7 @@ import ShiftGrid, {
   templatesToCells, cellsToTemplates, incompleteRows, timeKey,
 } from '../components/ShiftGrid';
 import {
-  WEEKDAYS, ALL_WEEKDAYS, formatDays, STATIONS, DEPARTMENTS, departmentHasStations,
+  WEEKDAYS, ALL_WEEKDAYS, formatDays, STATIONS, DEPARTMENTS, departmentHasStations, departmentsFor,
   MIN_SHIFT_SLOTS, MAX_SHIFT_SLOTS, slotsUpTo, gridRows,
 } from '../constants';
 import {
@@ -159,7 +159,20 @@ export default function ShiftMasterPage() {
   useEffect(() => { loadClearPreview(); setClearResult(null); }, [loadClearPreview]);
 
   /** This brand's stations, then the two department rows. */
-  const rows = useMemo(() => gridRows(outlet?.brand?.stations ?? []), [outlet?.brand?.stations]);
+  /**
+   * Departments this user may plan for, or null for all of them.
+   * Mirrors the server guard in shiftTemplate.routes.js; the server is what
+   * enforces it, this just stops the sheet offering rows that cannot be saved.
+   */
+  const ownedDepartments = useMemo(() => {
+    const owned = departmentsFor(user?.role);
+    return owned.length ? owned : null;
+  }, [user?.role]);
+
+  const rows = useMemo(
+    () => gridRows(outlet?.brand?.stations ?? [], ownedDepartments),
+    [outlet?.brand?.stations, ownedDepartments]
+  );
 
   /**
    * How many shift rows a station shows: two by default, more if the stored
@@ -535,11 +548,18 @@ export default function ShiftMasterPage() {
           </p>
         )}
 
-        {rows.length === 2 && (
+        {(outlet?.brand?.stations ?? []).length === 0 &&
+          (!ownedDepartments || ownedDepartments.includes('KITCHEN')) && (
           <div className="card card--alert-warn mb-3">
             <p className="text-sm">
-              <strong>{outlet?.brand?.name}</strong> has no kitchen stations defined, so only
-              Service and House Keeping are shown.
+              <strong>{outlet?.brand?.name}</strong> has no kitchen stations defined, so there
+              {rows.length === 0
+                // A head chef whose brand has no stations has nothing at all to
+                // plan. Saying "only Service and House Keeping are shown" would
+                // be doubly wrong: those rows are gone, and they were never
+                // theirs to fill.
+                ? ' is nothing to plan here yet.'
+                : ' are no kitchen rows below.'}
               {isAdmin ? ' Use Stations above to add them.' : ' An admin can add them.'}
             </p>
           </div>
@@ -744,7 +764,7 @@ export default function ShiftMasterPage() {
                   }))
                 }
               >
-                {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+                {(ownedDepartments ?? DEPARTMENTS).map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
             <div className="form-group">
