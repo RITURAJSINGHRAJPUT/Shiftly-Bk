@@ -697,6 +697,13 @@ router.delete('/:id', authenticateToken, canOrOutletManager('EMPLOYEE_DEACTIVATE
     const denied = assignmentDenied(req, { outletId: target.outletId, role: target.role, department: target.department });
     if (denied) return res.status(403).json({ error: denied });
 
+    // HR has global scope, so assignmentDenied() lets them past for any target.
+    // Without this, giving HR deactivation would let them lock out an Admin or
+    // Super Admin — the same line as "HR cannot assign management roles".
+    if (req.user.role === 'HR' && GLOBAL_SCOPE_ROLES.includes(target.role)) {
+      return res.status(403).json({ error: 'HR cannot deactivate management accounts' });
+    }
+
     const employee = await prisma.employee.update({
       where: { id },
       data: { isActive: false },

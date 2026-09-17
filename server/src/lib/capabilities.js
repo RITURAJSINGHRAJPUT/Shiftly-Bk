@@ -79,9 +79,11 @@ export const CAPABILITIES = {
       'for staff at their own outlet.',
   },
   EMPLOYEE_DEACTIVATE: {
-    group: 'People', label: 'Deactivate an employee', minRole: 'ADMIN',
+    group: 'People', label: 'Deactivate an employee', minRole: 'HR',
     note: 'Deactivation is a real lockout — the login handler refuses an inactive account. ' +
-      'Exception: an Outlet Manager may deactivate staff at their own outlet.',
+      'HR can deactivate anyone except management accounts (Super Admin, Admin, HR), matching ' +
+      'the rule that HR cannot assign those roles. An Outlet Manager may deactivate staff at ' +
+      'their own outlet only.',
   },
   STAFF_WIPE_PREVIEW: {
     group: 'People', label: 'See what a staff wipe would delete', minRole: 'SUPER_ADMIN',
@@ -208,8 +210,8 @@ export function can(key) {
  * the capability's floor.
  *
  * For the handful of capabilities pinned above OUTLET_MANAGER's own rank
- * (EMPLOYEE_RESET_PW, EMPLOYEE_DEACTIVATE, OUTLET_EDIT, SHIFT_DELETE,
- * SHIFT_RESET, SHIFT_RESET_PREVIEW — all ADMIN-floor), lowering the floor
+ * (OUTLET_EDIT, SHIFT_DELETE, SHIFT_RESET, SHIFT_RESET_PREVIEW — all
+ * ADMIN-floor), lowering the floor
  * itself would hand HR the same rights,
  * since HR ties OUTLET_MANAGER's rank. Bypassing the floor for this one role
  * instead leaves HR's permissions exactly as they are.

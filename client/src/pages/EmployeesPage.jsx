@@ -10,8 +10,9 @@ import { Plus, Search, Filter, Edit, Trash2, Store, ShieldCheck, Users, KeyRound
 /**
  * Role options for the Add/Edit modal, split by which "side" of the
  * management/outlet line they sit on. OUTLET_ROLES_RESTRICTED excludes
- * OUTLET_MANAGER itself — an Outlet Manager can staff their own outlet but
- * not create a peer, the same way HR cannot assign management roles.
+ * OUTLET_MANAGER itself and is for Outlet Managers only — they can staff their
+ * own outlet but not create a peer. HR gets the full OUTLET_ROLES list; what HR
+ * cannot assign is the management roles.
  */
 const OUTLET_ROLES = [
   ['OUTLET_MANAGER', 'Outlet Manager'], ['MASTER_OF_HOUSE', 'Master of House'],
@@ -71,6 +72,9 @@ export default function EmployeesPage() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
+  // Opened from the key on a clock-in-only row: focus the email field and say
+  // what saving it will do.
+  const [grantingLogin, setGrantingLogin] = useState(false);
   const [formData, setFormData] = useState({
     name: '', email: '', phone: '', role: 'STAFF', department: 'KITCHEN', outletId: '', skills: [], employeeCode: ''
   });
@@ -178,6 +182,8 @@ export default function EmployeesPage() {
 
   const handleOpenAdd = () => {
     if (!addMode) return;
+    // Otherwise a sign-in grant opened earlier would still mark email required.
+    setGrantingLogin(false);
     setEditingEmployee(null);
     setFormData(
       addMode === 'management'
@@ -205,7 +211,8 @@ export default function EmployeesPage() {
     return options.includes(department) ? department : (options[0] || '');
   }, [departmentOptionsFor]);
 
-  const handleOpenEdit = (emp) => {
+  const handleOpenEdit = (emp, { grantLogin = false } = {}) => {
+    setGrantingLogin(grantLogin);
     setEditingEmployee(emp);
     setFormData({
       name: emp.name,
@@ -646,12 +653,16 @@ export default function EmployeesPage() {
                                   and one is issued in that same save. */}
                               <button
                                 className="btn btn-ghost btn-icon btn-sm"
-                                onClick={() => handleResetPassword(emp)}
-                                disabled={!emp.email}
-                                aria-label={`Reset password for ${emp.name}`}
+                                // For a clock-in-only record this opens the edit
+                                // form on the email field instead of sitting
+                                // disabled. Adding an email is how they get a
+                                // sign-in, and a greyed-out key with the route
+                                // hidden in a tooltip left HR with no way through.
+                                onClick={() => (emp.email ? handleResetPassword(emp) : handleOpenEdit(emp, { grantLogin: true }))}
+                                aria-label={emp.email ? `Reset password for ${emp.name}` : `Give ${emp.name} a sign-in`}
                                 title={emp.email
                                   ? 'Issue a new one-time password'
-                                  : 'Clock-in only — add an email to give them a sign-in'}
+                                  : 'Give them a sign-in — add an email and a one-time password is issued'}
                               >
                                 <KeyRound size={14} />
                               </button>
@@ -751,8 +762,15 @@ export default function EmployeesPage() {
                 onChange={e => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 /* One identifier is enough: an email to sign in with, or a code
                    for the punch log to find them by. */
-                required={!formData.employeeCode?.trim()}
+                required={grantingLogin || !formData.employeeCode?.trim()}
+                autoFocus={grantingLogin}
               />
+              {editingEmployee && !editingEmployee.email && (
+                <p className="text-xs text-muted mt-1">
+                  Clock-in only today. Add an email to give {editingEmployee.name} a sign-in —
+                  a one-time password is shown when you save.
+                </p>
+              )}
             </div>
             )}
             <div className="form-group">
@@ -875,7 +893,7 @@ export default function EmployeesPage() {
             >
               {(isDepartmentHead
                 ? [['STAFF', 'Staff Member']]
-                : isOutletScopedAdmin
+                : user?.role === 'OUTLET_MANAGER'
                   ? OUTLET_ROLES_RESTRICTED
                   : managementForm
                     ? MANAGEMENT_ROLES

@@ -55,7 +55,7 @@ query parameter, so it cannot be widened by asking differently.
 | Edit an employee | ✅ | ✅ | ✅ | ✅ | — | — | — |
 | Add or correct an entry in the punch directory | ✅ | ✅ | ✅ | — | — | — | — |
 | Issue a new one-time password | ✅ | ✅ | ✅ | ✅ | — | — | — |
-| Deactivate an employee | ✅ | ✅ | — | — | — | — | — |
+| Deactivate an employee | ✅ | ✅ | ✅ | ✅ | — | — | — |
 | See what a staff wipe would delete | ✅ | — | — | — | — | — | — |
 | Delete every staff account and their history | ✅ | — | — | — | — | — | — |
 
@@ -67,7 +67,7 @@ query parameter, so it cannot be widened by asking differently.
 
 > **Issue a new one-time password** — The same floor as enrolment, because it is the same act from the other end: HR issues the first one-time password when they enrol someone, and a lost password is simply that again. Holding this above enrolment meant the role that creates accounts could not help the person whose password it had handed them. A department head still cannot — they enrol clock-in-only records, which have no sign-in to take over. Exception: an Outlet Manager may reset a password for staff at their own outlet.
 
-> **Deactivate an employee** — Deactivation is a real lockout — the login handler refuses an inactive account. Exception: an Outlet Manager may deactivate staff at their own outlet.
+> **Deactivate an employee** — Deactivation is a real lockout — the login handler refuses an inactive account. HR can deactivate anyone except management accounts (Super Admin, Admin, HR), matching the rule that HR cannot assign those roles. An Outlet Manager may deactivate staff at their own outlet only.
 
 > **Delete every staff account and their history** — Irreversible, and behind a typed confirmation as well as this role.
 
