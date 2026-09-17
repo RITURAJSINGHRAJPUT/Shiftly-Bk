@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import {
   WEEKDAYS, MIN_SHIFT_SLOTS, MAX_SHIFT_SLOTS, slotsUpTo, formatDays,
 } from '../constants';
-import { Copy, Eraser, AlertTriangle, Plus, X } from 'lucide-react';
+import { Copy, CopyCheck, Eraser, AlertTriangle, Plus, X } from 'lucide-react';
 
 /**
  * The weekly shift sheet: stations down the side, Monday–Sunday across, and a
@@ -173,6 +173,35 @@ export default function ShiftGrid({
     onCounts(next);
   };
 
+  /**
+   * The top station's hours onto every station, shift by shift.
+   *
+   * Most restaurants run the same hours at every station, so typing them per
+   * row was the slowest part of filling the sheet. Only slots the source has
+   * complete hours for are copied — a blank Shift 2 at the top must not wipe
+   * Shift 2 elsewhere — and only into shifts a station already has.
+   */
+  const source = rows[0];
+  const sourceSlots = source ? slotsUpTo(slotsFor(source.key)) : [];
+  const canApplyTimes = rows.length > 1 && sourceSlots.some((slot) => {
+    const t = times[timeKey(source.key, slot)];
+    return t?.startTime && t?.endTime;
+  });
+
+  const applyTimesToAll = () => {
+    if (!canApplyTimes) return;
+    const next = { ...times };
+    for (const slot of sourceSlots) {
+      const t = times[timeKey(source.key, slot)];
+      if (!t?.startTime || !t?.endTime) continue;
+      for (const row of rows.slice(1)) {
+        if (slot > slotsFor(row.key)) continue;
+        next[timeKey(row.key, slot)] = { startTime: t.startTime, endTime: t.endTime };
+      }
+    }
+    onTimes(next);
+  };
+
   const clearRow = (rowKey, slot) => {
     const next = { ...counts };
     for (const { value: day } of WEEKDAYS) delete next[countKey(rowKey, slot, day)];
@@ -187,7 +216,25 @@ export default function ShiftGrid({
           <tr>
             <th className="grid-station">Station</th>
             <th className="grid-slot">Shift</th>
-            <th className="grid-time">Time</th>
+            <th className="grid-time">
+              <span className="grid-time-head">
+                Time
+                {!readOnly && rows.length > 1 && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm btn-icon"
+                    onClick={applyTimesToAll}
+                    disabled={!canApplyTimes}
+                    title={canApplyTimes
+                      ? `Apply ${source.label}'s times to every station`
+                      : `Enter times for ${source?.label ?? 'the first station'} first`}
+                    aria-label="Apply the first station's times to every station"
+                  >
+                    <CopyCheck size={12} />
+                  </button>
+                )}
+              </span>
+            </th>
             {WEEKDAYS.map((d) => <th key={d.value} className="grid-cell">{d.short}</th>)}
             {!readOnly && <th className="grid-tools" aria-label="Row actions" />}
           </tr>
