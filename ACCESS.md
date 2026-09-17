@@ -109,7 +109,7 @@ query parameter, so it cannot be widened by asking differently.
 | Approve overtime | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
 | Reject overtime | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
 
-> **See other people's attendance** — Everyone can always see their own record. A department head sees their own department at their own restaurant — Head Chef the kitchen, Master of House service and housekeeping — matching how leave, overtime and rostering already route. An Outlet Manager and above see the whole restaurant. Administration roles never clock in, so their rows are hidden from the list either way.
+> **See other people's attendance** — Everyone can always see their own record. A Master of House or Head Chef sees every employee at their own restaurant, every department; HR and above see every restaurant. Seeing is broader than approving — overtime is still signed off only by the head of that department. Administration roles never clock in, so their rows are hidden from the list.
 
 > **Pull attendance from the punch log** — Higher than viewing it: the pull is organisation-wide by nature, so it writes every restaurant's rows, not just the caller's own.
 

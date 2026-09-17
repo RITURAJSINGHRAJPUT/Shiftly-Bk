@@ -1,5 +1,3 @@
-import { departmentsFor } from './departments.js';
-
 /**
  * Org / Brand / Outlet scoping.
  *
@@ -59,21 +57,18 @@ export function employeeScope(req) {
 /**
  * Employee-level filter for "people whose attendance this caller may see".
  *
- * Three narrowings, in one place because every consumer — the attendance list,
+ * Two narrowings, in one place because every consumer — the attendance list,
  * the weekly/monthly summary and the daily stats — has to agree, or a head
  * reads a percentage whose numerator and denominator count different people.
  *
- * 1. **Outlet**, via outletScope().
+ * 1. **Outlet**, via outletScope(). A Master of House or Head Chef sees every
+ *    department at their own restaurant — they run the floor and the kitchen
+ *    side by side and need to see who is in. What they may *approve* is still
+ *    their own department only; that is overtimeApprovalDenied()'s rule, not
+ *    this one.
  * 2. **Administration roles are excluded.** They belong to no restaurant and
  *    never punch a clock, so their rows are noise in the list and silently
  *    inflate any headcount denominator built from Employee.
- * 3. **A department head sees their own department only** — Head Chef Kitchen,
- *    Master of House Service and Housekeeping. Attendance was the last place a
- *    head could see beyond their own patch, now that shifts, patterns,
- *    enrolment, leave and overtime are all scoped this way. Derived from the
- *    role, never from their own `department` column: a Master of House is
- *    stored as one of the two but owns both, and the signed token carries no
- *    department at all.
  *
  * Returned flat, for use either as an Employee `where` or as the *value* of an
  * `employee` key on Attendance. It must be spread into that nested object
@@ -82,16 +77,7 @@ export function employeeScope(req) {
  * head chef would then see every outlet in the org.
  */
 export function clockingEmployeeFilter(req) {
-  const filter = { ...outletScope(req), role: { notIn: GLOBAL_SCOPE_ROLES } };
-
-  // An Outlet Manager runs the whole restaurant, every department in it — the
-  // same exemption leave, overtime and shift writes already make.
-  if (hasGlobalScope(req.user) || req.user?.role === 'OUTLET_MANAGER') return filter;
-
-  const owned = departmentsFor(req.user?.role);
-  if (owned.length) filter.department = { in: owned };
-
-  return filter;
+  return { ...outletScope(req), role: { notIn: GLOBAL_SCOPE_ROLES } };
 }
 
 /** Standard include for returning an outlet with its brand and org attached. */

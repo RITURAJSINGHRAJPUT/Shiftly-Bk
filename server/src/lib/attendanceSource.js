@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { attendanceCutoffHour } from './dates.js';
 
 /**
  * Reads the raw punch log out of the attendance database.
@@ -43,6 +44,11 @@ function config() {
     timestamp: ident(e.ATTENDANCE_SOURCE_TIME_COL || DEFAULTS.timestamp, 'timestamp column'),
     name: ident(e.ATTENDANCE_SOURCE_NAME_COL || DEFAULTS.name, 'name column'),
     source: ident(e.ATTENDANCE_SOURCE_DEVICE_COL || DEFAULTS.source, 'device column'),
+    // Optional boolean column marking punches the source itself decided should
+    // count. Neon's punch_event flags double-taps this way. Unset: no filter.
+    counted: e.ATTENDANCE_SOURCE_COUNTED_COL
+      ? ident(e.ATTENDANCE_SOURCE_COUNTED_COL, 'counted column')
+      : null,
   };
 }
 
@@ -70,12 +76,14 @@ export async function fetchPunches({ from, to }) {
   if (!url) throw new Error('ATTENDANCE_DATABASE_URL is not set');
 
   const c = config();
-  const zone = process.env.ATTENDANCE_SOURCE_TIMEZONE;
-  // AT TIME ZONE only applies to timestamptz columns; for a plain timestamp the
-  // stored wall clock is already the answer, so the cast is left off.
-  const timeExpr = zone
-    ? `to_char(${c.timestamp} AT TIME ZONE '${zone.replace(/'/g, "''")}', 'YYYY-MM-DD HH24:MI:SS')`
-    : `to_char(${c.timestamp}, 'YYYY-MM-DD HH24:MI:SS')`;
+  const zone = process.env.ATTENDANCE_SOURCE_TIMEZONE || null;
+  const cutoff = attendanceCutoffHour();
+
+  // The punch as a local wall clock. For a timestamptz column that means
+  // converting the instant to the zone the restaurants run in; a plain
+  // timestamp already is one. The zone travels as a query parameter, so it
+  // needs no quoting and cannot inject anything.
+  const local = zone ? `(${c.timestamp} AT TIME ZONE $4::text)` : c.timestamp;
 
   const client = new pg.Client({
     connectionString: url,
@@ -90,16 +98,24 @@ export async function fetchPunches({ from, to }) {
   try {
     await client.connect();
     const { rows } = await client.query(
+      // Bounded by *working* days, not calendar days. A range starting at the
+      // 16th's midnight would include a 00:30 punch that belongs to the 15th's
+      // evening shift, and the importer would then upsert the 15th with that
+      // punch alone — overwriting the row and discarding its evening punches.
+      // Offsetting both ends by the cutoff fetches exactly the punches of the
+      // days asked for. Compared as local wall clock, so the boundary is the
+      // restaurant's midnight rather than the database session's UTC one.
       `SELECT ${c.userId} AS userid,
               ${c.name} AS emp_name,
-              ${timeExpr} AS edatetime,
+              to_char(${local}, 'YYYY-MM-DD HH24:MI:SS') AS edatetime,
               ${c.source} AS evtsourcedet
          FROM ${c.table}
-        WHERE ${c.timestamp} >= $1::date
-          AND ${c.timestamp} < ($2::date + INTERVAL '1 day')
+        WHERE ${local} >= ($1::date + make_interval(hours => $3::int))
+          AND ${local} <  ($2::date + INTERVAL '1 day' + make_interval(hours => $3::int))
+          ${c.counted ? `AND ${c.counted}` : ''}
         ORDER BY ${c.timestamp}
         LIMIT ${MAX_ROWS}`,
-      [from, to]
+      zone ? [from, to, cutoff, zone] : [from, to, cutoff]
     );
 
     // employeeCode is a string column; an integer userid would make Prisma

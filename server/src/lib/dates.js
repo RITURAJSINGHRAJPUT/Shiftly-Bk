@@ -62,8 +62,7 @@ export function localDateRange(startDate, endDate = startDate) {
  * than updating the first.
  */
 export function attendanceDayFor(time) {
-  const raw = Number(process.env.ATTENDANCE_DAY_CUTOFF_HOUR ?? 0);
-  const cutoff = Number.isFinite(raw) ? Math.min(Math.max(Math.trunc(raw), 0), 12) : 0;
+  const cutoff = attendanceCutoffHour();
 
   const day = startOfLocalDay(time);
   if (cutoff > 0 && time.getHours() < cutoff) {
@@ -92,6 +91,19 @@ export function startOfLocalMonth(value) {
   const d = startOfLocalDay(value);
   d.setDate(1);
   return d;
+}
+
+/**
+ * ATTENDANCE_DAY_CUTOFF_HOUR, read once and clamped to 0–12.
+ *
+ * Shared by attendanceDayFor() and by the attendance-source query, which has to
+ * fetch exactly the punches belonging to a range of working days. If the two
+ * parsed it separately, a malformed value could be clamped one way in the
+ * fetch and another in the grouping.
+ */
+export function attendanceCutoffHour() {
+  const raw = Number(process.env.ATTENDANCE_DAY_CUTOFF_HOUR ?? 0);
+  return Number.isFinite(raw) ? Math.min(Math.max(Math.trunc(raw), 0), 12) : 0;
 }
 
 /** YYYY-MM-DD from a Date's local parts (not toISOString, which shifts the day). */
