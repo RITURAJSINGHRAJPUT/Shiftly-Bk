@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
+import { useScope } from '../contexts/ScopeContext';
 import {
-  CheckCircle, LogIn, LogOut, RefreshCw, AlertTriangle, XCircle, Clock,
+  CheckCircle, LogIn, LogOut, RefreshCw, AlertTriangle, XCircle, Clock, Store,
 } from 'lucide-react';
 import {
   format, subDays, subWeeks, subMonths, startOfWeek, startOfMonth, parseISO,
@@ -59,6 +60,9 @@ function missingPunchOut(rec) {
 
 export default function AttendancePage() {
   const { user } = useAuth();
+  // `locked` is true for every role the server already pins to one restaurant,
+  // so the picker appears only for someone who genuinely has a choice.
+  const { outlets, locked } = useScope();
 
   const canViewAll = ATTENDANCE_VIEW_ALL_ROLES.includes(user?.role);
   const canSync = ATTENDANCE_SYNC_ROLES.includes(user?.role);
@@ -84,6 +88,16 @@ export default function AttendancePage() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState(null);
 
+  /**
+   * Which restaurant the page is showing, or '' for all of them.
+   *
+   * Only global roles ever see more than one, and for them the unfiltered view
+   * was the only view — a log mixing every restaurant in the group, with no way
+   * to look at one. The server has always accepted `?outlet=`; nothing on this
+   * page sent it.
+   */
+  const [selectedOutletId, setSelectedOutletId] = useState('');
+
   const [view, setView] = useState('daily');
   const range = useMemo(() => {
     const end = new Date();
@@ -99,15 +113,20 @@ export default function AttendancePage() {
     try {
       const { startDate, endDate } = range;
       const qs = `startDate=${startDate}&endDate=${endDate}`;
+      // outletScope() ignores this for a locked role, so it is safe to send
+      // unconditionally — but only a global role can ever set it.
+      const scope = selectedOutletId ? `&outlet=${selectedOutletId}` : '';
 
       const [main, today, pending] = await Promise.all([
         view === 'daily'
-          ? api.get(`/attendance?${qs}`)
-          : api.get(`/attendance/summary?period=${view === 'weekly' ? 'week' : 'month'}&${qs}`),
+          ? api.get(`/attendance?${qs}${scope}`)
+          : api.get(`/attendance/summary?period=${view === 'weekly' ? 'week' : 'month'}&${qs}${scope}`),
         api.get('/attendance/today'),
         // Asked for by status rather than filtered out of the visible range:
         // an outstanding day just outside the window still needs deciding.
-        api.get('/attendance?overtimeStatus=PENDING'),
+        // Follows the restaurant filter, so the queue never lists approvals for
+        // a restaurant the rest of the page is not showing.
+        api.get(`/attendance?overtimeStatus=PENDING${scope}`),
       ]);
 
       if (view === 'daily') {
@@ -124,7 +143,7 @@ export default function AttendancePage() {
     } finally {
       setLoading(false);
     }
-  }, [range, view]);
+  }, [range, view, selectedOutletId]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -177,6 +196,38 @@ export default function AttendancePage() {
           </div>
         )}
       </div>
+
+      {/* Only for a role that can reach more than one restaurant. Everyone else
+          is pinned server-side, so a picker would be a control with one
+          setting. "All" stays available because HR legitimately wants the
+          group-wide view — it is the narrowing that was missing, not the
+          breadth. */}
+      {!locked && outlets.length > 1 && (
+        <div className="outlet-tabs mb-4" role="tablist" aria-label="Restaurant">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={selectedOutletId === ''}
+            className={`outlet-tab ${selectedOutletId === '' ? 'active' : ''}`}
+            onClick={() => setSelectedOutletId('')}
+          >
+            <span>All restaurants</span>
+          </button>
+          {outlets.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              role="tab"
+              aria-selected={o.id === selectedOutletId}
+              className={`outlet-tab ${o.id === selectedOutletId ? 'active' : ''}`}
+              onClick={() => setSelectedOutletId(o.id)}
+            >
+              <Store size={14} />
+              <span>{o.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {syncResult && (
         <div className={`card mb-4 ${syncResult.error ? 'card--alert-crit' : 'card--alert-good'}`}>
