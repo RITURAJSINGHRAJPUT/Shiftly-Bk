@@ -34,7 +34,10 @@ function ManagementDashboard() {
   // Action is a shortcut to doing something, so it follows what the role may do.
   const canManageEmployees = GLOBAL_SCOPE_ROLES.includes(user?.role);
   const canManageOutlets = GLOBAL_SCOPE_ROLES.includes(user?.role);
-  const canViewReports = [...GLOBAL_SCOPE_ROLES, 'OUTLET_MANAGER', 'MASTER_OF_HOUSE'].includes(user?.role);
+  // Kept in step with the /reports entry in navigation.js by hand — the two
+  // lists are a pair, and a Quick Action linking to a page the sidebar hides is
+  // the drift this comment exists to prevent.
+  const canViewReports = [...GLOBAL_SCOPE_ROLES, 'MASTER_OF_HOUSE'].includes(user?.role);
 
   const [stats, setStats] = useState(null);
   const [trend, setTrend] = useState(null);

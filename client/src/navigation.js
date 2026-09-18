@@ -74,13 +74,23 @@ export const NAV_SECTIONS = [
       // Short labels: these rows also carry a "Soon" badge, which leaves roughly
       // 80px for text. The full names live on the destination pages in App.jsx.
       { path: '/workforce-planner', label: 'AI Planner', icon: BrainCircuit, roles: ['SUPER_ADMIN', 'ADMIN', 'HR'], stub: true },
-      { path: '/transfers', label: 'Transfers', icon: ArrowLeftRight, roles: 'all' },
+      // Everyone requests and cancels their own transfer here, and there is no
+      // other screen that does it — except the Outlet Manager, who is not in
+      // ROSTERABLE_ROLES (transferManager.js) so cannot request one, and no
+      // longer holds TRANSFER_APPROVE, so cannot decide one either. For them the
+      // page is a table with nothing to do.
+      { path: '/transfers', label: 'Transfers', icon: ArrowLeftRight, roles: 'all',
+        except: ['OUTLET_MANAGER'] },
     ],
   },
   {
     title: 'Insights',
     items: [
-      { path: '/reports', label: 'Reports', icon: BarChart3, roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'OUTLET_MANAGER', 'MASTER_OF_HOUSE'] },
+      // Not the Outlet Manager: Reports draws the same four figures their own
+      // dashboard already shows, scoped to the same one restaurant. Dropping
+      // them here empties the section — visibleSections() then removes the
+      // header too, since Analytics is Admin-and-above.
+      { path: '/reports', label: 'Reports', icon: BarChart3, roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'MASTER_OF_HOUSE'] },
       { path: '/analytics', label: 'Analytics', icon: LineChart, roles: ['SUPER_ADMIN', 'ADMIN', 'HR'], stub: true },
     ],
   },
@@ -94,9 +104,18 @@ export const NAV_SECTIONS = [
   },
 ];
 
-/** Shared by the sidebar and the phone's More list. */
+/**
+  * Shared by the sidebar and the phone's More list.
+  *
+  * `except` only applies to a `roles: 'all'` item, and is for a page that
+  * genuinely is for everyone bar one role. Spelling out the other six instead
+  * would read as an allowlist and quietly drop any role added later — which for
+  * a self-service page is the wrong way to fail.
+  */
 export const canSeeNavItem = (item, role) =>
-  item.roles === 'all' || item.roles.includes(role);
+  item.roles === 'all'
+    ? !item.except?.includes(role)
+    : item.roles.includes(role);
 
 /**
  * The sections a role may see, with empty ones dropped so no header is left
