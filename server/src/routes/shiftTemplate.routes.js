@@ -31,7 +31,9 @@ function outletWriteDenied(req, outletId) {
  * Departments this caller may write patterns for, or null for all of them.
  *
  * Global roles and outlet managers get null — an outlet manager runs the whole
- * restaurant, matching the exemption in leave.routes.js and shift.routes.js.
+ * restaurant, matching departmentShiftDenied() in shift.routes.js. Writing the
+ * patterns is theirs; clearing the shifts they produced is not, which is what
+ * the SHIFT_RESET check on `includeShifts` below is for.
  */
 function ownedDepartments(req) {
   if (hasGlobalScope(req.user) || req.user.role === 'OUTLET_MANAGER') return null;
@@ -248,7 +250,7 @@ router.post('/clear', authenticateToken, can('PATTERN_CLEAR'), async (req, res) 
     // can() cannot express "this one field needs more", so it is checked here.
     if (includeShifts && !holdsCapability(req.user, 'SHIFT_RESET')) {
       return res.status(403).json({
-        error: 'Deleting shifts as well as patterns requires Admin, or an Outlet Manager at this restaurant',
+        error: 'Deleting shifts as well as patterns requires Admin',
       });
     }
 
@@ -262,7 +264,8 @@ router.post('/clear', authenticateToken, can('PATTERN_CLEAR'), async (req, res) 
     // the grid save, there is no per-row hint that it happened.
     //
     // The shift side needs no such narrowing: includeShifts is gated on
-    // SHIFT_RESET just above, which no department head holds.
+    // SHIFT_RESET just above, which neither a department head nor an outlet
+    // manager holds.
     const ownedForClear = ownedDepartments(req);
     const clearScope = ownedForClear?.length ? { department: { in: ownedForClear } } : {};
 

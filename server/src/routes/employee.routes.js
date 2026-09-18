@@ -2,7 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { can, canOrOutletManager, holdsCapability } from '../lib/capabilities.js';
+import { can, holdsCapability } from '../lib/capabilities.js';
 import { outletScope, outletInclude, GLOBAL_SCOPE_ROLES, hasGlobalScope } from '../lib/scope.js';
 import { ownsDepartment, departmentsFor } from '../lib/departments.js';
 import { generateTemporaryPassword } from '../lib/passwords.js';
@@ -89,14 +89,13 @@ function readAssignment(role, { outletId, department, skills }, existing = {}) {
  * write is allowed.
  *
  * - **HR/ADMIN/SUPER_ADMIN** — any role, any outlet.
- * - **OUTLET_MANAGER** — their own outlet, and only into an outlet-level role:
- *   not a global role and not another Outlet Manager, mirroring the
- *   HR-cannot-assign-management-roles rule below.
  * - **MASTER_OF_HOUSE / HEAD_CHEF** — their own outlet, their own department
  *   (per departments.js), and STAFF only. They know who works for them; HR does
  *   not, and routing every new kitchen porter through HR is what left 45 people
  *   in the system against 343 in the punch log.
- * - Anyone else — denied.
+ * - Anyone else — denied, including an OUTLET_MANAGER, who reads the roster but
+ *   does not write it. They are turned away at the route guard before reaching
+ *   here; this closes by default regardless, so the two agree either way.
  *
  * The previous version opened `if (req.user.role !== 'OUTLET_MANAGER') return
  * null`, so it was a no-op for every role but one. That was safe only because
@@ -110,16 +109,6 @@ function readAssignment(role, { outletId, department, skills }, existing = {}) {
  */
 function assignmentDenied(req, { outletId, role, department }) {
   if (hasGlobalScope(req.user)) return null;
-
-  if (req.user.role === 'OUTLET_MANAGER') {
-    if (outletId !== req.user.outletId) {
-      return 'You can only manage employees at your own outlet';
-    }
-    if (GLOBAL_SCOPE_ROLES.includes(role) || role === 'OUTLET_MANAGER') {
-      return 'You cannot assign that role';
-    }
-    return null;
-  }
 
   if (req.user.role === 'MASTER_OF_HOUSE' || req.user.role === 'HEAD_CHEF') {
     // Role first, deliberately: readAssignment() nulls outletId for a
@@ -642,7 +631,7 @@ router.put('/:id', authenticateToken, can('EMPLOYEE_ENROL'), async (req, res) =>
  * everyday case of somebody locked out. The value is returned exactly once —
  * what is stored is a hash, so there is no way to look it up again.
  */
-router.post('/:id/reset-password', authenticateToken, canOrOutletManager('EMPLOYEE_RESET_PW'), async (req, res) => {
+router.post('/:id/reset-password', authenticateToken, can('EMPLOYEE_RESET_PW'), async (req, res) => {
   try {
     const employee = await prisma.employee.findUnique({
       where: { id: req.params.id },
@@ -685,7 +674,7 @@ router.post('/:id/reset-password', authenticateToken, canOrOutletManager('EMPLOY
 // through TransferRequest as well. Bulk removal at that scope already exists,
 // gated at SUPER_ADMIN with a typed confirmation (see wipe-staff below); this
 // single-employee action stays reversible and ADMIN-level.
-router.delete('/:id', authenticateToken, canOrOutletManager('EMPLOYEE_DEACTIVATE'), async (req, res) => {
+router.delete('/:id', authenticateToken, can('EMPLOYEE_DEACTIVATE'), async (req, res) => {
   try {
     const id = req.params.id;
 

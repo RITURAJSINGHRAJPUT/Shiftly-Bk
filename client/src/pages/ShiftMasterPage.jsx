@@ -62,6 +62,15 @@ export default function ShiftMasterPage() {
   const [saving, setSaving] = useState(false);
   const [togglingId, setTogglingId] = useState(null);
 
+  /**
+   * Clearing the patterns is a HEAD_CHEF action; taking the roster with them is
+   * not — the server checks SHIFT_RESET on `includeShifts` separately, and that
+   * is ADMIN-floor. Without this the checkbox was offered to every manager and
+   * the whole clear came back 403 once it was ticked, which reads as the clear
+   * being refused rather than the extra.
+   */
+  const canDeleteShifts = ['SUPER_ADMIN', 'ADMIN'].includes(user?.role);
+
   const [clearOpen, setClearOpen] = useState(false);
   const [clearPreview, setClearPreview] = useState(null);
   const [clearShifts, setClearShifts] = useState(false);
@@ -1055,8 +1064,9 @@ export default function ShiftMasterPage() {
             at <strong>{outlet?.name}</strong>. Other restaurants are untouched. It cannot be undone.
           </p>
 
-          {/* Opt-in, and only offered when there is a roster to lose. */}
-          {clearPreview?.shifts > 0 && (
+          {/* Opt-in, and only offered when there is a roster to lose and the
+              caller is allowed to lose it. */}
+          {canDeleteShifts && clearPreview?.shifts > 0 && (
             <label className="flex items-start gap-2 text-sm">
               <input
                 type="checkbox"

@@ -410,10 +410,13 @@ router.post('/sync-job', requireApiKey('ATTENDANCE_IMPORT_KEYS'), async (req, re
  * Mirrors leaveApprovalDenied() in leave.routes.js — overtime is routed to the
  * same people by the same rule, so the two should not drift apart.
  *
- * HR/ADMIN/SUPER_ADMIN may act on any record. An OUTLET_MANAGER may act on any
- * department at their own restaurant. A department head may act only on their
- * own department, at their own restaurant. Returns an error string, or null
- * when the action is allowed.
+ * HR/ADMIN/SUPER_ADMIN may act on any record. A department head may act only on
+ * their own department, at their own restaurant. Returns an error string, or
+ * null when the action is allowed.
+ *
+ * An OUTLET_MANAGER reaches none of this — the route guard turns them away.
+ * They see every hour worked at their restaurant and sign off none of it, which
+ * is the whole distinction between them and a Master of House.
  *
  * Unlike the leave version this also refuses to let anyone sign off their own
  * hours. Heads accrue no overtime today, so the case should not arise — but
@@ -428,7 +431,6 @@ function overtimeApprovalDenied(req, record) {
   if (record.employee.outletId !== req.user.outletId) {
     return 'You can only act on overtime for your own outlet';
   }
-  if (req.user.role === 'OUTLET_MANAGER') return null;
   if (DEPARTMENT_APPROVERS[record.employee.department] !== req.user.role) {
     return 'You can only approve overtime for your own department';
   }

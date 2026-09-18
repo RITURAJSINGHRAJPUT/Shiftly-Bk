@@ -20,16 +20,16 @@ if (!JWT_SECRET) {
 
 // Role hierarchy for permission checks.
 //
-// OUTLET_MANAGER ties HR's level deliberately: it clears the same capability
-// floors HR does (employee management, etc.) but is NOT in GLOBAL_SCOPE_ROLES
-// (scope.js), so outletScope()/employeeScope() still pin it to one outlet —
-// rank decides *what* a role may attempt, GLOBAL_SCOPE_ROLES decides *how much
-// of the org* it can attempt it on. Capabilities gated above this level
-// (EMPLOYEE_RESET_PW, EMPLOYEE_DEACTIVATE, OUTLET_EDIT, SHIFT_DELETE,
-// SHIFT_RESET, SHIFT_RESET_PREVIEW) grant
-// OUTLET_MANAGER an explicit bypass via canOrOutletManager() in
-// capabilities.js instead of lowering their floor, so HR's own permissions
-// are untouched.
+// Rank decides *what* a role may attempt, GLOBAL_SCOPE_ROLES (scope.js) decides
+// *how much of the org* it may attempt it on — two separate axes, which is why
+// HR outranks a Master of House and still cannot be pinned to one restaurant.
+//
+// OUTLET_MANAGER is the exception to the first axis: its rank is never consulted
+// for capabilities. It ties HR's number only so that comparisons elsewhere place
+// it above the department heads it oversees; what it may actually do is the
+// explicit `outletManager` list in capabilities.js, which is a short one. Before
+// that list existed the role cleared every floor HR did, and each capability
+// added afterwards widened it silently.
 export const ROLE_HIERARCHY = {
   SUPER_ADMIN: 6,
   ADMIN: 5,

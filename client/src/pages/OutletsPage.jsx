@@ -45,12 +45,11 @@ export default function OutletsPage() {
   const [savingBrand, setSavingBrand] = useState(false);
   const [brandError, setBrandError] = useState('');
 
-  // Creating an outlet or a brand, and editing a brand, stay ADMIN-guarded
-  // server-side — those are org-wide structural actions.
+  // Everything on this page is ADMIN-guarded server-side, editing an outlet
+  // included: the record carries the geofence, and moving that defeats
+  // attendance validation for everyone who clocks in there. An Outlet Manager
+  // used to be excepted for their own outlet and no longer is.
   const canManage = ['SUPER_ADMIN', 'ADMIN'].includes(user?.role);
-  // An Outlet Manager may edit their own outlet's record, geofence included —
-  // the list they see is already scoped server-side to just that one outlet.
-  const canEditOwnOutlet = canManage || user?.role === 'OUTLET_MANAGER';
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -260,7 +259,7 @@ export default function OutletsPage() {
                       {outlet.address || 'No address on file'}
                     </div>
                   </div>
-                  {canEditOwnOutlet && (
+                  {canManage && (
                     <button
                       className="btn btn-ghost btn-icon btn-sm"
                       style={{ marginLeft: 'auto' }}
@@ -412,7 +411,7 @@ export default function OutletsPage() {
             </p>
           )}
 
-          {editing && canEditOwnOutlet && (
+          {editing && canManage && (
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label" htmlFor="outlet-lat">Latitude</label>

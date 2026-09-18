@@ -15,6 +15,14 @@ each action names the lowest rank that may perform it. Most access first:
 - **Head Chef** (2)
 - **Staff** (1)
 
+**Outlet Manager is the one role that does not inherit.** It shares HR's rank so
+that it sits above the department heads it oversees, but its rank buys it
+nothing: it holds exactly the actions ticked in its column below and no others,
+and anything added to this system in future is closed to it until someone says
+otherwise. The role runs one restaurant's roster and watches its attendance.
+Deciding leave, signing off overtime, changing staff records and tearing up a
+roster all belong elsewhere — to the department heads and to head office.
+
 ## Reading
 
 Anyone signed in can read, but not the same amount.
@@ -44,18 +52,18 @@ query parameter, so it cannot be widened by asking differently.
 
 > **Edit a brand, including its station list** — Station lists drive the Shift Master sheet for every outlet in the brand.
 
-> **Edit a restaurant, including its geofence** — Moving the geofence defeats attendance validation, so this is not a manager-level action. Exception: an Outlet Manager may edit their own outlet — see canOrOutletManager() in this file.
+> **Edit a restaurant, including its geofence** — Moving the geofence defeats attendance validation, so this is not a manager-level action, including for the manager of that restaurant.
 
 ### People
 
 | Action | Super Admin | Admin | HR | Outlet Manager | Master of House | Head Chef | Staff |
 |---|---|---|---|---|---|---|---|
-| Enrol a staff member at your own restaurant | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| Enrol anyone, anywhere | ✅ | ✅ | ✅ | ✅ | — | — | — |
-| Edit an employee | ✅ | ✅ | ✅ | ✅ | — | — | — |
+| Enrol a staff member at your own restaurant | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
+| Enrol anyone, anywhere | ✅ | ✅ | ✅ | — | — | — | — |
+| Edit an employee | ✅ | ✅ | ✅ | — | — | — | — |
 | Add or correct an entry in the punch directory | ✅ | ✅ | ✅ | — | — | — | — |
-| Issue a new one-time password | ✅ | ✅ | ✅ | ✅ | — | — | — |
-| Deactivate an employee | ✅ | ✅ | ✅ | ✅ | — | — | — |
+| Issue a new one-time password | ✅ | ✅ | ✅ | — | — | — | — |
+| Deactivate an employee | ✅ | ✅ | ✅ | — | — | — | — |
 | See what a staff wipe would delete | ✅ | — | — | — | — | — | — |
 | Delete every staff account and their history | ✅ | — | — | — | — | — | — |
 
@@ -65,9 +73,9 @@ query parameter, so it cannot be widened by asking differently.
 
 > **Add or correct an entry in the punch directory** — The directory is who the biometric feed knows about, and it is what the enrolment form reads to turn a code into a name. Department heads read it; only head office writes to it. Enforced with hasGlobalScope() rather than this floor, because OUTLET_MANAGER shares HR’s rank and would otherwise clear it.
 
-> **Issue a new one-time password** — The same floor as enrolment, because it is the same act from the other end: HR issues the first one-time password when they enrol someone, and a lost password is simply that again. Holding this above enrolment meant the role that creates accounts could not help the person whose password it had handed them. A department head still cannot — they enrol clock-in-only records, which have no sign-in to take over. Exception: an Outlet Manager may reset a password for staff at their own outlet.
+> **Issue a new one-time password** — The same floor as enrolment, because it is the same act from the other end: HR issues the first one-time password when they enrol someone, and a lost password is simply that again. Holding this above enrolment meant the role that creates accounts could not help the person whose password it had handed them. A department head still cannot — they enrol clock-in-only records, which have no sign-in to take over.
 
-> **Deactivate an employee** — Deactivation is a real lockout — the login handler refuses an inactive account. HR can deactivate anyone except management accounts (Super Admin, Admin, HR), matching the rule that HR cannot assign those roles. An Outlet Manager may deactivate staff at their own outlet only.
+> **Deactivate an employee** — Deactivation is a real lockout — the login handler refuses an inactive account. HR can deactivate anyone except management accounts (Super Admin, Admin, HR), matching the rule that HR cannot assign those roles.
 
 > **Delete every staff account and their history** — Irreversible, and behind a typed confirmation as well as this role.
 
@@ -82,9 +90,9 @@ query parameter, so it cannot be widened by asking differently.
 | See what resetting a restaurant would delete | ✅ | ✅ | — | — | — | — | — |
 | Delete every shift at one restaurant | ✅ | ✅ | — | — | — | — | — |
 
-> **Delete a shift** — Higher than creating one: a deleted shift leaves no record that it existed. Exception: an Outlet Manager may delete a shift at their own outlet.
+> **Delete a shift** — Higher than creating one: a deleted shift leaves no record that it existed. An Outlet Manager builds the roster but cannot erase parts of it.
 
-> **Delete every shift at one restaurant** — The whole roster at once, for all time and every status — including completed shifts, which the dashboard counts for its attendance history. Same floor as deleting a single shift, since this is strictly more destructive. Exception: an Outlet Manager may reset their own restaurant. Also required to tick "delete shifts too" when clearing shift patterns, which reaches the same outcome.
+> **Delete every shift at one restaurant** — The whole roster at once, for all time and every status — including completed shifts, which the dashboard counts for its attendance history. Same floor as deleting a single shift, since this is strictly more destructive. Also required to tick "delete shifts too" when clearing shift patterns, which reaches the same outcome.
 
 ### Shift patterns
 
@@ -105,32 +113,32 @@ query parameter, so it cannot be widened by asking differently.
 | Action | Super Admin | Admin | HR | Outlet Manager | Master of House | Head Chef | Staff |
 |---|---|---|---|---|---|---|---|
 | See other people's attendance | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| Pull attendance from the punch log | ✅ | ✅ | ✅ | ✅ | — | — | — |
-| Approve overtime | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| Reject overtime | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Pull attendance from the punch log | ✅ | ✅ | ✅ | — | — | — | — |
+| Approve overtime | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
+| Reject overtime | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
 
-> **See other people's attendance** — Everyone can always see their own record. A Master of House or Head Chef sees every employee at their own restaurant, every department; HR and above see every restaurant. Seeing is broader than approving — overtime is still signed off only by the head of that department. Administration roles never clock in, so their rows are hidden from the list.
+> **See other people's attendance** — Everyone can always see their own record. An Outlet Manager, Master of House or Head Chef sees every employee at their own restaurant, every department; HR and above see every restaurant. Seeing is broader than approving — overtime is still signed off only by the head of that department, and an Outlet Manager cannot sign off any of it. Administration roles never clock in, so their rows are hidden from the list.
 
 > **Pull attendance from the punch log** — Higher than viewing it: the pull is organisation-wide by nature, so it writes every restaurant's rows, not just the caller's own.
 
-> **Approve overtime** — Only for your own department, at your own restaurant, and never your own overtime — enforced per record, the same way leave approval is.
+> **Approve overtime** — Only for your own department, at your own restaurant, and never your own overtime — enforced per record. A Master of House or Head Chef signs off the hours of the people they run; an Outlet Manager sees those hours but does not decide them, which is the point of the two being separate roles.
 
 ### Leave
 
 | Action | Super Admin | Admin | HR | Outlet Manager | Master of House | Head Chef | Staff |
 |---|---|---|---|---|---|---|---|
-| Approve a leave request | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| Reject a leave request | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| Auto-assign cover for emergency leave | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Approve a leave request | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
+| Reject a leave request | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
+| Auto-assign cover for emergency leave | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
 
-> **Approve a leave request** — Your own department, at your own restaurant, and never your own request — enforced per record. A single quiet weekday off still auto-approves on submission without passing through this at all.
+> **Approve a leave request** — Your own department, at your own restaurant, and never your own request — enforced per record. A single quiet weekday off still auto-approves on submission without passing through this at all. Like overtime, this belongs to the department head rather than the Outlet Manager.
 
 ### Transfers
 
 | Action | Super Admin | Admin | HR | Outlet Manager | Master of House | Head Chef | Staff |
 |---|---|---|---|---|---|---|---|
-| Approve a transfer request | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
-| Reject a transfer request | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Approve a transfer request | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
+| Reject a transfer request | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
 
 ### System
 

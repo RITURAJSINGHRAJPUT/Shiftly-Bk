@@ -69,14 +69,14 @@ export default function AttendancePage() {
 
   /**
    * Mirrors overtimeApprovalDenied() on the server: a global role acts on
-   * anyone, an outlet manager on any department at their restaurant, a
-   * department head only on their own — and nobody on their own hours. The
+   * anyone, a department head only on their own department — and nobody on
+   * their own hours. An Outlet Manager acts on none of it; they are on this
+   * page to see the hours their restaurant worked, not to sign them off. The
    * server enforces all of it; this only decides what to show.
    */
   const canDecide = useCallback((rec) => {
     if (rec.employee?.id === user?.id) return false;
     if (GLOBAL_SCOPE_ROLES.includes(user?.role)) return true;
-    if (user?.role === 'OUTLET_MANAGER') return true;
     return DEPARTMENT_APPROVERS[rec.employee?.department] === user?.role;
   }, [user]);
 

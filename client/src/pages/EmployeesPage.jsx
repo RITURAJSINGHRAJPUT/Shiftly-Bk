@@ -9,17 +9,15 @@ import { Plus, Search, Filter, Edit, Trash2, Store, ShieldCheck, Users, KeyRound
 
 /**
  * Role options for the Add/Edit modal, split by which "side" of the
- * management/outlet line they sit on. OUTLET_ROLES_RESTRICTED excludes
- * OUTLET_MANAGER itself and is for Outlet Managers only — they can staff their
- * own outlet but not create a peer. HR gets the full OUTLET_ROLES list; what HR
- * cannot assign is the management roles.
+ * management/outlet line they sit on. HR gets the full OUTLET_ROLES list; what
+ * HR cannot assign is the management roles. There was a third, narrower list
+ * for Outlet Managers; they no longer write employee records at all, so the
+ * only way to reach this modal is as HR or above, or as a department head
+ * enrolling Staff.
  */
 const OUTLET_ROLES = [
   ['OUTLET_MANAGER', 'Outlet Manager'], ['MASTER_OF_HOUSE', 'Master of House'],
   ['HEAD_CHEF', 'Head Chef'], ['STAFF', 'Staff Member'],
-];
-const OUTLET_ROLES_RESTRICTED = [
-  ['MASTER_OF_HOUSE', 'Master of House'], ['HEAD_CHEF', 'Head Chef'], ['STAFF', 'Staff Member'],
 ];
 const MANAGEMENT_ROLES = [['SUPER_ADMIN', 'Super Admin'], ['ADMIN', 'Admin'], ['HR', 'HR']];
 
@@ -41,6 +39,17 @@ export default function EmployeesPage() {
    * it regardless — this decides what is worth putting on screen.
    */
   const isDepartmentHead = ['MASTER_OF_HOUSE', 'HEAD_CHEF'].includes(user?.role);
+
+  /**
+   * Whether this page is a directory or a workbench.
+   *
+   * An Outlet Manager reads it and writes nothing: every write on it —
+   * EMPLOYEE_ENROL, EMPLOYEE_EDIT, EMPLOYEE_RESET_PW, EMPLOYEE_DEACTIVATE — is
+   * now closed to them server-side. App.jsx mounts routes with no role guard of
+   * its own, so what a page chooses to render is the only thing standing
+   * between a role and a screen full of buttons that 403.
+   */
+  const canWrite = user?.role !== 'OUTLET_MANAGER';
 
   /**
    * Which departments a given target role may be put in.
@@ -455,8 +464,13 @@ export default function EmployeesPage() {
       <div className="page-header">
         <div>
           <h1 className="page-title">Employee Directory</h1>
-          <p className="page-subtitle">Manage profiles, departments, outlet assignments and kitchen stations</p>
+          <p className="page-subtitle">
+            {canWrite
+              ? 'Manage profiles, departments, outlet assignments and kitchen stations'
+              : 'Who works where, in which department, and on which stations'}
+          </p>
         </div>
+        {canWrite && (
         <div className="flex gap-2">
           {/* Disabled until a card is picked: without one there is no outlet to
               put someone in, and no way to know which of the two forms to show. */}
@@ -480,6 +494,7 @@ export default function EmployeesPage() {
             </button>
           )}
         </div>
+        )}
       </div>
 
       <div className="card mb-4">
@@ -588,7 +603,7 @@ export default function EmployeesPage() {
                         <th>Department</th>
                         <th>Role</th>
                         <th>Stations</th>
-                        <th>Actions</th>
+                        {canWrite && <th>Actions</th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -632,6 +647,7 @@ export default function EmployeesPage() {
                               )}
                             </div>
                           </td>
+                          {canWrite && (
                           <td>
                             <div className="flex gap-2">
                               <button
@@ -641,8 +657,8 @@ export default function EmployeesPage() {
                               >
                                 <Edit size={14} />
                               </button>
-                              {/* Both are Admin/Outlet Manager actions, so for
-                                  a department head they would 403 on click. A
+                              {/* Both are HR-and-above actions, so for a
+                                  department head they would 403 on click. A
                                   head can correct their own staff; taking over
                                   or locking out an account is not theirs. */}
                               {!isDepartmentHead && (
@@ -677,6 +693,7 @@ export default function EmployeesPage() {
                               )}
                             </div>
                           </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -893,11 +910,9 @@ export default function EmployeesPage() {
             >
               {(isDepartmentHead
                 ? [['STAFF', 'Staff Member']]
-                : user?.role === 'OUTLET_MANAGER'
-                  ? OUTLET_ROLES_RESTRICTED
-                  : managementForm
-                    ? MANAGEMENT_ROLES
-                    : OUTLET_ROLES
+                : managementForm
+                  ? MANAGEMENT_ROLES
+                  : OUTLET_ROLES
               ).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               {!isOutletScopedAdmin && !isDepartmentHead && (
               <optgroup label={managementForm ? 'Move to an outlet' : 'Move to management'}>

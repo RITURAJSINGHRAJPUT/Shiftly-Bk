@@ -81,8 +81,12 @@ export const ATTENDANCE_VIEW_ALL_ROLES = [
   'SUPER_ADMIN', 'ADMIN', 'HR', 'OUTLET_MANAGER', 'MASTER_OF_HOUSE', 'HEAD_CHEF',
 ];
 
-/** Mirrors ATTENDANCE_SYNC — the pull is org-wide, so it sits higher. */
-export const ATTENDANCE_SYNC_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR', 'OUTLET_MANAGER'];
+/**
+ * Mirrors ATTENDANCE_SYNC — the pull is org-wide, so it sits higher. An Outlet
+ * Manager sees every record at their restaurant and pulls none of them: the
+ * import writes every restaurant's rows, which is not theirs to trigger.
+ */
+export const ATTENDANCE_SYNC_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR'];
 
 /**
  * Mirrors server/src/lib/departments.js. A locked manager acts only on their

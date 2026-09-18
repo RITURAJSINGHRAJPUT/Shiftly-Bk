@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { can, canOrOutletManager } from '../lib/capabilities.js';
+import { can } from '../lib/capabilities.js';
 import { logAudit } from '../lib/audit.js';
 import { hasGlobalScope, MATCH_NOTHING } from '../lib/scope.js';
 
@@ -97,9 +97,10 @@ router.post('/', authenticateToken, can('OUTLET_CREATE'), async (req, res) => {
 //
 // Guarded at ADMIN: this endpoint moves the geofence, so anyone who can call it
 // can defeat attendance validation. It previously shipped with no role check.
-// An OUTLET_MANAGER clears the same bar, but only for their own outlet — see
-// canOrOutletManager()/the ownership check just inside the handler.
-router.put('/:id', authenticateToken, canOrOutletManager('OUTLET_EDIT'), async (req, res) => {
+// An Outlet Manager does not clear it. The ownership check just inside the
+// handler is therefore only reached by ADMIN and above, and stays as the
+// belt-and-braces for any role added between the floor and global scope later.
+router.put('/:id', authenticateToken, can('OUTLET_EDIT'), async (req, res) => {
   try {
     if (!hasGlobalScope(req.user) && req.params.id !== req.user.outletId) {
       return res.status(403).json({ error: 'You can only edit your own outlet' });

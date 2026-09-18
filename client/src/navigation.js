@@ -44,8 +44,10 @@ export const NAV_SECTIONS = [
       { path: '/organizations', label: 'Organizations', icon: Building2, roles: ['SUPER_ADMIN', 'ADMIN'] },
       // Brands and outlets are one page: the outlet directory was already
       // grouped by brand, so a separate brand list was a flatter view of the
-      // same tree. Brand writes stay ADMIN-only inside the page.
-      { path: '/outlets', label: 'Brands & Outlets', icon: Store, roles: ['SUPER_ADMIN', 'ADMIN', 'HR', 'OUTLET_MANAGER'] },
+      // same tree. Brand writes stay ADMIN-only inside the page. Not the Outlet
+      // Manager: every action on that page is now ADMIN-floor, so for them it
+      // would be a list of one restaurant with nothing to do to it.
+      { path: '/outlets', label: 'Brands & Outlets', icon: Store, roles: ['SUPER_ADMIN', 'ADMIN', 'HR'] },
     ],
   },
   {

@@ -12,7 +12,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { CAPABILITIES } from '../lib/capabilities.js';
+import { CAPABILITIES, roleHolds } from '../lib/capabilities.js';
 import { ROLE_HIERARCHY } from '../middleware/auth.js';
 import { GLOBAL_SCOPE_ROLES } from '../lib/scope.js';
 
@@ -34,19 +34,13 @@ const LABELS = {
   STAFF: 'Staff',
 };
 
-const allows = (role, minRole) => ROLE_HIERARCHY[role] >= ROLE_HIERARCHY[minRole];
-
 /**
- * Who actually holds a capability.
- *
- * Normally the rank floor answers this. It cannot always: HR and OUTLET_MANAGER
- * share rank 4, so no floor selects one without the other, and a capability
- * guarded by hasGlobalScope() excludes the outlet manager while `minRole: 'HR'`
- * would tick their column. A capability may therefore name its roles outright,
- * and this table is only as honest as that escape hatch makes it.
+ * Who actually holds a capability — the same function the route guards call,
+ * not a second reading of the same fields. An earlier version reimplemented the
+ * floor comparison here, which is precisely how a generated table starts lying:
+ * the rule changes in one file and the doc keeps describing the old one.
  */
-const holders = (cap) =>
-  (role) => (Array.isArray(cap.roles) ? cap.roles.includes(role) : allows(role, cap.minRole));
+const holders = (key) => (role) => roleHolds(role, key);
 
 export function buildDoc() {
   const groups = new Map();
@@ -60,7 +54,7 @@ export function buildDoc() {
 
   const sections = [...groups].map(([group, caps]) => {
     const rows = caps.map((c) => {
-      const held = holders(c);
+      const held = holders(c.key);
       const cells = ROLES.map((r) => (held(r) ? '✅' : '—'));
       return `| ${c.label} | ${cells.join(' | ')} |`;
     });
@@ -92,6 +86,14 @@ Every role inherits everything the roles below it can do: they are ranked, and
 each action names the lowest rank that may perform it. Most access first:
 
 ${ROLES.map((r) => `- **${LABELS[r]}** (${ROLE_HIERARCHY[r]})`).join('\n')}
+
+**Outlet Manager is the one role that does not inherit.** It shares HR's rank so
+that it sits above the department heads it oversees, but its rank buys it
+nothing: it holds exactly the actions ticked in its column below and no others,
+and anything added to this system in future is closed to it until someone says
+otherwise. The role runs one restaurant's roster and watches its attendance.
+Deciding leave, signing off overtime, changing staff records and tearing up a
+roster all belong elsewhere — to the department heads and to head office.
 
 ## Reading
 

@@ -16,7 +16,8 @@ export default function LeavesPage() {
     // Nobody else signs off their own. Without this the Approve and Reject
     // icons render on a manager's own row and 403 on click.
     if (leave.employee?.id === user?.id) return false;
-    if (user?.role === 'OUTLET_MANAGER') return true;
+    // An Outlet Manager is absent from DEPARTMENT_APPROVERS and so falls
+    // through to false: they read this page, they do not decide on it.
     return DEPARTMENT_APPROVERS[leave.employee.department] === user?.role;
   };
   const [leaves, setLeaves] = useState([]);

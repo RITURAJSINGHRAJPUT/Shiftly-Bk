@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { can, canOrOutletManager } from '../lib/capabilities.js';
+import { can } from '../lib/capabilities.js';
 import { autoAllocateShifts, AUTO_OFF_REASON, outletResetOps } from '../engine/shiftAllocator.js';
 import { outletScope, hasGlobalScope } from '../lib/scope.js';
 import { departmentsFor, ownsDepartment } from '../lib/departments.js';
@@ -48,8 +48,11 @@ function outletShiftDenied(req, outletId) {
  */
 function departmentShiftDenied(req, department) {
   if (hasGlobalScope(req.user)) return null;
-  // An Outlet Manager runs the whole restaurant, every department in it. Same
-  // exemption leave.routes.js makes, for the same reason.
+  // An Outlet Manager runs the whole restaurant, every department in it —
+  // rostering is the job the role exists for. Note this is *not* the shape of
+  // leaveApprovalDenied() next door, which turns them away entirely: building
+  // the week is theirs, deciding who is absent from it is the department
+  // head's. The two functions are deliberately no longer mirrors.
   if (req.user.role === 'OUTLET_MANAGER') return null;
   if (!ownsDepartment(req.user.role, department)) {
     const owned = departmentsFor(req.user.role);
@@ -237,7 +240,7 @@ async function resolveResetTarget(req) {
 // GET /api/shifts/stats/reset-preview?outlet=<id>
 // Two segments, like /employees/stats/wipe-preview, so a future GET /:id on
 // this router cannot capture it.
-router.get('/stats/reset-preview', authenticateToken, canOrOutletManager('SHIFT_RESET_PREVIEW'), async (req, res) => {
+router.get('/stats/reset-preview', authenticateToken, can('SHIFT_RESET_PREVIEW'), async (req, res) => {
   try {
     const target = await resolveResetTarget(req);
     if (target.error) return res.status(target.status).json({ error: target.error });
@@ -273,7 +276,7 @@ router.get('/stats/reset-preview', authenticateToken, canOrOutletManager('SHIFT_
 // POST /api/shifts/reset
 // POST rather than DELETE for the reason given on /employees/wipe-staff: the
 // client's delete() sends no body, and this needs one.
-router.post('/reset', authenticateToken, canOrOutletManager('SHIFT_RESET'), async (req, res) => {
+router.post('/reset', authenticateToken, can('SHIFT_RESET'), async (req, res) => {
   try {
     const target = await resolveResetTarget(req);
     if (target.error) return res.status(target.status).json({ error: target.error });
@@ -354,7 +357,7 @@ router.put('/:id', authenticateToken, can('SHIFT_EDIT'), async (req, res) => {
 });
 
 // DELETE /api/shifts/:id
-router.delete('/:id', authenticateToken, canOrOutletManager('SHIFT_DELETE'), async (req, res) => {
+router.delete('/:id', authenticateToken, can('SHIFT_DELETE'), async (req, res) => {
   try {
     const existing = await prisma.shift.findUnique({
       where: { id: req.params.id },

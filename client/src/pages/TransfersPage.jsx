@@ -19,6 +19,13 @@ export default function TransfersPage() {
   const { user, isManager } = useAuth();
   const { outlets } = useScope();
 
+  /**
+   * Narrower than `isManager`, which still decides what the *table* shows — an
+   * Outlet Manager reads every transfer at their restaurant. Deciding one is
+   * TRANSFER_APPROVE, which they do not hold, so the two icons would 403.
+   */
+  const canDecide = isManager && user?.role !== 'OUTLET_MANAGER';
+
   const [transfers, setTransfers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('');
@@ -262,7 +269,7 @@ export default function TransfersPage() {
                     </td>
                     <td data-label="Actions">
                       <div className="flex gap-1">
-                        {t.status === 'PENDING' && isManager && !isOwn && (
+                        {t.status === 'PENDING' && canDecide && !isOwn && (
                           <>
                             <button
                               className="btn btn-sm btn-accent"

@@ -254,8 +254,8 @@ reference, along with key issuing and origin allowlisting, is `api/PUBLIC_API.md
 | `PUT` | `/api/shifts/:id` | HEAD_CHEF |
 | `DELETE` | `/api/shifts/:id` | ADMIN |
 | `GET` | `/api/shifts/my/upcoming` | — (own shifts, next 14) |
-| `GET` | `/api/shifts/stats/reset-preview?outlet=` | ADMIN (or Outlet Manager, own outlet) |
-| `POST` | `/api/shifts/reset` | ADMIN (or Outlet Manager, own outlet) |
+| `GET` | `/api/shifts/stats/reset-preview?outlet=` | ADMIN |
+| `POST` | `/api/shifts/reset` | ADMIN |
 | `GET` | `/api/shift-templates?outlet=&activeOnly=` | — |
 | `POST` `PUT` `DELETE` | `/api/shift-templates[/:id]` | HEAD_CHEF |
 

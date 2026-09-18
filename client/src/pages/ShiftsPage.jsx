@@ -58,12 +58,13 @@ export default function ShiftsPage() {
   const [resetResult, setResetResult] = useState(null);
 
   /**
-   * Not `isManager`, which also covers HR, Master of House and Head Chef — all
-   * of whom would see a button that 403s, since SHIFT_RESET is ADMIN-floor with
-   * an Outlet Manager exception. The server enforces this independently; this
+   * Not `isManager`, which also covers HR, the Outlet Manager and the two
+   * department heads — all of whom would see a button that 403s, since
+   * SHIFT_RESET is ADMIN-floor with no exceptions. An Outlet Manager builds the
+   * roster and cannot wipe it. The server enforces this independently; this
    * only decides what is worth showing.
    */
-  const canReset = ['SUPER_ADMIN', 'ADMIN', 'OUTLET_MANAGER'].includes(user?.role);
+  const canReset = ['SUPER_ADMIN', 'ADMIN'].includes(user?.role);
 
   /**
    * Who this user may actually roster.

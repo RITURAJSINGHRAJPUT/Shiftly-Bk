@@ -29,8 +29,11 @@ function ManagementDashboard() {
 
   // Mirrors Sidebar.jsx's role gating for the same destinations, so Quick
   // Actions never link to a page the sidebar itself would hide.
-  const canManageEmployees = [...GLOBAL_SCOPE_ROLES, 'OUTLET_MANAGER'].includes(user?.role);
-  const canManageOutlets = [...GLOBAL_SCOPE_ROLES, 'OUTLET_MANAGER'].includes(user?.role);
+  // Both of these are *writes*, not the pages themselves — an Outlet Manager
+  // still reaches the employee directory from the sidebar, read-only. A Quick
+  // Action is a shortcut to doing something, so it follows what the role may do.
+  const canManageEmployees = GLOBAL_SCOPE_ROLES.includes(user?.role);
+  const canManageOutlets = GLOBAL_SCOPE_ROLES.includes(user?.role);
   const canViewReports = [...GLOBAL_SCOPE_ROLES, 'OUTLET_MANAGER', 'MASTER_OF_HOUSE'].includes(user?.role);
 
   const [stats, setStats] = useState(null);

@@ -1,4 +1,4 @@
-import { requireMinRole, ROLE_HIERARCHY } from '../middleware/auth.js';
+import { ROLE_HIERARCHY } from '../middleware/auth.js';
 
 /**
  * Every guarded action, declared once.
@@ -17,6 +17,15 @@ import { requireMinRole, ROLE_HIERARCHY } from '../middleware/auth.js';
  *
  * `note` is for the caveat a label cannot carry — why a capability sits higher
  * than its neighbours.
+ *
+ * `outletManager: true` is the one exception to the floor, and it is a
+ * narrowing, not a widening. OUTLET_MANAGER ties HR's rank, so the floor alone
+ * would hand them everything HR holds; the role is meant to run one restaurant's
+ * roster and watch its attendance, nothing else. So the rank is ignored for that
+ * role entirely and this flag is the whole list. A capability added later
+ * without the flag is closed to them by default, which is the way round that
+ * fails safe — the previous arrangement let them past every gate and each new
+ * capability silently widened the role.
  */
 export const CAPABILITIES = {
   ORGANIZATION_CREATE: {
@@ -38,8 +47,8 @@ export const CAPABILITIES = {
   },
   OUTLET_EDIT: {
     group: 'Organisation', label: 'Edit a restaurant, including its geofence', minRole: 'ADMIN',
-    note: 'Moving the geofence defeats attendance validation, so this is not a manager-level action. ' +
-      'Exception: an Outlet Manager may edit their own outlet — see canOrOutletManager() in this file.',
+    note: 'Moving the geofence defeats attendance validation, so this is not a manager-level action, ' +
+      'including for the manager of that restaurant.',
   },
 
   EMPLOYEE_ENROL: {
@@ -75,15 +84,13 @@ export const CAPABILITIES = {
       'first one-time password when they enrol someone, and a lost password is simply that again. ' +
       'Holding this above enrolment meant the role that creates accounts could not help the person ' +
       'whose password it had handed them. A department head still cannot — they enrol clock-in-only ' +
-      'records, which have no sign-in to take over. Exception: an Outlet Manager may reset a password ' +
-      'for staff at their own outlet.',
+      'records, which have no sign-in to take over.',
   },
   EMPLOYEE_DEACTIVATE: {
     group: 'People', label: 'Deactivate an employee', minRole: 'HR',
     note: 'Deactivation is a real lockout — the login handler refuses an inactive account. ' +
       'HR can deactivate anyone except management accounts (Super Admin, Admin, HR), matching ' +
-      'the rule that HR cannot assign those roles. An Outlet Manager may deactivate staff at ' +
-      'their own outlet only.',
+      'the rule that HR cannot assign those roles.',
   },
   STAFF_WIPE_PREVIEW: {
     group: 'People', label: 'See what a staff wipe would delete', minRole: 'SUPER_ADMIN',
@@ -95,17 +102,20 @@ export const CAPABILITIES = {
 
   SHIFT_CREATE: {
     group: 'Shifts', label: 'Add a shift', minRole: 'HEAD_CHEF',
+    outletManager: true,
   },
   SHIFT_EDIT: {
     group: 'Shifts', label: 'Edit a shift', minRole: 'HEAD_CHEF',
+    outletManager: true,
   },
   SHIFT_ALLOCATE: {
     group: 'Shifts', label: 'Run auto-allocation for a week', minRole: 'HEAD_CHEF',
+    outletManager: true,
   },
   SHIFT_DELETE: {
     group: 'Shifts', label: 'Delete a shift', minRole: 'ADMIN',
     note: 'Higher than creating one: a deleted shift leaves no record that it existed. ' +
-      'Exception: an Outlet Manager may delete a shift at their own outlet.',
+      'An Outlet Manager builds the roster but cannot erase parts of it.',
   },
   SHIFT_RESET_PREVIEW: {
     group: 'Shifts', label: 'See what resetting a restaurant would delete', minRole: 'ADMIN',
@@ -115,40 +125,48 @@ export const CAPABILITIES = {
     note: 'The whole roster at once, for all time and every status — including ' +
       'completed shifts, which the dashboard counts for its attendance history. ' +
       'Same floor as deleting a single shift, since this is strictly more ' +
-      'destructive. Exception: an Outlet Manager may reset their own restaurant. ' +
-      'Also required to tick "delete shifts too" when clearing shift patterns, ' +
-      'which reaches the same outcome.',
+      'destructive. Also required to tick "delete shifts too" when clearing shift ' +
+      'patterns, which reaches the same outcome.',
   },
 
   PATTERN_CREATE: {
     group: 'Shift patterns', label: 'Add a shift pattern', minRole: 'HEAD_CHEF',
+    outletManager: true,
   },
   PATTERN_BULK: {
     group: 'Shift patterns', label: 'Add one pattern across several restaurants', minRole: 'HEAD_CHEF',
+    outletManager: true,
     note: 'Each restaurant is checked separately, so a head chef can only reach their own.',
   },
   PATTERN_GRID: {
     group: 'Shift patterns', label: 'Save the weekly shift sheet', minRole: 'HEAD_CHEF',
+    outletManager: true,
   },
   PATTERN_EDIT: {
     group: 'Shift patterns', label: 'Edit a shift pattern', minRole: 'HEAD_CHEF',
+    outletManager: true,
   },
   PATTERN_DELETE: {
     group: 'Shift patterns', label: 'Delete a shift pattern', minRole: 'HEAD_CHEF',
+    outletManager: true,
   },
   PATTERN_CLEAR: {
     group: 'Shift patterns', label: "Clear a restaurant's patterns", minRole: 'HEAD_CHEF',
+    outletManager: true,
   },
   PATTERN_CLEAR_PREVIEW: {
     group: 'Shift patterns', label: 'See what clearing would delete', minRole: 'HEAD_CHEF',
+    outletManager: true,
   },
 
   ATTENDANCE_VIEW_ALL: {
     group: 'Attendance', label: "See other people's attendance", minRole: 'HEAD_CHEF',
-    note: 'Everyone can always see their own record. A Master of House or Head Chef sees every ' +
-      'employee at their own restaurant, every department; HR and above see every restaurant. ' +
-      'Seeing is broader than approving — overtime is still signed off only by the head of that ' +
-      'department. Administration roles never clock in, so their rows are hidden from the list.',
+    outletManager: true,
+    note: 'Everyone can always see their own record. An Outlet Manager, Master of House or Head ' +
+      'Chef sees every employee at their own restaurant, every department; HR and above see every ' +
+      'restaurant. Seeing is broader than approving — overtime is still signed off only by the head ' +
+      'of that department, and an Outlet Manager cannot sign off any of it. Administration roles ' +
+      'never clock in, so their rows are hidden from the list.',
   },
 
   ATTENDANCE_SYNC: {
@@ -159,7 +177,9 @@ export const CAPABILITIES = {
   OVERTIME_APPROVE: {
     group: 'Attendance', label: 'Approve overtime', minRole: 'HEAD_CHEF',
     note: 'Only for your own department, at your own restaurant, and never your own ' +
-      'overtime — enforced per record, the same way leave approval is.',
+      'overtime — enforced per record. A Master of House or Head Chef signs off the hours of the ' +
+      'people they run; an Outlet Manager sees those hours but does not decide them, which is the ' +
+      'point of the two being separate roles.',
   },
   OVERTIME_REJECT: {
     group: 'Attendance', label: 'Reject overtime', minRole: 'HEAD_CHEF',
@@ -169,7 +189,8 @@ export const CAPABILITIES = {
     group: 'Leave', label: 'Approve a leave request', minRole: 'HEAD_CHEF',
     note: 'Your own department, at your own restaurant, and never your own request — ' +
       'enforced per record. A single quiet weekday off still auto-approves on submission ' +
-      'without passing through this at all.',
+      'without passing through this at all. Like overtime, this belongs to the department ' +
+      'head rather than the Outlet Manager.',
   },
   LEAVE_REJECT: {
     group: 'Leave', label: 'Reject a leave request', minRole: 'HEAD_CHEF',
@@ -202,53 +223,47 @@ export function can(key) {
   // Thrown at import time, not on the first request: a typo here would otherwise
   // produce a route with no guard at all, which fails open.
   if (!capability) throw new Error(`Unknown capability "${key}"`);
-  return requireMinRole(capability.minRole);
-}
-
-/**
- * Same gate as can(), but also lets an OUTLET_MANAGER through regardless of
- * the capability's floor.
- *
- * For the handful of capabilities pinned above OUTLET_MANAGER's own rank
- * (OUTLET_EDIT, SHIFT_DELETE, SHIFT_RESET, SHIFT_RESET_PREVIEW — all
- * ADMIN-floor), lowering the floor
- * itself would hand HR the same rights,
- * since HR ties OUTLET_MANAGER's rank. Bypassing the floor for this one role
- * instead leaves HR's permissions exactly as they are.
- *
- * This only gets an OUTLET_MANAGER past the door — every route using this
- * still has to verify the acted-on resource belongs to their own outlet, the
- * same way outletWriteDenied()/leaveApprovalDenied() already do for other
- * capabilities.
- */
-export function canOrOutletManager(key) {
-  // Resolved here rather than per-request so an unknown key still throws at
-  // import time, the same as can().
-  const capability = CAPABILITIES[key];
-  if (!capability) throw new Error(`Unknown capability "${key}"`);
   return (req, res, next) => {
     if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
-    if (holdsCapability(req.user, key)) return next();
+    if (roleHolds(req.user.role, key)) return next();
     return res.status(403).json({ error: 'Insufficient permissions' });
   };
 }
 
 /**
- * The same rule as canOrOutletManager(), as a plain predicate.
+ * Whether a role holds a capability at all. One rule, three callers: the
+ * middleware above, the in-handler checks that a route guard cannot express,
+ * and ACCESS.md's generator — so the published table and the enforcement are
+ * the same function rather than two readings of the same data.
  *
- * For the one case a route-level guard cannot express: POST
- * /api/shift-templates/clear is a HEAD_CHEF route, but its `includeShifts`
- * field deletes the whole roster and so has to answer to SHIFT_RESET. Checking
- * that inside the handler is the only option, and it must not become a second
- * copy of the rule.
+ * Three tiers, most specific first:
  *
- * Like the middleware, this only says the role may attempt the action — the
- * caller still has to verify the resource belongs to their own outlet.
+ *  1. `roles` — an outright list, for the few capabilities enforced by
+ *     something other than rank (DIRECTORY_EDIT goes through hasGlobalScope()).
+ *  2. OUTLET_MANAGER — the flag only, never the rank. See the note on
+ *     `outletManager` at the top of this file.
+ *  3. everyone else — the rank floor, so each role inherits the ones below it.
+ *
+ * This only says the role may attempt the action. Every route still has to
+ * verify the acted-on record belongs to the caller's own outlet, the way
+ * outletShiftDenied()/leaveApprovalDenied() do.
  */
-export function holdsCapability(user, key) {
+export function roleHolds(role, key) {
   const capability = CAPABILITIES[key];
   if (!capability) throw new Error(`Unknown capability "${key}"`);
-  if (!user) return false;
-  if (user.role === 'OUTLET_MANAGER') return true;
-  return (ROLE_HIERARCHY[user.role] || 0) >= (ROLE_HIERARCHY[capability.minRole] || 0);
+  if (!role) return false;
+  if (Array.isArray(capability.roles)) return capability.roles.includes(role);
+  if (role === 'OUTLET_MANAGER') return capability.outletManager === true;
+  return (ROLE_HIERARCHY[role] || 0) >= (ROLE_HIERARCHY[capability.minRole] || 0);
+}
+
+/** roleHolds() for a request's user, which may be absent. */
+export function holdsCapability(user, key) {
+  if (!user) {
+    // Still resolve the key, so a typo throws here rather than lying "no" to
+    // every anonymous caller and only surfacing once someone signs in.
+    if (!CAPABILITIES[key]) throw new Error(`Unknown capability "${key}"`);
+    return false;
+  }
+  return roleHolds(user.role, key);
 }
