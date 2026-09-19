@@ -119,7 +119,7 @@ query parameter, so it cannot be widened by asking differently.
 
 > **See other people's attendance** — Everyone can always see their own record. An Outlet Manager, Master of House or Head Chef sees every employee at their own restaurant, every department; HR and above see every restaurant. Seeing is broader than approving — overtime is still signed off only by the head of that department, and an Outlet Manager cannot sign off any of it. Administration roles never clock in, so their rows are hidden from the list.
 
-> **Pull attendance from the punch log** — Higher than viewing it: the pull is organisation-wide by nature, so it writes every restaurant's rows, not just the caller's own.
+> **Pull attendance from the punch log** — Higher than viewing it: the pull is organisation-wide by nature, so it writes every restaurant's rows, not just the caller's own — and this is the version where the caller picks the dates. Keeping attendance current does not need it: opening the Attendance page refreshes anything older than fifteen minutes for every role, over a fixed window nobody can widen, and fills in the month for anyone enrolled since the last pull.
 
 > **Approve overtime** — Only for your own department, at your own restaurant, and never your own overtime — enforced per record. A Master of House or Head Chef signs off the hours of the people they run; an Outlet Manager sees those hours but does not decide them, which is the point of the two being separate roles.
 

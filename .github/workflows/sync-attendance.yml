@@ -1,26 +1,48 @@
-# Nightly attendance pull.
+# Pull attendance from the Neon punch log every 30 minutes.
 #
-# Runs here rather than inside the server because Render's free instance sleeps
-# after 15 minutes idle, and a suspended process fires no timers — a setInterval
-# schedule would simply never run on an evening nobody used the app. This
-# request also wakes the instance, which is the point.
+# The Attendance page also refreshes itself on every visit. This is what keeps
+# the data current when nobody is looking — overnight punches, and overtime
+# waiting in the approval queue by morning.
 #
-# Set two repository secrets (Settings → Secrets and variables → Actions):
-#   SHIFTLY_URL                 https://your-service.onrender.com
-#   ATTENDANCE_IMPORT_KEY       one value from ATTENDANCE_IMPORT_KEYS on Render
+# It runs here rather than inside the server because Render's free instance
+# sleeps after 15 minutes idle, and a sleeping process fires no timers. This
+# request wakes it, which is the point. A side effect of a 30-minute ping: the
+# instance never gets to sleep, so it uses roughly 720–744 of the free plan's
+# 750 instance-hours a month. Fine for one service; add a second and it won't be.
+#
+# Why 30 minutes: about 1,440 billed minutes a month, inside GitHub's 2,000 free
+# for a private repository. 15 minutes would roughly double that and go over.
+# The server throttles pulls to one per 15 minutes anyway, so a run that lands
+# just after a manager's page visit answers "fresh" and costs Neon nothing.
+#
+# Needs three settings, all secret:
+#   Render  → Environment      ATTENDANCE_IMPORT_KEYS   a long random value
+#   GitHub  → Actions secrets  SHIFTLY_URL              https://shiftly-bk.onrender.com
+#   GitHub  → Actions secrets  ATTENDANCE_IMPORT_KEY    the same value
+# Until they are set every run fails red — deliberately, so it is noticed.
 name: Sync attendance
 
 on:
   schedule:
-    # 03:30 UTC = 09:00 IST, after the night shift has closed out. GitHub's
-    # scheduler is best-effort and can drift by 15 minutes or so; nothing here
-    # depends on the exact minute.
-    - cron: '30 3 * * *'
+    # Every 30 minutes, UTC — which is :00 and :30 IST as well, since IST is a
+    # half-hour offset. GitHub's scheduler is best-effort and can run late, or
+    # skip a slot under load; nothing here depends on the exact minute.
+    - cron: '*/30 * * * *'
   workflow_dispatch:
+
+# A delayed run can land on top of the next one. Queue rather than overlap —
+# the server would refuse the second with "busy" anyway, and cancelling the
+# first could cut off a pull halfway through its writes.
+concurrency:
+  group: sync-attendance
+  cancel-in-progress: false
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+    # A hung connection must not burn the monthly minute budget. A cold start
+    # plus a month's catch-up finishes in well under this.
+    timeout-minutes: 10
     steps:
       - name: Pull punches into Shiftly
         env:
@@ -29,9 +51,18 @@ jobs:
         run: |
           set -euo pipefail
 
+          if [ -z "${SHIFTLY_URL:-}" ] || [ -z "${ATTENDANCE_IMPORT_KEY:-}" ]; then
+            echo "::error::Set the SHIFTLY_URL and ATTENDANCE_IMPORT_KEY repository secrets"
+            exit 1
+          fi
+
           # A sleeping free instance cold-starts in around a minute, so the
           # first attempt is given room and retried once rather than failing
           # the run on a timeout that means nothing.
+          # Cleared first: curl writes nothing when it cannot connect, and a
+          # leftover body would then be printed as if this run had received it.
+          rm -f /tmp/out.json
+          code=000
           for attempt in 1 2; do
             code=$(curl -sS -o /tmp/out.json -w '%{http_code}' \
               --max-time 180 \
@@ -43,20 +74,43 @@ jobs:
             sleep 30
           done
 
-          cat /tmp/out.json
+          cat /tmp/out.json 2>/dev/null || true
           echo
 
           if [ "${code:-000}" != "200" ]; then
+            # 503 here almost always means ATTENDANCE_IMPORT_KEYS is unset on
+            # Render; 401 means the two keys do not match.
             echo "::error::sync returned HTTP ${code:-no response}"
             exit 1
           fi
 
-          # Surface unmatched punch ids in the run summary — they are the only
-          # thing about a successful sync that needs a person to act.
+          # "fresh" and "busy" are successes: someone else's pull already
+          # covered this half hour. Unmatched punch ids go in the run summary —
+          # they are the only thing about a good run that needs a person.
           python3 - <<'PY'
-          import json
+          import json, os
           d = json.load(open('/tmp/out.json'))
-          print(f"{d.get('daysWritten', 0)} day(s) written from {d.get('processed', 0)} punches")
-          for u in d.get('unmatched', []):
-              print(f"  unmatched: {u['userid']}  {u.get('name') or '(no name)'}  {u['punchCount']} punches")
+          status = d.get('status', 'synced')
+          lines = []
+          if status == 'synced':
+              lines.append(f"Synced: {d.get('daysWritten', 0)} day(s) written from "
+                           f"{d.get('processed', 0)} punches; "
+                           f"{d.get('backfilled', 0)} newly enrolled person(s) caught up.")
+          elif status == 'not-configured':
+              print("::error::The attendance feed is not connected on Render (ATTENDANCE_DATABASE_URL)")
+              raise SystemExit(1)
+          else:
+              lines.append(f"Nothing to do ({status}) — already pulled at {d.get('lastSyncAt')}.")
+          # Capped: until everyone is enrolled this is most of the punch log,
+          # and 300 lines every half hour would bury the one that matters.
+          # Busiest first — those are the people most worth giving a code.
+          unmatched = sorted(d.get('unmatched', []), key=lambda u: -u.get('punchCount', 0))
+          if unmatched:
+              lines.append(f"{len(unmatched)} punch id(s) match nobody in Shiftly"
+                           + (" — busiest 15:" if len(unmatched) > 15 else ":"))
+              for u in unmatched[:15]:
+                  lines.append(f"- {u['userid']}  {u.get('name') or '(no name)'}  {u['punchCount']} punches")
+          print("\n".join(lines))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+              f.write("\n".join(lines) + "\n")
           PY

@@ -65,10 +65,12 @@ services:
       - key: PUBLIC_API_ORIGINS
         sync: false
 
-      # Keys for POST /api/attendance/import and the attendance sync, comma
-      # separated. Kept separate from PUBLIC_API_KEYS so a leaked read-only key
-      # can never write attendance. Unset means both answer 503 — which is what
-      # the deployed instance has been doing, since this was never listed here.
+      # Keys for POST /api/attendance/import and /sync-job, comma separated —
+      # the half-hourly GitHub Actions pull sends one as ATTENDANCE_IMPORT_KEY.
+      # Kept separate from PUBLIC_API_KEYS so a leaked read-only key can never
+      # write attendance. Unset means both answer 503 and every scheduled run
+      # fails red. The Attendance page's own refresh needs no key and works
+      # regardless. See DEPLOY.md § B6.
       - key: ATTENDANCE_IMPORT_KEYS
         sync: false
 

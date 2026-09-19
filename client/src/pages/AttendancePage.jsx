@@ -321,6 +321,37 @@ export default function AttendancePage() {
   useEffect(() => { loadData(); }, [loadData]);
 
   /**
+   * Ask the server to catch up with the punch log, then reload if it did.
+   *
+   * After the first load rather than before it, so the page shows what it
+   * already has instantly — a cold Neon compute can take several seconds, and a
+   * spinner over data that was fine five minutes ago is worse than the data.
+   * Once per visit: the server throttles anyway, so repeating it here would
+   * only make requests that answer "fresh".
+   */
+  const [feed, setFeed] = useState({ status: 'checking' });
+  useEffect(() => {
+    let cancelled = false;
+    api.post('/attendance/refresh', {})
+      .then((res) => {
+        if (cancelled) return;
+        setFeed(res || { status: 'fresh' });
+        if (res?.status === 'synced' && res.daysWritten > 0) loadData();
+      })
+      .catch(() => { if (!cancelled) setFeed({ status: 'error' }); });
+    return () => { cancelled = true; };
+    // loadData is deliberately left out: it changes with the outlet tab, and
+    // switching tabs is not a reason to ask the punch log again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const feedLine = feed.status === 'checking' ? 'Updating from the punch log…'
+    : feed.status === 'not-configured' ? 'The attendance feed isn’t connected — ask an admin'
+    : feed.status === 'error' ? 'Couldn’t reach the punch log — showing the last import'
+    : feed.lastSyncAt ? `Updated ${format(new Date(feed.lastSyncAt), 'h:mm a')}`
+    : null;
+
+  /**
    * The weekly and monthly rollups, for one person, on demand.
    *
    * Scoped to `employee` server-side rather than fetched for everyone and
@@ -688,7 +719,21 @@ export default function AttendancePage() {
           {canViewAll ? (
             <>
               <div className="card-header">
-                <h3 className="card-title">Employees</h3>
+                <div style={{ minWidth: 0 }}>
+                  <h3 className="card-title">Employees</h3>
+                  {feedLine && (
+                    <div
+                      className="text-xs flex items-center gap-2"
+                      style={{
+                        color: feed.status === 'not-configured' || feed.status === 'error'
+                          ? 'var(--ink-warn)' : 'var(--ink-muted)',
+                      }}
+                    >
+                      {feed.status === 'checking' && <RefreshCw size={12} className="animate-spin" />}
+                      <span>{feedLine}</span>
+                    </div>
+                  )}
+                </div>
                 <div className="header-search" style={{ maxWidth: 280 }}>
                   <Search className="search-icon" size={16} />
                   <input

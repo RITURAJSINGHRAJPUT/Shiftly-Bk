@@ -286,6 +286,42 @@ Two things to expect on the free tier while running these:
   starts the count again. Do the 25 attempts in one go, or you may not see the
   429. A real attacker hammering the endpoint keeps it awake and does trip it.
 
+## B6 · Connect the attendance feed
+
+Attendance comes from the punch log in Neon. Two things pull it into Shiftly:
+the Attendance page, whenever someone opens it and the data is more than 15
+minutes old, and a GitHub Actions job every 30 minutes
+([`.github/workflows/sync-attendance.yml`](.github/workflows/sync-attendance.yml))
+for the hours nobody is looking.
+
+**On Render → Environment**, copy these across from `server/.env`:
+
+| Key | Value |
+|---|---|
+| `ATTENDANCE_DATABASE_URL` | the Neon connection string |
+| `ATTENDANCE_SOURCE_TABLE` … `ATTENDANCE_SOURCE_COUNTED_COL` | as in `server/.env` |
+| `ATTENDANCE_SOURCE_TIMEZONE` | `Asia/Kolkata` |
+| `ATTENDANCE_DAY_CUTOFF_HOUR` | `5` |
+| `ATTENDANCE_IMPORT_KEYS` | a long random value — `openssl rand -hex 32` |
+
+**On GitHub → the repository → Settings → Secrets and variables → Actions**, add
+two repository secrets:
+
+| Secret | Value |
+|---|---|
+| `SHIFTLY_URL` | `https://<your-url>` — no trailing slash |
+| `ATTENDANCE_IMPORT_KEY` | the same value as `ATTENDANCE_IMPORT_KEYS` |
+
+Then **Actions → Sync attendance → Run workflow**. A green run prints how many
+days it wrote and lists any punch ids that match nobody. A red one names the
+cause: **503** means `ATTENDANCE_IMPORT_KEYS` isn't set on Render, **401** means
+the two keys differ, and "feed is not connected" means `ATTENDANCE_DATABASE_URL`
+is missing.
+
+Pinging every 30 minutes keeps the free instance awake around the clock, about
+720–744 of its 750 hours a month. That's fine for this one service. A second
+free service in the same workspace would run out.
+
 ---
 
 ## Costs, and what free actually costs

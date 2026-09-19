@@ -5,7 +5,7 @@ import { requireApiKey } from '../middleware/apiKey.js';
 import { importPunches } from '../engine/attendanceImport.js';
 import { clockingEmployeeFilter, hasGlobalScope } from '../lib/scope.js';
 import { can, holdsCapability } from '../lib/capabilities.js';
-import { fetchPunches, attendanceSourceConfigured } from '../lib/attendanceSource.js';
+import { runSync, autoSync, auditImport } from '../lib/attendanceSync.js';
 import {
   localDateRange, localDateKey, startOfLocalDay,
   startOfLocalWeek, startOfLocalMonth,
@@ -258,37 +258,6 @@ router.get('/stats', authenticateToken, async (req, res) => {
 });
 
 /**
- * One audit row for the import itself, plus one per overtime decision the new
- * punches invalidated.
- *
- * The per-decision rows matter because overtime lives in columns rather than
- * its own table: the columns always agree with the punches they came from, but
- * they keep no history. Without this there would be no record that a chef's
- * approval was ever reopened, or what it had been for.
- */
-function auditImport(summary, source) {
-  logAudit({
-    action: 'ATTENDANCE_IMPORT',
-    entity: 'Attendance',
-    details: {
-      source,
-      processed: summary.processed,
-      daysWritten: summary.daysWritten,
-      unmatched: summary.unmatched.length,
-      reopened: summary.reopened.length,
-    },
-  });
-
-  for (const r of summary.reopened) {
-    logAudit({
-      action: 'OVERTIME_RECOMPUTED',
-      entity: 'Attendance',
-      details: { source, ...r },
-    });
-  }
-}
-
-/**
  * POST /api/attendance/import
  *
  * Bridges an external attendance system (KGAPI's raw biometric/mobile-app
@@ -316,40 +285,6 @@ router.post('/import', requireApiKey('ATTENDANCE_IMPORT_KEYS'), async (req, res)
     res.status(500).json({ error: err.message });
   }
 });
-
-/**
- * Pull from the attendance database and import what comes back.
- *
- * One definition behind two doors: the button a person presses, and the
- * scheduled call from outside. The flag is enough of a lock because this runs
- * on a single instance — two overlapping pulls would write identical data, but
- * they would also race each other's upserts into a unique-constraint error and
- * double the load for nothing.
- */
-let syncing = false;
-
-async function runSync({ from, to }) {
-  if (!attendanceSourceConfigured()) {
-    const err = new Error('Attendance source is not configured');
-    err.status = 503;
-    throw err;
-  }
-  if (syncing) {
-    const err = new Error('A sync is already running');
-    err.status = 409;
-    throw err;
-  }
-
-  syncing = true;
-  try {
-    const punches = await fetchPunches({ from, to });
-    const summary = await importPunches(prisma, punches, { source: 'attendance database' });
-    auditImport(summary, 'attendance-db');
-    return { from, to, ...summary };
-  } finally {
-    syncing = false;
-  }
-}
 
 /**
  * Yesterday and today by default.
@@ -380,6 +315,31 @@ function sendSyncError(res, err) {
   res.status(err.status || 500).json({ error: err.message });
 }
 
+/**
+ * POST /api/attendance/refresh — bring attendance up to date, if it is stale.
+ *
+ * Called by the Attendance page on every visit, for every role. It needs no
+ * capability, and that is the point: ATTENDANCE_SYNC guards the button, which
+ * pulls whatever range the caller asks for. This takes no input at all — a
+ * fixed window, throttled to once per fifteen minutes, idempotent — so the only
+ * thing anyone can do with it is make the data current. An Outlet Manager or a
+ * head chef seeing yesterday's punches is not a privilege question.
+ *
+ * Without it, attendance was only as fresh as the last time someone in head
+ * office remembered to press the button — the nightly job needed secrets
+ * nobody had set, and people enrolled since then had no days at all.
+ */
+router.post('/refresh', authenticateToken, async (req, res) => {
+  try {
+    // Picked, not spread: the full result lists unmatched punch ids with names
+    // from every restaurant, and this answers any signed-in user.
+    const { status, lastSyncAt, daysWritten, backfilled } = await autoSync();
+    res.json({ status, lastSyncAt, daysWritten, backfilled });
+  } catch (err) {
+    sendSyncError(res, err);
+  }
+});
+
 // POST /api/attendance/sync — the button.
 // Declared before any /:id route so the literal path cannot be read as an id.
 router.post('/sync', authenticateToken, can('ATTENDANCE_SYNC'), async (req, res) => {
@@ -391,16 +351,22 @@ router.post('/sync', authenticateToken, can('ATTENDANCE_SYNC'), async (req, res)
 });
 
 /**
- * POST /api/attendance/sync-job — the same pull, for the scheduler.
+ * POST /api/attendance/sync-job — the scheduler's door.
  *
  * An external cron holds no session, and inventing a service account to give it
  * one would be a second way in. It uses the same API key as the import bridge:
  * the same integration boundary, already failing closed when unset and already
  * fingerprinting the caller into the request log.
+ *
+ * With no body it runs exactly what a page visit runs — autoSync(), so the
+ * half-hourly cron also fills in anyone enrolled since the last pull, and backs
+ * off with `fresh` when a manager's visit already pulled a few minutes ago.
+ * With `from`/`to` it is the ranged pull, for a deliberate backfill by hand.
  */
 router.post('/sync-job', requireApiKey('ATTENDANCE_IMPORT_KEYS'), async (req, res) => {
   try {
-    res.json(await runSync(syncRange(req.body || {})));
+    const body = req.body || {};
+    res.json(body.from || body.to ? await runSync(syncRange(body)) : await autoSync());
   } catch (err) {
     sendSyncError(res, err);
   }

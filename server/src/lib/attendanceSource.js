@@ -71,7 +71,7 @@ const MAX_ROWS = 50000;
  * punch was recorded in. Formatting in Postgres settles both questions here,
  * where they are visible, instead of somewhere downstream.
  */
-export async function fetchPunches({ from, to }) {
+export async function fetchPunches({ from, to, userIds }) {
   const url = process.env.ATTENDANCE_DATABASE_URL;
   if (!url) throw new Error('ATTENDANCE_DATABASE_URL is not set');
 
@@ -79,11 +79,23 @@ export async function fetchPunches({ from, to }) {
   const zone = process.env.ATTENDANCE_SOURCE_TIMEZONE || null;
   const cutoff = attendanceCutoffHour();
 
+  // Positional parameters are built up rather than numbered by hand, because
+  // two of them are optional and a gap in $n numbering is a Postgres error.
+  const params = [from, to, cutoff];
+  const param = (value) => { params.push(value); return `$${params.length}`; };
+
   // The punch as a local wall clock. For a timestamptz column that means
   // converting the instant to the zone the restaurants run in; a plain
   // timestamp already is one. The zone travels as a query parameter, so it
   // needs no quoting and cannot inject anything.
-  const local = zone ? `(${c.timestamp} AT TIME ZONE $4::text)` : c.timestamp;
+  const local = zone ? `(${c.timestamp} AT TIME ZONE ${param(zone)}::text)` : c.timestamp;
+
+  // Narrowing to named people, for a catch-up that should not re-import the
+  // whole restaurant. Cast to text so it works whether the source keeps ids
+  // as "DP194" or as a bare integer.
+  const onlyThese = Array.isArray(userIds) && userIds.length
+    ? `AND ${c.userId}::text = ANY(${param(userIds.map(String))}::text[])`
+    : '';
 
   const client = new pg.Client({
     connectionString: url,
@@ -113,9 +125,10 @@ export async function fetchPunches({ from, to }) {
         WHERE ${local} >= ($1::date + make_interval(hours => $3::int))
           AND ${local} <  ($2::date + INTERVAL '1 day' + make_interval(hours => $3::int))
           ${c.counted ? `AND ${c.counted}` : ''}
+          ${onlyThese}
         ORDER BY ${c.timestamp}
         LIMIT ${MAX_ROWS}`,
-      zone ? [from, to, cutoff, zone] : [from, to, cutoff]
+      params
     );
 
     // employeeCode is a string column; an integer userid would make Prisma

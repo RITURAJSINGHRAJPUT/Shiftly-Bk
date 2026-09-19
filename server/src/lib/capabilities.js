@@ -172,7 +172,11 @@ export const CAPABILITIES = {
   ATTENDANCE_SYNC: {
     group: 'Attendance', label: 'Pull attendance from the punch log', minRole: 'HR',
     note: 'Higher than viewing it: the pull is organisation-wide by nature, so it ' +
-      'writes every restaurant\'s rows, not just the caller\'s own.',
+      'writes every restaurant\'s rows, not just the caller\'s own — and this is the ' +
+      'version where the caller picks the dates. Keeping attendance current does not ' +
+      'need it: opening the Attendance page refreshes anything older than fifteen ' +
+      'minutes for every role, over a fixed window nobody can widen, and fills in the ' +
+      'month for anyone enrolled since the last pull.',
   },
   OVERTIME_APPROVE: {
     group: 'Attendance', label: 'Approve overtime', minRole: 'HEAD_CHEF',
