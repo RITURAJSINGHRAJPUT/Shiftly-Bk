@@ -102,7 +102,10 @@ export function startOfLocalMonth(value) {
  * fetch and another in the grouping.
  */
 export function attendanceCutoffHour() {
-  const raw = Number(process.env.ATTENDANCE_DAY_CUTOFF_HOUR ?? 0);
+  // 5 by default: these restaurants run 16:30–00:00 shifts, whose closing punch
+  // lands after midnight. At 0 it would open a new day holding one lone punch.
+  // Set ATTENDANCE_DAY_CUTOFF_HOUR=0 for plain calendar days.
+  const raw = Number(process.env.ATTENDANCE_DAY_CUTOFF_HOUR ?? 5);
   return Number.isFinite(raw) ? Math.min(Math.max(Math.trunc(raw), 0), 12) : 0;
 }
 

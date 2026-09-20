@@ -130,8 +130,9 @@ the department head. `overtimeMinutesAtDecision` is what was actually approved,
 so a re-import can tell a changed punch from an unchanged one and only reopen a
 decision in the first case.
 
-The working day need not begin at midnight — `ATTENDANCE_DAY_CUTOFF_HOUR` moves
-the boundary so a shift running past it stays one row. See
+The working day begins at **05:00**, not midnight, so a 16:30–00:00 shift whose
+closing punch lands after midnight stays one row. `ATTENDANCE_DAY_CUTOFF_HOUR`
+moves the boundary (`0` for calendar days). See
 `attendanceDayFor()` in `server/src/lib/dates.js`.
 
 **`Leave`** — includes `isEmergency`, `coveredById` and `expiresAt`, which drive

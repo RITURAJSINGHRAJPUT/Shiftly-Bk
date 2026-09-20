@@ -294,15 +294,18 @@ minutes old, and a GitHub Actions job every 30 minutes
 ([`.github/workflows/sync-attendance.yml`](.github/workflows/sync-attendance.yml))
 for the hours nobody is looking.
 
-**On Render → Environment**, copy these across from `server/.env`:
+**On Render → Environment**, add two:
 
 | Key | Value |
 |---|---|
 | `ATTENDANCE_DATABASE_URL` | the Neon connection string |
-| `ATTENDANCE_SOURCE_TABLE` … `ATTENDANCE_SOURCE_COUNTED_COL` | as in `server/.env` |
-| `ATTENDANCE_SOURCE_TIMEZONE` | `Asia/Kolkata` |
-| `ATTENDANCE_DAY_CUTOFF_HOUR` | `5` |
 | `ATTENDANCE_IMPORT_KEYS` | a long random value — `openssl rand -hex 32` |
+
+That's all. The code already knows Neon's shape: the `punch_event` table, its
+columns, the `counted` flag, IST and the 5 AM day cutoff. The
+`ATTENDANCE_SOURCE_*` and `ATTENDANCE_DAY_CUTOFF_HOUR` variables exist only to
+point at a *different* source. Set one of them to `none` to switch that feature
+off. Don't copy them from `server/.env` unless they differ from those defaults.
 
 **On GitHub → the repository → Settings → Secrets and variables → Actions**, add
 two repository secrets:

@@ -11,16 +11,38 @@ import { attendanceCutoffHour } from './dates.js';
  * already takes. Nothing downstream needs to know where the punches came from.
  *
  * The table and column names are configurable because the schema is the other
- * system's to change, not ours. Defaults match the KGAPI feed this replaces.
+ * system's to change, not ours. The defaults are Neon's actual punch_event
+ * table, so ATTENDANCE_DATABASE_URL is the only setting a deployment needs.
+ *
+ * They used to be the old KGAPI names. A deployment that set the URL and not
+ * the seven overrides then asked Neon for a table that does not exist, and the
+ * page could only say "couldn't reach the punch log" — while the punches sat
+ * right there. A default that matches no real source is a trap, not a default.
  */
 
 const DEFAULTS = {
-  table: 'attendance_punches',
-  userId: 'userid',
-  timestamp: 'edatetime',
-  name: 'emp_name',
-  source: 'evtsourcedet',
+  table: 'punch_event',
+  userId: 'external_user_id',
+  timestamp: 'punched_at',
+  name: 'external_name',
+  source: 'source_detail',
+  // Neon marks double-taps within two minutes as not counted.
+  counted: 'counted',
+  // punched_at is timestamptz. Without a zone it would be read as UTC and
+  // every punch would land 5h30m early — verified against the KGAPI export:
+  // 1,142 exact matches as IST, none as UTC.
+  timezone: 'Asia/Kolkata',
 };
+
+/**
+ * An override, or the default. The literal "none" switches an optional one
+ * off — for a source with no counted flag, or whose times are already local.
+ */
+function setting(name, fallback) {
+  const v = process.env[name];
+  if (v === 'none') return null;
+  return v || fallback;
+}
 
 /**
  * Identifiers cannot be passed as query parameters, so these end up
@@ -45,10 +67,11 @@ function config() {
     name: ident(e.ATTENDANCE_SOURCE_NAME_COL || DEFAULTS.name, 'name column'),
     source: ident(e.ATTENDANCE_SOURCE_DEVICE_COL || DEFAULTS.source, 'device column'),
     // Optional boolean column marking punches the source itself decided should
-    // count. Neon's punch_event flags double-taps this way. Unset: no filter.
-    counted: e.ATTENDANCE_SOURCE_COUNTED_COL
-      ? ident(e.ATTENDANCE_SOURCE_COUNTED_COL, 'counted column')
-      : null,
+    // count. "none" to read every punch.
+    counted: (() => {
+      const col = setting('ATTENDANCE_SOURCE_COUNTED_COL', DEFAULTS.counted);
+      return col ? ident(col, 'counted column') : null;
+    })(),
   };
 }
 
@@ -76,7 +99,7 @@ export async function fetchPunches({ from, to, userIds }) {
   if (!url) throw new Error('ATTENDANCE_DATABASE_URL is not set');
 
   const c = config();
-  const zone = process.env.ATTENDANCE_SOURCE_TIMEZONE || null;
+  const zone = setting('ATTENDANCE_SOURCE_TIMEZONE', DEFAULTS.timezone);
   const cutoff = attendanceCutoffHour();
 
   // Positional parameters are built up rather than numbered by hand, because
