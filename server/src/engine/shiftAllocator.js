@@ -66,7 +66,10 @@ export function outletResetOps(prisma, outletId) {
 export function scoreEmployee(employee, slot, existingShifts, allAttendance) {
   let score = 0;
 
-  // 1. SKILL MATCH (+30) — employee has worked this section before
+  // 1. SKILL MATCH (+30) — employee has worked this section before.
+  // autoAllocateShifts() only offers a station slot to people who work that
+  // station, so every candidate there earns this equally and it no longer
+  // decides who gets the slot.
   if (slot.section && employee.skills.includes(slot.section.toLowerCase())) {
     score += 30;
   }
@@ -361,11 +364,24 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
        * head spread across two departments always starts the week with the
        * fewest hours. A single pool would hand them shifts ahead of the people
        * whose department it actually is.
+       *
+       * Both pools are also restricted to the template's station, if it has
+       * one. A station is a hard rule, not a preference: a Pizza cook is never
+       * put on Pasta, even when the Pasta cook is off — the slot is left empty
+       * and reported instead. That includes heads, who must list the station on
+       * their profile to be rostered on it. Templates without a section
+       * (Service, Housekeeping) are unaffected.
        */
-      const deptEmployees = employees.filter(e => e.department === template.department);
+      const station = template.section?.trim().toLowerCase();
+      const worksStation = (e) => !station || e.skills.includes(station);
+
+      const deptEmployees = employees.filter(
+        e => e.department === template.department && worksStation(e)
+      );
       const stretchEmployees = employees.filter(
         e => e.department !== template.department
           && departmentsFor(e.role).includes(template.department)
+          && worksStation(e)
       );
 
       if (deptEmployees.length === 0 && stretchEmployees.length === 0) {
@@ -376,7 +392,9 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
           section: template.section,
           needed: template.headcount,
           filled: 0,
-          reason: 'no active staff in this department, and no department head who could cover it',
+          reason: station
+            ? `no active staff assigned to the ${template.section} station`
+            : 'no active staff in this department, and no department head who could cover it',
         });
         continue;
       }

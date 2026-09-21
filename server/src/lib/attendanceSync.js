@@ -133,6 +133,36 @@ async function codesNeedingBackfill(floor) {
   return people.map((p) => p.employeeCode).filter((c) => !backfilled.has(c));
 }
 
+/**
+ * The longest routine pull. A gap wider than this means the app has not been
+ * opened in a month, and a single unbounded query is the wrong way to find out.
+ */
+const MAX_ROUTINE_DAYS = 31;
+
+/**
+ * Where the routine pull starts: the last day that has any attendance, so the
+ * days since then are collected however long the gap is.
+ *
+ * It used to be a flat "yesterday and today". Anything missed while nobody
+ * opened the app — a weekend, a failing sync, the days before this code
+ * shipped — stayed missed forever, because the month catch-up only looks at
+ * people with *no* attendance at all. Someone already synced to the 16th kept
+ * a permanent hole at the 17th and 18th.
+ *
+ * The last day is re-fetched rather than skipped: punches arrive late, and a
+ * day closed at 23:00 gains its final punch after midnight. Re-importing is an
+ * upsert, so this costs nothing but the fetch.
+ */
+async function routineFrom(yesterday) {
+  const { _max } = await prisma.attendance.aggregate({ _max: { date: true } });
+  const floor = localDateKey(new Date(Date.now() - MAX_ROUTINE_DAYS * 86400000));
+  if (!_max.date) return floor;
+  const last = localDateKey(_max.date);
+  // Never later than yesterday, or a run after midnight would ask for a range
+  // starting today and miss the evening that just ended.
+  return [last < floor ? floor : last, yesterday].sort()[0];
+}
+
 async function autoSyncRun() {
   const today = localDateKey(new Date());
   const yesterday = localDateKey(new Date(Date.now() - 86400000));
@@ -144,8 +174,9 @@ async function autoSyncRun() {
     const floor = backfillFloor();
     const codes = await codesNeedingBackfill(floor);
 
-    // Routine: the same two days the button pulls.
-    const routine = await pull({ from: yesterday, to: today });
+    // Routine: everything since the last day on record, up to today.
+    const from = await routineFrom(yesterday);
+    const routine = await pull({ from, to: today });
     let daysWritten = routine.daysWritten;
 
     // Catch-up: only the codes with nothing, so a new person costs one narrow
@@ -161,6 +192,9 @@ async function autoSyncRun() {
     lastSyncAt = new Date();
     return {
       status: 'synced', lastSyncAt, daysWritten, backfilled: codes.length,
+      // The window actually pulled — otherwise a run that quietly asked for
+      // the wrong two days looks identical to one that caught up a week.
+      from, to: today,
       // For the scheduler's run log only — the ids nobody has been given yet
       // are the one thing a successful run needs a person to act on. Carries
       // names from every restaurant, so /refresh must not pass it through.
