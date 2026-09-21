@@ -107,6 +107,15 @@ let inFlight = null;
 const backfilled = new Set();
 
 /**
+ * Set when a code has just been given to someone, so the next autoSync() runs
+ * even inside the fifteen-minute window. Without it, a person enrolled a few
+ * minutes after a page visit showed "no attendance" until the window ran out
+ * and somebody happened to open the page again — while their month of punches
+ * sat in the log.
+ */
+let forceNext = false;
+
+/**
  * How far back a person with no history is filled: the start of this month,
  * but never less than a fortnight, so someone enrolled on the 2nd still gets a
  * full card rather than one day.
@@ -168,6 +177,10 @@ async function autoSyncRun() {
   const yesterday = localDateKey(new Date(Date.now() - 86400000));
 
   return locked(async () => {
+    // Cleared at the start, not the end: a code saved while this run is going
+    // may already have missed its backfill query, and must keep the flag.
+    forceNext = false;
+
     // Who needs a catch-up is decided *before* the routine pull. Afterwards,
     // someone who punched yesterday already has a row, no longer looks new,
     // and silently never gets the rest of their month.
@@ -214,7 +227,7 @@ async function autoSyncRun() {
 export async function autoSync() {
   if (!attendanceSourceConfigured()) return { status: 'not-configured' };
 
-  if (lastSyncAt && Date.now() - lastSyncAt.getTime() < FRESH_FOR_MS) {
+  if (!forceNext && lastSyncAt && Date.now() - lastSyncAt.getTime() < FRESH_FOR_MS) {
     return { status: 'fresh', lastSyncAt };
   }
 
@@ -231,8 +244,33 @@ export async function autoSync() {
   return inFlight;
 }
 
+/**
+ * Pull these codes' punches now, rather than at the next scheduled pull.
+ *
+ * Called when an employee is enrolled with a code or has one set or changed.
+ * The code is also forgotten from the catch-up memory: it may have belonged to
+ * someone else before, or been typed wrong and corrected, and either way this
+ * person has not had their month filled.
+ *
+ * Fire-and-forget — the caller has already answered. A run already in flight
+ * began before this code existed, so a fresh one is queued behind it.
+ */
+export function requestBackfill(codes) {
+  const wanted = (codes || []).filter(Boolean);
+  if (!wanted.length || !attendanceSourceConfigured()) return;
+  for (const c of wanted) backfilled.delete(c);
+  forceNext = true;
+
+  const run = () => autoSync().catch((err) => {
+    console.error('Attendance backfill for new codes failed:', err.message);
+  });
+  if (inFlight) inFlight.finally(run);
+  else run();
+}
+
 /** For the tests only: forget the throttle and the catch-up memory. */
 export function _resetAutoSync({ keepBackfilled = false } = {}) {
   lastSyncAt = null;
+  forceNext = false;
   if (!keepBackfilled) backfilled.clear();
 }

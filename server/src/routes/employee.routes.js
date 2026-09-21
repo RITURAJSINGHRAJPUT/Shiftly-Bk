@@ -7,6 +7,7 @@ import { outletScope, outletInclude, GLOBAL_SCOPE_ROLES, hasGlobalScope } from '
 import { ownsDepartment, departmentsFor } from '../lib/departments.js';
 import { generateTemporaryPassword } from '../lib/passwords.js';
 import { logAudit } from '../lib/audit.js';
+import { requestBackfill } from '../lib/attendanceSync.js';
 
 const router = Router();
 
@@ -297,6 +298,7 @@ router.put('/codes', authenticateToken, can('EMPLOYEE_EDIT'), async (req, res) =
     }));
 
     const conflicts = [];
+    const newCodes = [];
     const applied = [];
 
     // Caught here rather than by the unique constraint, which would otherwise
@@ -331,6 +333,7 @@ router.put('/codes', authenticateToken, can('EMPLOYEE_EDIT'), async (req, res) =
       try {
         await prisma.employee.update({ where: { id: a.id }, data: { employeeCode: a.employeeCode } });
         updated++;
+        if (a.employeeCode) newCodes.push(a.employeeCode);
       } catch (err) {
         conflicts.push({
           ...a,
@@ -340,6 +343,8 @@ router.put('/codes', authenticateToken, can('EMPLOYEE_EDIT'), async (req, res) =
         });
       }
     }
+
+    requestBackfill(newCodes);
 
     if (updated > 0) {
       logAudit({
@@ -468,6 +473,10 @@ router.post('/', authenticateToken, can('EMPLOYEE_ENROL'), async (req, res) => {
     // an email later produced a login with an empty hash that bcrypt can never
     // match and that the holder cannot reset themselves. This way it degrades
     // to "needs a password reset", which is already a supported action.
+    // Their punches may go back weeks; fetch them now rather than leave the
+    // new record empty until the next scheduled pull.
+    if (cleanCode) requestBackfill([cleanCode]);
+
     res.status(201).json({ ...sanitized, ...(cleanEmail ? { temporaryPassword } : {}) });
   } catch (err) {
     if (err.code === 'P2002') {
@@ -496,7 +505,7 @@ router.put('/:id', authenticateToken, can('EMPLOYEE_ENROL'), async (req, res) =>
       where: { id: req.params.id },
       select: {
         role: true, department: true, outletId: true, skills: true,
-        email: true, employeeCode: true,
+        email: true, employeeCode: true, isActive: true,
       },
     });
     if (!existing) return res.status(404).json({ error: 'Employee not found' });
@@ -608,6 +617,12 @@ router.put('/:id', authenticateToken, can('EMPLOYEE_ENROL'), async (req, res) =>
       action: 'EMPLOYEE_EDIT', entity: 'Employee', entityId: employee.id, actor: req.user,
       details: { employeeName: employee.name, ...(temporaryPassword ? { issuedLogin: true } : {}) },
     });
+
+    // A code set, corrected, or brought back with a reactivated record: that
+    // person's punches have never been matched, so fetch them now.
+    const codeChanged = data.employeeCode !== undefined && data.employeeCode !== existing.employeeCode;
+    const reactivated = data.isActive === true && existing.isActive === false;
+    if (employee.employeeCode && (codeChanged || reactivated)) requestBackfill([employee.employeeCode]);
 
     res.json({ ...sanitized, ...(temporaryPassword ? { temporaryPassword } : {}) });
   } catch (err) {
