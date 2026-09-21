@@ -115,7 +115,35 @@ export async function approveLeave(prisma, leaveId, approvedBy) {
     throw new Error('Leave cannot be approved in current status');
   }
 
-  // Find shifts that need reallocation
+  const reallocations = await reallocateLeaveShifts(prisma, leave);
+
+  // Update leave status
+  const updatedLeave = await prisma.leave.update({
+    where: { id: leaveId },
+    data: {
+      status: 'APPROVED',
+      approvedBy,
+    },
+  });
+
+  // `employee` at the top level (not just nested under `leave`) so callers —
+  // namely the route's audit-log call, which reads `result.employee?.name` —
+  // get it without needing a second fetch; `updatedLeave` itself has no
+  // `include` and would otherwise carry no employee data.
+  return { leave: updatedLeave, employee: leave.employee, reallocations };
+}
+
+/**
+ * Hand every still-assigned shift inside a leave's dates to someone else.
+ *
+ * Shared by approval and by a manager recording or re-dating leave directly: in
+ * each case the person is now off on those days, and a shift left in their name
+ * would show them working through their own leave. A shift nobody can take
+ * stays where it is, and the caller reports it via the returned list.
+ *
+ * `leave` needs `employeeId`, `startDate`, `endDate` and `employee.name`.
+ */
+export async function reallocateLeaveShifts(prisma, leave) {
   const affectedShifts = await prisma.shift.findMany({
     where: {
       employeeId: leave.employeeId,
@@ -123,11 +151,11 @@ export async function approveLeave(prisma, leaveId, approvedBy) {
         gte: leave.startDate,
         lte: leave.endDate,
       },
-      status: 'ASSIGNED',
+      // SWAPPED too: a shift they took over as cover is still theirs to work.
+      status: { in: ['ASSIGNED', 'SWAPPED'] },
     },
   });
 
-  // Auto-reallocate each affected shift
   const reallocations = [];
   for (const shift of affectedShifts) {
     const replacement = await findBestReplacement(prisma, shift, leave.employeeId);
@@ -153,32 +181,29 @@ export async function approveLeave(prisma, leaveId, approvedBy) {
       reallocations.push({ shift, replacement });
     }
   }
-
-  // Update leave status
-  const updatedLeave = await prisma.leave.update({
-    where: { id: leaveId },
-    data: {
-      status: 'APPROVED',
-      approvedBy,
-    },
-  });
-
-  // `employee` at the top level (not just nested under `leave`) so callers —
-  // namely the route's audit-log call, which reads `result.employee?.name` —
-  // get it without needing a second fetch; `updatedLeave` itself has no
-  // `include` and would otherwise carry no employee data.
-  return { leave: updatedLeave, employee: leave.employee, reallocations };
+  return reallocations;
 }
 
 /**
  * Find the best replacement for a shift
  */
 async function findBestReplacement(prisma, shift, excludeEmployeeId) {
+  // Cover comes from the same department and, for a station shift, the same
+  // station — the rule the allocator follows. A Pizza cook never covers Pasta;
+  // with nobody qualified the shift stays put and the manager reassigns it.
+  const absent = await prisma.employee.findUnique({
+    where: { id: excludeEmployeeId },
+    select: { department: true },
+  });
+  const station = shift.section?.trim().toLowerCase();
+
   const employees = await prisma.employee.findMany({
     where: {
       outletId: shift.outletId,
       isActive: true,
       id: { not: excludeEmployeeId },
+      ...(absent?.department ? { department: absent.department } : {}),
+      ...(station ? { skills: { has: station } } : {}),
     },
     include: {
       shifts: {
@@ -230,12 +255,9 @@ async function findBestReplacement(prisma, shift, excludeEmployeeId) {
     })
   );
 
-  // Sort by workload (lightest first), with skill match bonus
-  withWorkload.sort((a, b) => {
-    const aSkill = shift.section && a.employee.skills.includes(shift.section.toLowerCase()) ? -10 : 0;
-    const bSkill = shift.section && b.employee.skills.includes(shift.section.toLowerCase()) ? -10 : 0;
-    return (a.weekShifts + aSkill) - (b.weekShifts + bSkill);
-  });
+  // Lightest workload first. Station fit is already a filter above, so it no
+  // longer needs a place in the ordering.
+  withWorkload.sort((a, b) => a.weekShifts - b.weekShifts);
 
   return withWorkload[0]?.employee || null;
 }

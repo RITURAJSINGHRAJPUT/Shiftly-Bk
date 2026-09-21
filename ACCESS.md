@@ -129,9 +129,15 @@ query parameter, so it cannot be widened by asking differently.
 |---|---|---|---|---|---|---|---|
 | Approve a leave request | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
 | Reject a leave request | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
+| Record, change or cancel someone's leave | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
+| Call someone in on leave, or give leave on a day they are rostered | — | — | — | — | ✅ | ✅ | — |
 | Auto-assign cover for emergency leave | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
 
 > **Approve a leave request** — Your own department, at your own restaurant, and never your own request — enforced per record. A single quiet weekday off still auto-approves on submission without passing through this at all. Like overtime, this belongs to the department head rather than the Outlet Manager.
+
+> **Record, change or cancel someone's leave** — The same per-record rule as approval: your own department, at your own restaurant, and never your own leave. Includes moving an auto-assigned weekly off. Leave recorded this way is approved on the spot and hands that person's shifts in the range to cover. Leave that lands on a day they are rostered also needs LEAVE_ROSTER_OVERRIDE.
+
+> **Call someone in on leave, or give leave on a day they are rostered** — Both directions of the same decision — who works a day the roster and the leave disagree on. Only the department head makes it, for their own department and never themselves. Admin and HR are deliberately not included: they can still record leave on days a person is not rostered, but pulling someone off or onto a working day is the call of whoever runs their section.
 
 ### Transfers
 

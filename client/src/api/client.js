@@ -62,7 +62,12 @@ class ApiClient {
     }
 
     if (!res.ok) {
-      throw new Error(data.error || 'Request failed');
+      const err = new Error(data.error || 'Request failed');
+      // Carried through so a caller can recognise a specific refusal (a shift
+      // clashing with approved leave, say) and offer a way past it.
+      err.status = res.status;
+      err.code = data.code;
+      throw err;
     }
 
     return data;

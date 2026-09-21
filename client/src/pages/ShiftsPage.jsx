@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { useScope } from '../contexts/ScopeContext';
-import { ALL_WEEKDAYS, STATIONS, departmentHasStations, departmentsFor } from '../constants';
+import { ALL_WEEKDAYS, STATIONS, departmentHasStations, departmentsFor, canManageLeaveOf } from '../constants';
 import Modal from '../components/Modal';
+import LeaveFormModal from '../components/LeaveFormModal';
 import { format, startOfWeek, endOfWeek, addDays, isSameDay, isToday, parseISO } from 'date-fns';
 import {
   Calendar, CalendarDays, Plus, RefreshCw, CheckCircle2, AlertTriangle,
@@ -51,6 +52,8 @@ export default function ShiftsPage() {
   const [isShiftModalOpen, setShiftModalOpen] = useState(false);
   const [shiftForm, setShiftForm] = useState(null);
 
+  const [editingLeave, setEditingLeave] = useState(null);
+
   const [resetPreview, setResetPreview] = useState(null);
   const [isResetModalOpen, setResetModalOpen] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -65,6 +68,16 @@ export default function ShiftsPage() {
    * only decides what is worth showing.
    */
   const canReset = ['SUPER_ADMIN', 'ADMIN'].includes(user?.role);
+
+  /** SHIFT_DELETE is ADMIN-floor too; an Outlet Manager edits but cannot erase. */
+  const canDeleteShift = canReset;
+
+  /** Whether this user can open `shift` for editing — its person has to be theirs to roster. */
+  const canEditShift = (shift) => {
+    if (!isManager) return false;
+    const owned = departmentsFor(user?.role);
+    return owned.length === 0 || owned.includes(shift.employee?.department);
+  };
 
   /**
    * Who this user may actually roster.
@@ -310,8 +323,9 @@ export default function ShiftsPage() {
   };
 
   const openShiftModal = (dateObj) => {
-    const first = employees[0];
+    const first = rosterableEmployees[0];
     setShiftForm({
+      id: null,
       date: dayKey(dateObj || selectedDay),
       startTime: '12:00',
       endTime: '21:00',
@@ -324,16 +338,61 @@ export default function ShiftsPage() {
     setShiftModalOpen(true);
   };
 
+  /** The same form, filled from an existing shift, saving with PUT instead. */
+  const openEditShift = (shift) => {
+    setShiftForm({
+      id: shift.id,
+      date: dayKey(new Date(shift.date)),
+      startTime: shift.startTime,
+      endTime: shift.endTime,
+      // Matched back to the list's capitalisation — some shifts store it lowercase,
+      // which would otherwise select nothing.
+      section: STATIONS.find((st) => st.toLowerCase() === normSection(shift.section)) || shift.section || '',
+      employeeId: shift.employee?.id || shift.employeeId,
+      outletId: selectedOutletId,
+      originalName: shift.employee?.name,
+    });
+    setShiftModalOpen(true);
+  };
+
+  const refreshRoster = () => {
+    loadWeek();
+    loadDay();
+    loadResetPreview();
+  };
+
   const saveShift = async (e) => {
     e.preventDefault();
+    const { id, originalName, ...body } = shiftForm;
+    const send = (extra = {}) => (id
+      ? api.put(`/shifts/${id}`, { ...body, ...extra })
+      : api.post('/shifts', { ...body, ...extra }));
     try {
-      await api.post('/shifts', shiftForm);
+      try {
+        await send();
+      } catch (err) {
+        // Approved leave or a weekly off is the one refusal a manager can
+        // overrule: calling someone in takes that day off their leave.
+        if (err.code !== 'ON_LEAVE') throw err;
+        if (!window.confirm(`${err.message}.\n\nCall them in? That day will be taken off their leave, and they will be notified.`)) return;
+        await send({ overrideLeave: true });
+      }
       setShiftModalOpen(false);
-      loadWeek();
-      loadDay();
-      loadResetPreview();
+      refreshRoster();
     } catch (err) {
-      alert(err.message || 'Failed to create shift');
+      alert(err.message || (id ? 'Failed to update shift' : 'Failed to create shift'));
+    }
+  };
+
+  const deleteShift = async () => {
+    const who = shiftForm.originalName || 'this person';
+    if (!window.confirm(`Delete ${who}'s shift on ${shiftForm.date}? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/shifts/${shiftForm.id}`);
+      setShiftModalOpen(false);
+      refreshRoster();
+    } catch (err) {
+      alert(err.message || 'Failed to delete shift');
     }
   };
 
@@ -594,7 +653,12 @@ export default function ShiftsPage() {
                           Nobody assigned
                         </span>
                       ) : (
-                        shifts.map((s) => (
+                        shifts.map((s) => canEditShift(s) ? (
+                          <button key={s.id} type="button" className="badge badge-ghost name-button"
+                            onClick={() => openEditShift(s)} title={`Edit ${s.employee?.name}'s shift`}>
+                            {s.employee?.name}
+                          </button>
+                        ) : (
                           <span key={s.id} className="badge badge-ghost">
                             {s.employee?.name}
                           </span>
@@ -617,7 +681,12 @@ export default function ShiftsPage() {
                   <span className="badge badge-warn">{coverage.unmatched.length}</span>
                 </div>
                 <div className="flex gap-2 flex-wrap">
-                  {coverage.unmatched.map((s) => (
+                  {coverage.unmatched.map((s) => canEditShift(s) ? (
+                    <button key={s.id} type="button" className="badge badge-ghost name-button"
+                      onClick={() => openEditShift(s)} title={`Edit ${s.employee?.name}'s shift`}>
+                      {s.employee?.name} · {s.startTime}–{s.endTime}
+                    </button>
+                  ) : (
                     <span key={s.id} className="badge badge-ghost" title={`${s.employee?.department} · ${s.section || s.employee?.department || 'Unassigned'}`}>
                       {s.employee?.name} · {s.startTime}–{s.endTime}
                     </span>
@@ -710,7 +779,18 @@ export default function ShiftsPage() {
                             {g.startTime} – {g.endTime} · {g.shifts.length}
                           </div>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {g.shifts.map((s) => (
+                            {g.shifts.map((s) => canEditShift(s) ? (
+                              <button
+                                key={s.id}
+                                type="button"
+                                className="name-button text-2xs"
+                                style={{ opacity: 0.85 }}
+                                onClick={() => openEditShift(s)}
+                                title={`Edit ${s.employee?.name}'s shift`}
+                              >
+                                {s.employee?.name}
+                              </button>
+                            ) : (
                               <span key={s.id} className="text-2xs" style={{ opacity: 0.85 }}>
                                 {s.employee?.name}
                               </span>
@@ -773,7 +853,18 @@ export default function ShiftsPage() {
                     <div key={station} className="calendar-shift" data-section={station.toLowerCase()} style={{ borderLeft: '3px solid var(--primary-400)' }}>
                       <div className="font-semibold truncate text-xs text-strong">{station}</div>
                       <div className="flex flex-wrap gap-1 mt-1">
-                        {leaves.map(l => (
+                        {leaves.map(l => canManageLeaveOf(user, l.employee) && user?.role !== 'OUTLET_MANAGER' ? (
+                          <button
+                            key={l.id}
+                            type="button"
+                            className="name-button text-2xs"
+                            style={{ opacity: 0.85 }}
+                            onClick={() => setEditingLeave(l)}
+                            title={`Move or cancel ${l.employee?.name}'s leave`}
+                          >
+                            {l.employee?.name}{!l.approvedBy ? ' ✓' : ''}
+                          </button>
+                        ) : (
                           <span key={l.id} className="text-2xs" style={{ opacity: 0.85 }}>
                             {l.employee?.name}{!l.approvedBy ? ' ✓' : ''}
                           </span>
@@ -795,7 +886,7 @@ export default function ShiftsPage() {
       <Modal
         isOpen={isShiftModalOpen}
         onClose={() => setShiftModalOpen(false)}
-        title={`Add shift · ${outlet?.name || ''}`}
+        title={`${shiftForm?.id ? 'Edit shift' : 'Add shift'} · ${outlet?.name || ''}`}
       >
         {shiftForm && (
           <form onSubmit={saveShift} className="flex flex-col gap-4">
@@ -820,6 +911,12 @@ export default function ShiftsPage() {
                 {rosterableEmployees.map((e) => (
                   <option key={e.id} value={e.id}>{e.name} ({e.department})</option>
                 ))}
+                {/* A shift can belong to someone no longer on the list — since
+                    deactivated, say. Kept selectable so opening it for a time
+                    change does not silently hand it to whoever is first. */}
+                {shiftForm.id && !rosterableEmployees.some((e) => e.id === shiftForm.employeeId) && (
+                  <option value={shiftForm.employeeId}>{shiftForm.originalName || 'Current assignee'}</option>
+                )}
               </select>
             </div>
 
@@ -863,15 +960,39 @@ export default function ShiftsPage() {
                   {shiftEmployee.name} is {shiftEmployee.department} — stations apply to kitchen only.
                 </p>
               )}
+              {/* A warning, not a block: placing someone by hand is a deliberate
+                  choice. Auto-allocation is what holds to the station rule. */}
+              {shiftEmployee && shiftForm.section
+                && departmentHasStations(shiftEmployee.department)
+                && !(shiftEmployee.skills || []).includes(shiftForm.section.toLowerCase()) && (
+                <p className="text-xs mt-1" style={{ color: 'var(--ink-warn)' }}>
+                  {shiftForm.section} is not one of {shiftEmployee.name}'s stations
+                  {shiftEmployee.skills?.length ? ` (${shiftEmployee.skills.join(', ')})` : ''}.
+                </p>
+              )}
             </div>
 
             <div className="modal-footer" style={{ padding: 0, marginTop: 'var(--space-4)' }}>
+              {shiftForm.id && canDeleteShift && (
+                <button type="button" className="btn btn-ghost" style={{ color: 'var(--ink-crit)', marginRight: 'auto' }}
+                  onClick={deleteShift}>
+                  <Trash2 size={16} />
+                  <span>Delete</span>
+                </button>
+              )}
               <button type="button" className="btn btn-ghost" onClick={() => setShiftModalOpen(false)}>Cancel</button>
-              <button type="submit" className="btn btn-primary">Add Shift</button>
+              <button type="submit" className="btn btn-primary">{shiftForm.id ? 'Save changes' : 'Add Shift'}</button>
             </div>
           </form>
         )}
       </Modal>
+
+      <LeaveFormModal
+        isOpen={Boolean(editingLeave)}
+        onClose={() => setEditingLeave(null)}
+        onSaved={refreshRoster}
+        leave={editingLeave}
+      />
 
       <Modal
         isOpen={isResetModalOpen}

@@ -1985,6 +1985,30 @@ tbody tr:last-child td {
   box-shadow: var(--shadow-ring);
 }
 
+/* A person's name on a roster card that opens their shift or leave for
+   editing. Reads as plain text until hovered, so the grid stays calm. */
+.name-button {
+  background: none;
+  border: 0;
+  padding: 0 2px;
+  margin: 0 -2px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.name-button:hover {
+  color: var(--primary-600);
+  text-decoration: underline;
+}
+
+.name-button:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-ring);
+}
+
 /* Shown once after enrolling someone, and never retrievable again. Monospace
    and roomy: this gets read aloud or copied by hand. */
 .temp-password {

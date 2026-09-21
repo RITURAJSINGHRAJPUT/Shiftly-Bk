@@ -113,6 +113,23 @@ export function departmentsFor(role) {
     .map(([department]) => department);
 }
 
+/**
+ * Whether this user may record, change or cancel leave for `employee`.
+ *
+ * Mirrors leaveApprovalDenied() on the server, which is what LEAVE_MANAGE is
+ * checked against: global roles act on anyone, a department head on their own
+ * department, nobody on themselves, and an Outlet Manager on nobody.
+ */
+export function canManageLeaveOf(user, employee) {
+  if (!user || !employee) return false;
+  if (GLOBAL_SCOPE_ROLES.includes(user.role)) return true;
+  if (employee.id === user.id) return false;
+  return DEPARTMENT_APPROVERS[employee.department] === user.role;
+}
+
+/** Mirrors AUTO_OFF_REASON in server/src/engine/shiftAllocator.js. */
+export const AUTO_OFF_REASON = 'Weekly off (auto-assigned)';
+
 /** The standard working day, in minutes. Mirrors WORKDAY_MINUTES on the server. */
 export const WORKDAY_MINUTES = 9 * 60;
 

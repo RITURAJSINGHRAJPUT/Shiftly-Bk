@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
 import CountdownTimer from '../components/CountdownTimer';
+import LeaveFormModal from '../components/LeaveFormModal';
 import { format } from 'date-fns';
-import { PlaneTakeoff, Plus, CheckCircle, XCircle, AlertTriangle, Users } from 'lucide-react';
-import { GLOBAL_SCOPE_ROLES, DEPARTMENT_APPROVERS } from '../constants';
+import { PlaneTakeoff, Plus, CheckCircle, XCircle, AlertTriangle, Users, Pencil, Ban, UserPlus } from 'lucide-react';
+import { GLOBAL_SCOPE_ROLES, DEPARTMENT_APPROVERS, canManageLeaveOf } from '../constants';
 
 export default function LeavesPage() {
   const { user, isManager } = useAuth();
@@ -33,6 +34,20 @@ export default function LeavesPage() {
     reason: '',
   });
 
+  // Manager's add/edit form. `managedLeave` null with the modal open means
+  // "record new leave for someone".
+  const [isManageOpen, setIsManageOpen] = useState(false);
+  const [managedLeave, setManagedLeave] = useState(null);
+  const [staff, setStaff] = useState([]);
+
+  // Only people this user may actually put on leave, so the picker never offers
+  // a choice the server will refuse.
+  const manageableStaff = useMemo(
+    () => staff.filter((e) => canManageLeaveOf(user, e)),
+    [staff, user]
+  );
+  const canAddForStaff = isManager && user?.role !== 'OUTLET_MANAGER';
+
   // Emergency Leave Modal
   const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState(false);
   const [emergencyReason, setEmergencyReason] = useState('');
@@ -42,6 +57,35 @@ export default function LeavesPage() {
     const interval = setInterval(loadLeaves, 15000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!canAddForStaff) return;
+    api.get('/employees?limit=500')
+      .then((res) => setStaff(res.employees || []))
+      .catch((err) => console.error(err));
+  }, [canAddForStaff]);
+
+  const openManage = (leave = null) => {
+    setManagedLeave(leave);
+    setIsManageOpen(true);
+  };
+
+  const handleManaged = (res) => {
+    loadLeaves();
+    if (res?.reallocations > 0) {
+      alert(`${res.reallocations} shift${res.reallocations === 1 ? ' was' : 's were'} handed to cover.`);
+    }
+  };
+
+  const handleCancel = async (leave) => {
+    if (!window.confirm(`Withdraw your leave request for ${format(new Date(leave.startDate), 'MMM d')}?`)) return;
+    try {
+      await api.post(`/leaves/${leave.id}/cancel`);
+      loadLeaves();
+    } catch (err) {
+      alert(err.message || 'Could not withdraw the request');
+    }
+  };
 
   const loadLeaves = async () => {
     try {
@@ -144,6 +188,12 @@ export default function LeavesPage() {
             <AlertTriangle size={16} />
             <span>Emergency Leave</span>
           </button>
+          {canAddForStaff && (
+            <button className="btn btn-ghost" onClick={() => openManage()}>
+              <UserPlus size={16} />
+              <span>Add leave for staff</span>
+            </button>
+          )}
           <button className="btn btn-primary" onClick={handleOpenAdd}>
             <Plus size={16} />
             <span>Apply Leave</span>
@@ -199,7 +249,7 @@ export default function LeavesPage() {
                 <th>Reason</th>
                 <th>Covered By</th>
                 <th>Status</th>
-                {isManager && <th>Actions</th>}
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -227,20 +277,35 @@ export default function LeavesPage() {
                       <span className="badge badge-ghost ml-2" style={{ fontSize: '0.65rem' }}>Auto</span>
                     )}
                   </td>
-                  {isManager && (
-                    <td data-label="Actions">
-                      {(l.status === 'PENDING' || l.status === 'COVERAGE_PENDING') && canActOn(l) && (
-                        <div className="flex gap-2">
-                          <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--accent-400)' }} onClick={() => handleApprove(l.id)}>
+                  <td data-label="Actions">
+                    <div className="flex gap-2">
+                      {isManager && (l.status === 'PENDING' || l.status === 'COVERAGE_PENDING') && canActOn(l) && (
+                        <>
+                          <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--accent-400)' }}
+                            onClick={() => handleApprove(l.id)} title="Approve" aria-label="Approve">
                             <CheckCircle size={14} />
                           </button>
-                          <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--error-400)' }} onClick={() => handleReject(l.id)}>
+                          <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--error-400)' }}
+                            onClick={() => handleReject(l.id)} title="Reject" aria-label="Reject">
                             <XCircle size={14} />
                           </button>
-                        </div>
+                        </>
                       )}
-                    </td>
-                  )}
+                      {canAddForStaff && !l.isEmergency && (l.status === 'PENDING' || l.status === 'APPROVED')
+                        && canManageLeaveOf(user, l.employee) && (
+                        <button className="btn btn-ghost btn-sm btn-icon" onClick={() => openManage(l)}
+                          title="Edit or cancel" aria-label="Edit or cancel">
+                          <Pencil size={14} />
+                        </button>
+                      )}
+                      {l.employee?.id === user?.id && l.status === 'PENDING' && (
+                        <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--error-400)' }}
+                          onClick={() => handleCancel(l)} title="Withdraw request" aria-label="Withdraw request">
+                          <Ban size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -308,6 +373,14 @@ export default function LeavesPage() {
           </div>
         </form>
       </Modal>
+
+      <LeaveFormModal
+        isOpen={isManageOpen}
+        onClose={() => setIsManageOpen(false)}
+        onSaved={handleManaged}
+        leave={managedLeave}
+        employees={manageableStaff}
+      />
 
       {/* Emergency Leave Modal */}
       <Modal

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { can } from '../lib/capabilities.js';
+import { rosterOverrideDenied } from '../lib/rosterOverride.js';
 import { autoAllocateShifts, AUTO_OFF_REASON, outletResetOps } from '../engine/shiftAllocator.js';
 import { outletScope, hasGlobalScope } from '../lib/scope.js';
 import { departmentsFor, ownsDepartment } from '../lib/departments.js';
@@ -85,6 +86,154 @@ async function shiftWriteDenied(req, { outletId, employeeId }) {
   return departmentShiftDenied(req, employee.department);
 }
 
+/** "HH:MM" as minutes from midnight, with an end at or before the start read as past midnight. */
+function shiftSpan(startTime, endTime) {
+  const toMin = (t) => {
+    const [h, m] = String(t).split(':').map(Number);
+    return h * 60 + (m || 0);
+  };
+  const start = toMin(startTime);
+  let end = toMin(endTime);
+  if (end <= start) end += 24 * 60;
+  return [start, end];
+}
+
+/**
+ * Why this person cannot work this shift, or null when they can.
+ *
+ * Checked on every manual write. Before this, adding or moving a shift by hand
+ * would happily put someone on a day they had approved leave, or on top of a
+ * shift they were already working — the allocator guards against both, the
+ * manual paths did not.
+ *
+ * Returns `{ error, code, leaves }`. A clash with another shift is absolute. A
+ * clash with approved leave comes back as code `ON_LEAVE` with the leaves in
+ * question, because that one a manager may override — calling someone in on
+ * their day off is a real decision, not a mistake — by resending with
+ * `overrideLeave`. The shift clash is checked first so an override can never
+ * get past it.
+ */
+async function shiftConflict({ employeeId, date, startTime, endTime, excludeShiftId }) {
+  const day = localDateRange(date);
+
+  const sameDay = await prisma.shift.findMany({
+    where: {
+      employeeId,
+      date: day,
+      status: { not: 'CANCELLED' },
+      ...(excludeShiftId ? { id: { not: excludeShiftId } } : {}),
+    },
+    include: { employee: { select: { name: true } } },
+  });
+  const [start, end] = shiftSpan(startTime, endTime);
+  const clash = sameDay.find((s) => {
+    const [sStart, sEnd] = shiftSpan(s.startTime, s.endTime);
+    return start < sEnd && sStart < end;
+  });
+  if (clash) {
+    return { error: `${clash.employee.name} already works ${clash.startTime}–${clash.endTime} that day` };
+  }
+
+  const leaves = await prisma.leave.findMany({
+    where: {
+      employeeId,
+      status: 'APPROVED',
+      startDate: { lt: day.lt },
+      endDate: { gte: day.gte },
+    },
+    include: { employee: { select: { id: true, name: true, department: true } } },
+  });
+  if (leaves.length) {
+    const weeklyOff = leaves.every((l) => l.reason === AUTO_OFF_REASON);
+    return {
+      code: 'ON_LEAVE',
+      leaves,
+      error: `${leaves[0].employee.name} is on ${weeklyOff ? 'their weekly off' : 'approved leave'} that day`,
+    };
+  }
+  return null;
+}
+
+/**
+ * Take one day out of each leave, so the person can work it.
+ *
+ * Only that day: a week's holiday with a Wednesday called in becomes Mon–Tue
+ * and Thu–Sun, not no holiday. Dates are compared as local calendar days
+ * because leave rows are stored both at local midnight (weekly offs, manager-
+ * recorded leave) and at UTC midnight (an employee's own request).
+ */
+async function freeDayFromLeaves(req, leaves, date) {
+  const day = startOfLocalDay(date);
+  const key = localDateKey(day);
+  const before = new Date(day); before.setDate(before.getDate() - 1);
+  const after = new Date(day); after.setDate(after.getDate() + 1);
+
+  for (const leave of leaves) {
+    const startKey = localDateKey(leave.startDate);
+    const endKey = localDateKey(leave.endDate);
+    const { id, employee, createdAt, updatedAt, ...copy } = leave;
+
+    if (startKey === key && endKey === key) {
+      await prisma.leave.update({ where: { id }, data: { status: 'CANCELLED' } });
+    } else if (startKey === key) {
+      await prisma.leave.update({ where: { id }, data: { startDate: after } });
+    } else if (endKey === key) {
+      await prisma.leave.update({ where: { id }, data: { endDate: before } });
+    } else {
+      await prisma.leave.update({ where: { id }, data: { endDate: before } });
+      await prisma.leave.create({ data: { ...copy, startDate: after } });
+    }
+
+    const what = leave.reason === AUTO_OFF_REASON ? 'weekly off' : 'leave';
+    await prisma.notification.create({
+      data: {
+        employeeId: leave.employeeId,
+        type: 'GENERAL',
+        title: 'Called In on Leave',
+        message: `You have been rostered on ${key}, so that day has been taken off your ${what}.`,
+      },
+    });
+
+    logAudit({
+      action: 'LEAVE_EDIT', entity: 'Leave', entityId: id, actor: req.user,
+      details: { employeeName: employee?.name, calledInOn: key, from: { start: startKey, end: endKey } },
+    });
+  }
+}
+
+/**
+ * The clash check plus the override, for both write routes. Returns
+ * `{ status, body }` to refuse with, or `{ leavesToFree }` (possibly empty)
+ * when the write may go ahead — the leave is only touched once the shift has
+ * actually been saved.
+ */
+async function checkShiftSlot(req, slot, overrideLeave) {
+  const conflict = await shiftConflict(slot);
+  if (!conflict) return { leavesToFree: [] };
+  if (conflict.code !== 'ON_LEAVE') return { status: 409, body: { error: conflict.error } };
+
+  const denied = rosterOverrideDenied(req.user, conflict.leaves[0].employee, 'is on leave that day');
+  if (denied) return { status: 403, body: { error: denied } };
+  if (!overrideLeave) {
+    return { status: 409, body: { error: conflict.error, code: 'ON_LEAVE' } };
+  }
+  return { leavesToFree: conflict.leaves };
+}
+
+/** The kitchen-only rule for stations. Returns an error string or null. */
+async function stationDenied(employeeId, section) {
+  if (!section) return null;
+  const employee = await prisma.employee.findUnique({
+    where: { id: employeeId },
+    select: { name: true, department: true },
+  });
+  if (!employee) return 'Employee not found';
+  if (employee.department !== 'KITCHEN') {
+    return `${employee.name} works in ${employee.department} — stations apply to kitchen shifts only`;
+  }
+  return null;
+}
+
 // GET /api/shifts — list shifts with filters
 router.get('/', authenticateToken, async (req, res) => {
   try {
@@ -129,18 +278,11 @@ router.post('/', authenticateToken, can('SHIFT_CREATE'), async (req, res) => {
     // works in. Stations are a kitchen concept (only kitchen staff hold the
     // skills the allocator scores them against), so a station on a service
     // shift is dead data that still paints a station tag on the week grid.
-    if (section) {
-      const employee = await prisma.employee.findUnique({
-        where: { id: employeeId },
-        select: { name: true, department: true },
-      });
-      if (!employee) return res.status(400).json({ error: 'Employee not found' });
-      if (employee.department !== 'KITCHEN') {
-        return res.status(400).json({
-          error: `${employee.name} works in ${employee.department} — stations apply to kitchen shifts only`,
-        });
-      }
-    }
+    const badStation = await stationDenied(employeeId, section);
+    if (badStation) return res.status(400).json({ error: badStation });
+
+    const check = await checkShiftSlot(req, { employeeId, date, startTime, endTime }, req.body.overrideLeave);
+    if (check.body) return res.status(check.status).json(check.body);
 
     const shift = await prisma.shift.create({
       data: {
@@ -159,6 +301,8 @@ router.post('/', authenticateToken, can('SHIFT_CREATE'), async (req, res) => {
         outlet: outletSelect,
       },
     });
+
+    await freeDayFromLeaves(req, check.leavesToFree, date);
 
     // Notify employee
     await prisma.notification.create({
@@ -311,12 +455,12 @@ router.post('/reset', authenticateToken, can('SHIFT_RESET'), async (req, res) =>
   }
 });
 
-// PUT /api/shifts/:id
+// PUT /api/shifts/:id — move a shift to another person, day, time or station
 router.put('/:id', authenticateToken, can('SHIFT_EDIT'), async (req, res) => {
   try {
     const existing = await prisma.shift.findUnique({
       where: { id: req.params.id },
-      select: { outletId: true, employeeId: true },
+      include: { employee: { select: { name: true } } },
     });
     if (!existing) return res.status(404).json({ error: 'Shift not found' });
 
@@ -333,20 +477,86 @@ router.put('/:id', authenticateToken, can('SHIFT_EDIT'), async (req, res) => {
       : null);
     if (denied) return res.status(403).json({ error: denied });
 
-    const data = {};
-    if (date) data.date = startOfLocalDay(date);
-    if (startTime) data.startTime = startTime;
-    if (endTime) data.endTime = endTime;
-    if (section !== undefined) data.section = section;
-    if (employeeId) data.employeeId = employeeId;
-    if (status) data.status = status;
+    // The shift as it will be once saved — each check has to see the new person
+    // on the new day at the new times, not whichever half the body happened to
+    // include.
+    const next = {
+      employeeId: employeeId || existing.employeeId,
+      date: date ? startOfLocalDay(date) : existing.date,
+      startTime: startTime || existing.startTime,
+      endTime: endTime || existing.endTime,
+      section: section !== undefined ? (section || null) : existing.section,
+    };
+
+    const badStation = await stationDenied(next.employeeId, next.section);
+    if (badStation) return res.status(400).json({ error: badStation });
+
+    // A cancelled shift occupies nobody, so it needs no room in their day.
+    let leavesToFree = [];
+    if ((status || existing.status) !== 'CANCELLED') {
+      const check = await checkShiftSlot(req, { ...next, excludeShiftId: existing.id }, req.body.overrideLeave);
+      if (check.body) return res.status(check.status).json(check.body);
+      leavesToFree = check.leavesToFree;
+    }
 
     const shift = await prisma.shift.update({
       where: { id: req.params.id },
-      data,
+      data: { ...next, ...(status ? { status } : {}) },
       include: {
-        employee: { select: { id: true, name: true } },
+        employee: { select: { id: true, name: true, department: true, skills: true, avatar: true } },
         outlet: outletSelect,
+      },
+    });
+
+    await freeDayFromLeaves(req, leavesToFree, next.date);
+
+    const when = `${localDateKey(shift.date)} (${shift.startTime}-${shift.endTime})`;
+    const what = `${shift.section || 'general'} shift on ${when}`;
+    if (next.employeeId !== existing.employeeId) {
+      await prisma.notification.createMany({
+        data: [
+          {
+            employeeId: next.employeeId,
+            type: 'SHIFT_ASSIGNED',
+            title: 'Shift Assigned to You',
+            message: `You've been assigned a ${what}.`,
+          },
+          {
+            employeeId: existing.employeeId,
+            type: 'SHIFT_CHANGED',
+            title: 'Shift Removed',
+            message: `Your ${existing.section || 'general'} shift on ${localDateKey(existing.date)} `
+              + `(${existing.startTime}-${existing.endTime}) has been given to someone else.`,
+          },
+        ],
+      });
+    } else if (
+      localDateKey(existing.date) !== localDateKey(shift.date)
+      || existing.startTime !== shift.startTime
+      || existing.endTime !== shift.endTime
+      || (existing.section || null) !== (shift.section || null)
+    ) {
+      await prisma.notification.create({
+        data: {
+          employeeId: shift.employeeId,
+          type: 'SHIFT_CHANGED',
+          title: 'Shift Changed',
+          message: `Your shift is now a ${what}.`,
+        },
+      });
+    }
+
+    logAudit({
+      action: 'SHIFT_EDIT', entity: 'Shift', entityId: shift.id, actor: req.user,
+      details: {
+        from: {
+          employeeName: existing.employee?.name, date: localDateKey(existing.date),
+          startTime: existing.startTime, endTime: existing.endTime, section: existing.section,
+        },
+        to: {
+          employeeName: shift.employee?.name, date: localDateKey(shift.date),
+          startTime: shift.startTime, endTime: shift.endTime, section: shift.section,
+        },
       },
     });
 
@@ -361,7 +571,7 @@ router.delete('/:id', authenticateToken, can('SHIFT_DELETE'), async (req, res) =
   try {
     const existing = await prisma.shift.findUnique({
       where: { id: req.params.id },
-      select: { outletId: true, employeeId: true },
+      include: { employee: { select: { name: true } } },
     });
     if (!existing) return res.status(404).json({ error: 'Shift not found' });
     const denied = await shiftWriteDenied(req, existing);
@@ -369,7 +579,13 @@ router.delete('/:id', authenticateToken, can('SHIFT_DELETE'), async (req, res) =
 
     await prisma.shift.delete({ where: { id: req.params.id } });
 
-    logAudit({ action: 'SHIFT_DELETE', entity: 'Shift', entityId: req.params.id, actor: req.user });
+    logAudit({
+      action: 'SHIFT_DELETE', entity: 'Shift', entityId: req.params.id, actor: req.user,
+      details: {
+        employeeName: existing.employee?.name, date: localDateKey(existing.date),
+        startTime: existing.startTime, endTime: existing.endTime, section: existing.section,
+      },
+    });
 
     res.json({ message: 'Shift deleted' });
   } catch (err) {
