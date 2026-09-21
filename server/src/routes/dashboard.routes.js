@@ -208,7 +208,10 @@ router.get('/department-staffing', authenticateToken, async (req, res) => {
 
     const grouped = await prisma.shift.groupBy({
       by: ['employeeId'],
-      where: { ...outletScope(req), date: { gte: start, lt: end } },
+      // Restaurant only: this is who is on the floor or in the kitchen. ODC
+      // stays in the attendance-rate counts above, because those people still
+      // punch in and would otherwise read as present against no shift.
+      where: { ...outletScope(req), date: { gte: start, lt: end }, kind: 'RESTAURANT' },
     });
 
     const employeeIds = grouped.map((g) => g.employeeId);

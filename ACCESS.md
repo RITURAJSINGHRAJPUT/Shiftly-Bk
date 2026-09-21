@@ -85,10 +85,13 @@ query parameter, so it cannot be widened by asking differently.
 |---|---|---|---|---|---|---|---|
 | Add a shift | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
 | Edit a shift | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| Send someone to ODC (outdoor catering) | — | — | — | — | ✅ | ✅ | — |
 | Run auto-allocation for a week | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — |
 | Delete a shift | ✅ | ✅ | — | — | — | — | — |
 | See what resetting a restaurant would delete | ✅ | ✅ | — | — | — | — | — |
 | Delete every shift at one restaurant | ✅ | ✅ | — | — | — | — | — |
+
+> **Send someone to ODC (outdoor catering)** — Add, change or remove an ODC assignment for your own department. ODC time is punched and paid like any shift but does not count as restaurant staffing. Refused while the person still has a restaurant shift that day — move that first.
 
 > **Delete a shift** — Higher than creating one: a deleted shift leaves no record that it existed. An Outlet Manager builds the roster but cannot erase parts of it.
 

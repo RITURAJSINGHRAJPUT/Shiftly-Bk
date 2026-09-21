@@ -30,6 +30,9 @@ export async function requestEmergencyLeave(prisma, employeeId, reason) {
       employeeId,
       date: today,
       status: 'ASSIGNED',
+      // Emergency cover is for the restaurant. An ODC job is the department
+      // head's to rearrange, not something to broadcast to the floor.
+      kind: 'RESTAURANT',
     },
   });
 
@@ -169,6 +172,14 @@ export async function acceptEmergencyCover(prisma, volunteerId, leaveId) {
     throw new Error('You can only cover shifts at your own outlet');
   }
 
+  // Someone out at ODC today is not in the restaurant to cover anything.
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(todayStart); todayEnd.setDate(todayEnd.getDate() + 1);
+  const volunteerAtOdc = await prisma.shift.findFirst({
+    where: { employeeId: volunteerId, kind: 'ODC', status: { not: 'CANCELLED' }, date: { gte: todayStart, lt: todayEnd } },
+  });
+  if (volunteerAtOdc) throw new Error('You are at ODC today, so you cannot cover a restaurant shift');
+
   // Check if still within 30-min window
   if (leave.expiresAt && new Date() > leave.expiresAt) {
     throw new Error('The 30-minute acceptance window has expired');
@@ -183,6 +194,7 @@ export async function acceptEmergencyCover(prisma, volunteerId, leaveId) {
       employeeId: leave.employeeId,
       date: today,
       status: 'ASSIGNED',
+      kind: 'RESTAURANT',
     },
   });
 
@@ -260,6 +272,7 @@ export async function autoAssignEmergency(prisma, leaveId) {
       employeeId: leave.employeeId,
       date: today,
       status: 'ASSIGNED',
+      kind: 'RESTAURANT',
     },
   });
 
@@ -294,6 +307,11 @@ export async function autoAssignEmergency(prisma, leaveId) {
 
   const available = eligibleEmployees.filter(emp => {
     if (emp.leaves.length > 0) return false;
+    // Out at ODC today — away from the restaurant, whatever the hours.
+    const atOdc = emp.shifts.some(s =>
+      s.kind === 'ODC' && s.status !== 'CANCELLED'
+      && new Date(s.date).toDateString() === today.toDateString());
+    if (atOdc) return false;
     const hasConflict = emp.shifts.some(s => {
       if (new Date(s.date).toDateString() !== today.toDateString()) return false;
       const toMin = (t) => {

@@ -108,6 +108,13 @@ export const CAPABILITIES = {
     group: 'Shifts', label: 'Edit a shift', minRole: 'HEAD_CHEF',
     outletManager: true,
   },
+  SHIFT_ODC: {
+    group: 'Shifts', label: 'Send someone to ODC (outdoor catering)',
+    roles: ['HEAD_CHEF', 'MASTER_OF_HOUSE'],
+    note: 'Add, change or remove an ODC assignment for your own department. ODC time is ' +
+      'punched and paid like any shift but does not count as restaurant staffing. Refused ' +
+      'while the person still has a restaurant shift that day — move that first.',
+  },
   SHIFT_ALLOCATE: {
     group: 'Shifts', label: 'Run auto-allocation for a week', minRole: 'HEAD_CHEF',
     outletManager: true,

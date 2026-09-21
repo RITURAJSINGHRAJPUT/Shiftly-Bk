@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import prisma from '../db.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { can } from '../lib/capabilities.js';
-import { rosterOverrideDenied } from '../lib/rosterOverride.js';
+import { can, holdsCapability } from '../lib/capabilities.js';
+import { rosterOverrideDenied, odcDenied } from '../lib/rosterOverride.js';
 import { autoAllocateShifts, AUTO_OFF_REASON, outletResetOps } from '../engine/shiftAllocator.js';
 import { outletScope, hasGlobalScope } from '../lib/scope.js';
 import { departmentsFor, ownsDepartment } from '../lib/departments.js';
@@ -113,7 +113,7 @@ function shiftSpan(startTime, endTime) {
  * `overrideLeave`. The shift clash is checked first so an override can never
  * get past it.
  */
-async function shiftConflict({ employeeId, date, startTime, endTime, excludeShiftId }) {
+async function shiftConflict({ employeeId, date, startTime, endTime, excludeShiftId, kind = 'RESTAURANT' }) {
   const day = localDateRange(date);
 
   const sameDay = await prisma.shift.findMany({
@@ -125,6 +125,20 @@ async function shiftConflict({ employeeId, date, startTime, endTime, excludeShif
     },
     include: { employee: { select: { name: true } } },
   });
+  // ODC and the restaurant never share a day, whatever the hours: someone out
+  // at a catering job is not also on a station, and the restaurant shift has
+  // to be moved by hand before they go.
+  const otherKind = sameDay.find((s) => s.kind !== kind);
+  if (otherKind) {
+    const name = otherKind.employee.name;
+    const hours = `${otherKind.startTime}–${otherKind.endTime}`;
+    return {
+      error: kind === 'ODC'
+        ? `${name} has a ${otherKind.section || 'restaurant'} shift ${hours} that day — move it before sending them to ODC`
+        : `${name} is at ODC that day (${hours})`,
+    };
+  }
+
   const [start, end] = shiftSpan(startTime, endTime);
   const clash = sameDay.find((s) => {
     const [sStart, sEnd] = shiftSpan(s.startTime, s.endTime);
@@ -269,10 +283,26 @@ router.get('/', authenticateToken, async (req, res) => {
 // POST /api/shifts — create a shift manually
 router.post('/', authenticateToken, can('SHIFT_CREATE'), async (req, res) => {
   try {
-    const { date, startTime, endTime, section, employeeId, outletId } = req.body;
+    const { date, startTime, endTime, employeeId, outletId } = req.body;
+    const kind = req.body.kind === 'ODC' ? 'ODC' : 'RESTAURANT';
+    const isOdc = kind === 'ODC';
+    // An ODC job has no station; its note says where it is instead.
+    const section = isOdc ? null : req.body.section;
+    const note = isOdc ? (req.body.note?.trim() || null) : null;
+
     const targetOutletId = outletId || req.user.outletId;
     const denied = await shiftWriteDenied(req, { outletId: targetOutletId, employeeId });
     if (denied) return res.status(403).json({ error: denied });
+
+    if (isOdc) {
+      const person = await prisma.employee.findUnique({
+        where: { id: employeeId || '' },
+        select: { name: true, department: true },
+      });
+      if (!person) return res.status(400).json({ error: 'Employee not found' });
+      const odc = odcDenied(req.user, person);
+      if (odc) return res.status(403).json({ error: odc });
+    }
 
     // A shift carries no department of its own — it inherits the one the person
     // works in. Stations are a kitchen concept (only kitchen staff hold the
@@ -281,7 +311,7 @@ router.post('/', authenticateToken, can('SHIFT_CREATE'), async (req, res) => {
     const badStation = await stationDenied(employeeId, section);
     if (badStation) return res.status(400).json({ error: badStation });
 
-    const check = await checkShiftSlot(req, { employeeId, date, startTime, endTime }, req.body.overrideLeave);
+    const check = await checkShiftSlot(req, { employeeId, date, startTime, endTime, kind }, req.body.overrideLeave);
     if (check.body) return res.status(check.status).json(check.body);
 
     const shift = await prisma.shift.create({
@@ -293,6 +323,8 @@ router.post('/', authenticateToken, can('SHIFT_CREATE'), async (req, res) => {
         startTime,
         endTime,
         section,
+        kind,
+        note,
         employeeId,
         outletId: targetOutletId,
       },
@@ -309,12 +341,14 @@ router.post('/', authenticateToken, can('SHIFT_CREATE'), async (req, res) => {
       data: {
         employeeId,
         type: 'SHIFT_ASSIGNED',
-        title: 'New Shift Assigned',
-        message: `You've been assigned a ${section || 'general'} shift on ${new Date(date).toLocaleDateString()} (${startTime}-${endTime}).`,
+        title: isOdc ? 'Assigned to ODC' : 'New Shift Assigned',
+        message: isOdc
+          ? `You're on ODC (outdoor catering) on ${date} (${startTime}-${endTime})${note ? `: ${note}` : ''}.`
+          : `You've been assigned a ${section || 'general'} shift on ${new Date(date).toLocaleDateString()} (${startTime}-${endTime}).`,
       },
     });
 
-    logAudit({ action: 'SHIFT_CREATE', entity: 'Shift', entityId: shift.id, actor: req.user, details: { employeeName: shift.employee?.name, date, section } });
+    logAudit({ action: 'SHIFT_CREATE', entity: 'Shift', entityId: shift.id, actor: req.user, details: { employeeName: shift.employee?.name, date, section, kind, ...(note ? { note } : {}) } });
 
     res.status(201).json(shift);
   } catch (err) {
@@ -477,6 +511,21 @@ router.put('/:id', authenticateToken, can('SHIFT_EDIT'), async (req, res) => {
       : null);
     if (denied) return res.status(403).json({ error: denied });
 
+    // ODC belongs to the department head at both ends, like its creation.
+    // `kind` itself never changes: a restaurant shift is not turned into an ODC
+    // job, the ODC is added and the shift moved.
+    const isOdc = existing.kind === 'ODC';
+    if (isOdc) {
+      const ids = [...new Set([existing.employeeId, employeeId].filter(Boolean))];
+      const people = await prisma.employee.findMany({
+        where: { id: { in: ids } },
+        select: { id: true, name: true, department: true },
+      });
+      if (people.length !== ids.length) return res.status(400).json({ error: 'Employee not found' });
+      const odc = people.map((p) => odcDenied(req.user, p)).find(Boolean);
+      if (odc) return res.status(403).json({ error: odc });
+    }
+
     // The shift as it will be once saved — each check has to see the new person
     // on the new day at the new times, not whichever half the body happened to
     // include.
@@ -485,7 +534,10 @@ router.put('/:id', authenticateToken, can('SHIFT_EDIT'), async (req, res) => {
       date: date ? startOfLocalDay(date) : existing.date,
       startTime: startTime || existing.startTime,
       endTime: endTime || existing.endTime,
-      section: section !== undefined ? (section || null) : existing.section,
+      section: isOdc ? null : (section !== undefined ? (section || null) : existing.section),
+      note: isOdc
+        ? (req.body.note !== undefined ? (req.body.note?.trim() || null) : existing.note)
+        : null,
     };
 
     const badStation = await stationDenied(next.employeeId, next.section);
@@ -494,7 +546,7 @@ router.put('/:id', authenticateToken, can('SHIFT_EDIT'), async (req, res) => {
     // A cancelled shift occupies nobody, so it needs no room in their day.
     let leavesToFree = [];
     if ((status || existing.status) !== 'CANCELLED') {
-      const check = await checkShiftSlot(req, { ...next, excludeShiftId: existing.id }, req.body.overrideLeave);
+      const check = await checkShiftSlot(req, { ...next, kind: existing.kind, excludeShiftId: existing.id }, req.body.overrideLeave);
       if (check.body) return res.status(check.status).json(check.body);
       leavesToFree = check.leavesToFree;
     }
@@ -511,7 +563,9 @@ router.put('/:id', authenticateToken, can('SHIFT_EDIT'), async (req, res) => {
     await freeDayFromLeaves(req, leavesToFree, next.date);
 
     const when = `${localDateKey(shift.date)} (${shift.startTime}-${shift.endTime})`;
-    const what = `${shift.section || 'general'} shift on ${when}`;
+    const what = isOdc
+      ? `ODC (outdoor catering) on ${when}${shift.note ? `: ${shift.note}` : ''}`
+      : `${shift.section || 'general'} shift on ${when}`;
     if (next.employeeId !== existing.employeeId) {
       await prisma.notification.createMany({
         data: [
@@ -519,13 +573,13 @@ router.put('/:id', authenticateToken, can('SHIFT_EDIT'), async (req, res) => {
             employeeId: next.employeeId,
             type: 'SHIFT_ASSIGNED',
             title: 'Shift Assigned to You',
-            message: `You've been assigned a ${what}.`,
+            message: `You've been assigned ${isOdc ? '' : 'a '}${what}.`,
           },
           {
             employeeId: existing.employeeId,
             type: 'SHIFT_CHANGED',
             title: 'Shift Removed',
-            message: `Your ${existing.section || 'general'} shift on ${localDateKey(existing.date)} `
+            message: `Your ${isOdc ? 'ODC' : `${existing.section || 'general'} shift`} on ${localDateKey(existing.date)} `
               + `(${existing.startTime}-${existing.endTime}) has been given to someone else.`,
           },
         ],
@@ -535,13 +589,14 @@ router.put('/:id', authenticateToken, can('SHIFT_EDIT'), async (req, res) => {
       || existing.startTime !== shift.startTime
       || existing.endTime !== shift.endTime
       || (existing.section || null) !== (shift.section || null)
+      || (existing.note || null) !== (shift.note || null)
     ) {
       await prisma.notification.create({
         data: {
           employeeId: shift.employeeId,
           type: 'SHIFT_CHANGED',
           title: 'Shift Changed',
-          message: `Your shift is now a ${what}.`,
+          message: `Your ${isOdc ? 'ODC' : 'shift'} is now ${isOdc ? '' : 'a '}${what}.`,
         },
       });
     }
@@ -557,6 +612,7 @@ router.put('/:id', authenticateToken, can('SHIFT_EDIT'), async (req, res) => {
           employeeName: shift.employee?.name, date: localDateKey(shift.date),
           startTime: shift.startTime, endTime: shift.endTime, section: shift.section,
         },
+        ...(isOdc ? { kind: 'ODC' } : {}),
       },
     });
 
@@ -566,14 +622,29 @@ router.put('/:id', authenticateToken, can('SHIFT_EDIT'), async (req, res) => {
   }
 });
 
-// DELETE /api/shifts/:id
-router.delete('/:id', authenticateToken, can('SHIFT_DELETE'), async (req, res) => {
+/**
+ * DELETE /api/shifts/:id
+ *
+ * Two different gates, decided by what is being deleted. A restaurant shift is
+ * SHIFT_DELETE — Admin and up, since it leaves no record it existed. An ODC
+ * assignment is the department head's own (SHIFT_ODC): they sent the person
+ * out, and a job that fell through has to be removable by them.
+ */
+router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const existing = await prisma.shift.findUnique({
       where: { id: req.params.id },
-      include: { employee: { select: { name: true } } },
+      include: { employee: { select: { name: true, department: true } } },
     });
     if (!existing) return res.status(404).json({ error: 'Shift not found' });
+
+    if (existing.kind === 'ODC') {
+      const odc = odcDenied(req.user, existing.employee);
+      if (odc) return res.status(403).json({ error: odc });
+    } else if (!holdsCapability(req.user, 'SHIFT_DELETE')) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
     const denied = await shiftWriteDenied(req, existing);
     if (denied) return res.status(403).json({ error: denied });
 
@@ -584,6 +655,7 @@ router.delete('/:id', authenticateToken, can('SHIFT_DELETE'), async (req, res) =
       details: {
         employeeName: existing.employee?.name, date: localDateKey(existing.date),
         startTime: existing.startTime, endTime: existing.endTime, section: existing.section,
+        ...(existing.kind === 'ODC' ? { kind: 'ODC', note: existing.note } : {}),
       },
     });
 

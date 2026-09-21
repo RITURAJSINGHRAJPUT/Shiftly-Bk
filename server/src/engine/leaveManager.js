@@ -153,6 +153,9 @@ export async function reallocateLeaveShifts(prisma, leave) {
       },
       // SWAPPED too: a shift they took over as cover is still theirs to work.
       status: { in: ['ASSIGNED', 'SWAPPED'] },
+      // Restaurant shifts only. An ODC job is never handed to someone else
+      // automatically — the department head who arranged it decides.
+      kind: 'RESTAURANT',
     },
   });
 
@@ -224,6 +227,8 @@ async function findBestReplacement(prisma, shift, excludeEmployeeId) {
   // Filter out employees who are busy or on leave
   const available = employees.filter(emp => {
     if (emp.leaves.length > 0) return false;
+    // Out at ODC that day, so not in the restaurant to cover.
+    if (emp.shifts.some(s => s.kind === 'ODC' && s.status !== 'CANCELLED')) return false;
     const hasConflict = emp.shifts.some(s => {
       const toMin = (t) => {
         const [h, m] = t.split(':').map(Number);

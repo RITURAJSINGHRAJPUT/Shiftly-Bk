@@ -22,3 +22,18 @@ export function rosterOverrideDenied(user, employee, reason) {
   if (employee.id === user.id) return 'You cannot overrule the roster for yourself';
   return null;
 }
+
+/**
+ * Whether `user` may send `employee` to ODC, or change or remove their ODC.
+ *
+ * SHIFT_ODC: the department head, for their own department. Admin and HR plan
+ * the restaurant; who goes out to a catering job is the head's call, the same
+ * reasoning as calling someone in from leave.
+ */
+export function odcDenied(user, employee) {
+  if (!holdsCapability(user, 'SHIFT_ODC') || !ownsDepartment(user.role, employee.department)) {
+    const head = employee.department === 'KITCHEN' ? 'Head Chef' : 'Master of House';
+    return `Only the ${head} can send ${employee.name} to ODC`;
+  }
+  return null;
+}

@@ -1780,6 +1780,8 @@ tbody tr:last-child td {
 .calendar-shift[data-section='housekeeping'] { border-left-color: var(--series-9, #14b8a6); }
 .calendar-shift[data-section='kitchen'] { border-left-color: var(--line-strong); }
 .calendar-shift[data-section='unassigned'] { border-left-color: var(--line-strong); }
+/* Outdoor catering: dashed, so it reads as away from the restaurant rather than another station. */
+.calendar-shift[data-section='odc'] { border-left: 3px dashed var(--primary-500); }
 
 /* ========================== MOBILE NAV ========================== */
 .mobile-nav {

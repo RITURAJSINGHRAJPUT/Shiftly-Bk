@@ -183,7 +183,9 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
   // Keyed on the employees this run covers, not the whole outlet. The leave
   // delete below was already keyed this way, which is why it needed no change.
   await prisma.shift.deleteMany({
-    where: { outletId, status: 'ASSIGNED', date: dateRangeBounds, employeeId: { in: employeeIds } },
+    // RESTAURANT only: an ODC job was placed by a department head, not by
+    // this run, and re-planning the restaurant must not cancel a catering job.
+    where: { outletId, status: 'ASSIGNED', kind: 'RESTAURANT', date: dateRangeBounds, employeeId: { in: employeeIds } },
   });
 
   await prisma.leave.deleteMany({
@@ -203,7 +205,20 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
     );
   }
 
-  const keptShifts = existingShifts.filter(s => s.status !== 'ASSIGNED');
+  const keptShifts = existingShifts.filter(s => s.status !== 'ASSIGNED' || s.kind === 'ODC');
+
+  /**
+   * Who is out at ODC on which day. A whole-day block, whatever its hours: a
+   * person at a catering job is not on a station that day, and the manual
+   * routes refuse the combination too. Their ODC hours stay in keptShifts, so
+   * the hours balance still sees the work.
+   */
+  const odcDays = new Set(
+    existingShifts
+      .filter(s => s.kind === 'ODC' && s.status !== 'CANCELLED')
+      .map(s => `${s.employeeId}:${localDateKey(s.date)}`)
+  );
+  const atOdc = (empId, day) => odcDays.has(`${empId}:${localDateKey(startOfLocalDay(day))}`);
 
   // This outlet's own patterns. There is deliberately no hardcoded fallback:
   // silently applying a generic set to an outlet with none defined is what hid
@@ -299,10 +314,14 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
       if (hasOff) continue;
 
       // Prefer days where no same-department colleague is off
-      const freeDays = weekDays.filter(
+      // A day off spent at ODC is no day off, so those days are skipped when
+      // there is any other choice.
+      const ownDays = weekDays.filter(wd => !atOdc(emp.id, wd));
+      const pool = ownDays.length > 0 ? ownDays : weekDays;
+      const freeDays = pool.filter(
         wd => !coordinatedDepartments(emp).some(d => deptDayTaken.has(`${d}:${wd}`))
       );
-      const candidates = freeDays.length > 0 ? freeDays : weekDays;
+      const candidates = freeDays.length > 0 ? freeDays : pool;
 
       // Pick the day with the fewest total leaves — evens out the spread
       let bestDay = candidates[0];
@@ -416,6 +435,7 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
           let best = null;
           let bestScore = -Infinity;
           for (const emp of candidates) {
+            if (atOdc(emp.id, date)) continue;
             const score = scoreEmployee(emp, slot, pool, allAttendance);
             if (score > bestScore) {
               bestScore = score;

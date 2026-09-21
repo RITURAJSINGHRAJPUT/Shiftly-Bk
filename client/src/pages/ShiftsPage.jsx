@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { useScope } from '../contexts/ScopeContext';
-import { ALL_WEEKDAYS, STATIONS, departmentHasStations, departmentsFor, canManageLeaveOf } from '../constants';
+import { ALL_WEEKDAYS, STATIONS, departmentHasStations, departmentsFor, canManageLeaveOf, AUTO_OFF_REASON } from '../constants';
 import Modal from '../components/Modal';
 import LeaveFormModal from '../components/LeaveFormModal';
 import { format, startOfWeek, endOfWeek, addDays, isSameDay, isToday, parseISO } from 'date-fns';
 import {
   Calendar, CalendarDays, Plus, RefreshCw, CheckCircle2, AlertTriangle,
-  Layers, Store, ChevronLeft, ChevronRight, Eraser, Trash2,
+  Layers, Store, ChevronLeft, ChevronRight, Eraser, Trash2, Copy, Check, Truck,
 } from 'lucide-react';
 
 
@@ -18,6 +18,38 @@ const dayKey = (d) => format(d, 'yyyy-MM-dd');
 
 /** Sections are stored capitalised on patterns, lowercase on some shifts. */
 const normSection = (s) => (s ? String(s).toLowerCase().trim() : 'unassigned');
+
+/**
+ * Put text on the clipboard.
+ *
+ * The clipboard API only exists on https and localhost, and Shiftly is also
+ * opened over plain http on the restaurant LAN — there it is undefined, so the
+ * old execCommand route is the fallback. Resolves false if neither worked.
+ */
+async function copyText(text) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Permission refused or not a secure context — fall through.
+  }
+  const area = document.createElement('textarea');
+  area.value = text;
+  area.setAttribute('readonly', '');
+  area.style.position = 'fixed';
+  area.style.opacity = '0';
+  document.body.appendChild(area);
+  area.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch { ok = false; }
+  document.body.removeChild(area);
+  return ok;
+}
+
+/** An outdoor-catering job: real work, but not the restaurant's staffing. */
+const isOdc = (shift) => shift?.kind === 'ODC';
 
 /** Identity of a staffing slot: same hours, same station, same department. */
 const slotKey = (startTime, endTime, section, department) =>
@@ -40,6 +72,8 @@ export default function ShiftsPage() {
 
   const [weekShifts, setWeekShifts] = useState([]);
   const [dayShifts, setDayShifts] = useState([]);
+  const [dayLeaves, setDayLeaves] = useState([]);
+  const [copied, setCopied] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -72,8 +106,15 @@ export default function ShiftsPage() {
   /** SHIFT_DELETE is ADMIN-floor too; an Outlet Manager edits but cannot erase. */
   const canDeleteShift = canReset;
 
+  /**
+   * Mirrors SHIFT_ODC on the server: only the two department heads send people
+   * to outdoor catering, each for their own department.
+   */
+  const canOdc = ['HEAD_CHEF', 'MASTER_OF_HOUSE'].includes(user?.role);
+
   /** Whether this user can open `shift` for editing — its person has to be theirs to roster. */
   const canEditShift = (shift) => {
+    if (isOdc(shift)) return canOdc && departmentsFor(user?.role).includes(shift.employee?.department);
     if (!isManager) return false;
     const owned = departmentsFor(user?.role);
     return owned.length === 0 || owned.includes(shift.employee?.department);
@@ -155,7 +196,18 @@ export default function ShiftsPage() {
     if (!selectedOutletId) return;
     setDayLoading(true);
     try {
-      setDayShifts(await api.get(`/shifts?outlet=${selectedOutletId}&date=${dayKey(selectedDay)}`));
+      // Leave is asked for a day either side and narrowed here: the endpoint
+      // bounds dates at UTC midnight, which misses a weekly off stored at local
+      // midnight on the very day asked for. It has no outlet filter either.
+      const [shifts, leaves] = await Promise.all([
+        api.get(`/shifts?outlet=${selectedOutletId}&date=${dayKey(selectedDay)}`),
+        api.get(`/leaves?status=APPROVED&startDate=${dayKey(addDays(selectedDay, -1))}&endDate=${dayKey(addDays(selectedDay, 1))}`),
+      ]);
+      const key = dayKey(selectedDay);
+      setDayShifts(shifts);
+      setDayLeaves(leaves.filter((l) =>
+        l.employee?.outletId === selectedOutletId
+        && dayKey(new Date(l.startDate)) <= key && dayKey(new Date(l.endDate)) >= key));
     } catch (err) {
       console.error(err);
     } finally {
@@ -219,6 +271,14 @@ export default function ShiftsPage() {
     [weekDays, slotsForDay]
   );
 
+  /**
+   * The selected day split in two. Coverage, the slot count and the "other
+   * shifts" list are the restaurant's; ODC is listed on its own and counted in
+   * none of them.
+   */
+  const restaurantDayShifts = useMemo(() => dayShifts.filter((s) => !isOdc(s)), [dayShifts]);
+  const odcDayShifts = useMemo(() => dayShifts.filter(isOdc), [dayShifts]);
+
   const dayTemplates = useMemo(() => templatesForDay(selectedDay), [templatesForDay, selectedDay]);
   const slotsToday = dayTemplates.reduce((sum, t) => sum + t.headcount, 0);
 
@@ -239,7 +299,7 @@ export default function ShiftsPage() {
     });
 
     const unmatched = [];
-    for (const s of dayShifts) {
+    for (const s of restaurantDayShifts) {
       let bucket = buckets.get(
         slotKey(s.startTime, s.endTime, s.section, s.employee?.department)
       );
@@ -267,7 +327,62 @@ export default function ShiftsPage() {
       filled: groups.reduce((sum, g) => sum + Math.min(g.shifts.length, g.template.headcount), 0),
       assigned: groups.reduce((sum, g) => sum + g.shifts.length, 0),
     };
-  }, [dayShifts, dayTemplates]);
+  }, [restaurantDayShifts, dayTemplates]);
+
+  /**
+   * The selected day as plain text, for pasting into WhatsApp — asterisks are
+   * its bold. Built from exactly what the coverage card shows, so the message
+   * and the screen cannot disagree.
+   */
+  const buildDayText = () => {
+    const lines = [`*${outlet?.name || 'Shifts'} — ${format(selectedDay, 'EEE, d MMM yyyy')}*`];
+
+    for (const { template, shifts } of coverage.groups) {
+      const count = shifts.length === template.headcount ? '' : ` · ${shifts.length} of ${template.headcount} filled`;
+      lines.push('', `*${template.name}* · ${template.startTime}–${template.endTime}${count}`);
+      if (shifts.length === 0) lines.push('• (nobody assigned)');
+      for (const s of shifts) lines.push(`• ${s.employee?.name}`);
+    }
+
+    if (coverage.unmatched.length) {
+      lines.push('', '*Other shifts*');
+      for (const s of coverage.unmatched) {
+        lines.push(`• ${s.employee?.name} · ${s.startTime}–${s.endTime}${s.section ? ` · ${s.section}` : ''}`);
+      }
+    }
+
+    if (coverage.groups.length === 0 && coverage.unmatched.length === 0) {
+      lines.push('', 'No shifts scheduled');
+    }
+
+    if (odcDayShifts.length) {
+      lines.push('', '*ODC (outdoor catering)*');
+      for (const s of odcDayShifts) {
+        lines.push(`• ${s.employee?.name} · ${s.startTime}–${s.endTime}${s.note ? ` · ${s.note}` : ''}`);
+      }
+    }
+
+    if (dayLeaves.length) {
+      lines.push('', '*Off*');
+      for (const l of dayLeaves) {
+        const why = l.reason === AUTO_OFF_REASON ? 'weekly off' : `${l.type.toLowerCase()} leave`;
+        lines.push(`• ${l.employee?.name} — ${why}`);
+      }
+    }
+
+    return lines.join('\n');
+  };
+
+  const handleCopyDay = async () => {
+    const text = buildDayText();
+    if (await copyText(text)) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      // Last resort: the text in a box the user can copy from by hand.
+      window.prompt('Copy the day\'s shifts:', text);
+    }
+  };
 
   const handleAutoAllocate = async () => {
     setAllocating(true);
@@ -326,6 +441,8 @@ export default function ShiftsPage() {
     const first = rosterableEmployees[0];
     setShiftForm({
       id: null,
+      kind: 'RESTAURANT',
+      note: '',
       date: dayKey(dateObj || selectedDay),
       startTime: '12:00',
       endTime: '21:00',
@@ -338,10 +455,29 @@ export default function ShiftsPage() {
     setShiftModalOpen(true);
   };
 
+  /** The shift form in ODC mode: no station, an event or place instead. */
+  const openOdcModal = () => {
+    const first = rosterableEmployees[0];
+    setShiftForm({
+      id: null,
+      kind: 'ODC',
+      note: '',
+      date: dayKey(selectedDay),
+      startTime: '12:00',
+      endTime: '22:00',
+      section: '',
+      employeeId: first?.id || '',
+      outletId: selectedOutletId,
+    });
+    setShiftModalOpen(true);
+  };
+
   /** The same form, filled from an existing shift, saving with PUT instead. */
   const openEditShift = (shift) => {
     setShiftForm({
       id: shift.id,
+      kind: shift.kind || 'RESTAURANT',
+      note: shift.note || '',
       date: dayKey(new Date(shift.date)),
       startTime: shift.startTime,
       endTime: shift.endTime,
@@ -363,7 +499,9 @@ export default function ShiftsPage() {
 
   const saveShift = async (e) => {
     e.preventDefault();
-    const { id, originalName, ...body } = shiftForm;
+    // `kind` is fixed once created, so an edit does not send it.
+    const { id, originalName, kind, ...rest } = shiftForm;
+    const body = id ? rest : { ...rest, kind };
     const send = (extra = {}) => (id
       ? api.put(`/shifts/${id}`, { ...body, ...extra })
       : api.post('/shifts', { ...body, ...extra }));
@@ -386,7 +524,8 @@ export default function ShiftsPage() {
 
   const deleteShift = async () => {
     const who = shiftForm.originalName || 'this person';
-    if (!window.confirm(`Delete ${who}'s shift on ${shiftForm.date}? This cannot be undone.`)) return;
+    const what = isOdc(shiftForm) ? 'ODC' : 'shift';
+    if (!window.confirm(`Delete ${who}'s ${what} on ${shiftForm.date}? This cannot be undone.`)) return;
     try {
       await api.delete(`/shifts/${shiftForm.id}`);
       setShiftModalOpen(false);
@@ -435,6 +574,13 @@ export default function ShiftsPage() {
               <RefreshCw size={16} className={allocating ? 'animate-spin' : ''} />
               <span>{allocating ? 'Allocating…' : 'Auto-Allocate Week'}</span>
             </button>
+            {canOdc && (
+              <button className="btn btn-ghost" onClick={openOdcModal}
+                title="Send someone to outdoor catering — they are not counted in the restaurant that day">
+                <Truck size={16} />
+                <span>Send to ODC</span>
+              </button>
+            )}
             <button className="btn btn-primary" onClick={() => openShiftModal()}>
               <Plus size={16} />
               <span>Add Shift</span>
@@ -586,8 +732,18 @@ export default function ShiftsPage() {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted">
-              {coverage.filled} of {slotsToday} slots filled · {dayShifts.length} shifts
+              {coverage.filled} of {slotsToday} slots filled · {restaurantDayShifts.length} shifts
+              {odcDayShifts.length > 0 && ` · ${odcDayShifts.length} at ODC`}
             </span>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={handleCopyDay}
+              disabled={dayLoading}
+              title="Copy this day's shifts, timings and who is off — ready to paste into WhatsApp"
+            >
+              {copied ? <Check size={14} /> : <Copy size={14} />}
+              <span>{copied ? 'Copied' : 'Copy day'}</span>
+            </button>
             <div className="flex gap-1">
               <button
                 className="btn btn-ghost btn-sm btn-icon"
@@ -696,6 +852,31 @@ export default function ShiftsPage() {
             )}
           </>
         )}
+
+        {/* ODC is shown whatever the patterns say — it is not measured against
+            them, so it must not hide behind "define shift patterns first". */}
+        {!dayLoading && odcDayShifts.length > 0 && (
+          <div className="mt-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Truck size={14} className="icon-brand" />
+              <span className="text-xs uppercase text-muted">ODC · outdoor catering, not counted above</span>
+              <span className="badge badge-info">{odcDayShifts.length}</span>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {odcDayShifts.map((s) => {
+                const label = `${s.employee?.name} · ${s.startTime}–${s.endTime}${s.note ? ` · ${s.note}` : ''}`;
+                return canEditShift(s) ? (
+                  <button key={s.id} type="button" className="badge badge-ghost name-button"
+                    onClick={() => openEditShift(s)} title={`Edit ${s.employee?.name}'s ODC`}>
+                    {label}
+                  </button>
+                ) : (
+                  <span key={s.id} className="badge badge-ghost">{label}</span>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ============ 2 · WEEKLY ============ */}
@@ -708,7 +889,7 @@ export default function ShiftsPage() {
             </h3>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-muted">{weekShifts.length} shifts this week</span>
+            <span className="text-xs text-muted">{weekShifts.filter((s) => !isOdc(s)).length} shifts this week</span>
             <div className="flex gap-1">
               <button className="btn btn-ghost btn-sm" onClick={() => setWeekAnchor(addDays(weekAnchor, -7))}>Prev</button>
               <button className="btn btn-ghost btn-sm" onClick={() => setWeekAnchor(new Date())}>This week</button>
@@ -722,7 +903,11 @@ export default function ShiftsPage() {
         ) : (
           <div className="shift-calendar">
             {weekDays.map((day) => {
-              const dShifts = shiftsForDay(day);
+              const allDayShifts = shiftsForDay(day);
+              // The restaurant's shifts fill the slots; ODC gets its own block
+              // and stays out of the x/y count.
+              const dShifts = allDayShifts.filter((s) => !isOdc(s));
+              const dOdc = allDayShifts.filter(isOdc);
               const today = isSameDay(day, new Date());
               const isSelected = isSameDay(day, selectedDay);
               return (
@@ -765,7 +950,36 @@ export default function ShiftsPage() {
                         }
                         groups.get(key).shifts.push(s);
                       }
-                      return groups.size > 0 ? [...groups.values()].map((g) => (
+                      const odcBlock = dOdc.length > 0 && (
+                        <div
+                          key="odc"
+                          className="calendar-shift"
+                          data-section="odc"
+                          title={dOdc.map((s) => `${s.employee?.name}${s.note ? ` — ${s.note}` : ''}`).join(', ')}
+                        >
+                          <div className="font-semibold truncate text-xs text-strong">ODC</div>
+                          <div className="flex flex-col mt-1">
+                            {dOdc.map((s) => {
+                              const label = `${s.employee?.name} · ${s.startTime}–${s.endTime}`;
+                              return canEditShift(s) ? (
+                                <button key={s.id} type="button" className="name-button text-2xs"
+                                  style={{ opacity: 0.85 }} onClick={() => openEditShift(s)}
+                                  title={s.note ? `${s.note} — edit` : `Edit ${s.employee?.name}'s ODC`}>
+                                  {label}
+                                </button>
+                              ) : (
+                                <span key={s.id} className="text-2xs" style={{ opacity: 0.85 }} title={s.note || undefined}>
+                                  {label}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                      if (groups.size === 0 && !odcBlock) {
+                        return <div className="text-2xs text-muted text-center py-4">No shifts</div>;
+                      }
+                      return [...[...groups.values()].map((g) => (
                         <div
                           key={`${g.startTime}-${g.endTime}-${normSection(g.section)}`}
                           className="calendar-shift"
@@ -797,9 +1011,7 @@ export default function ShiftsPage() {
                             ))}
                           </div>
                         </div>
-                      )) : (
-                        <div className="text-2xs text-muted text-center py-4">No shifts</div>
-                      );
+                      )), odcBlock];
                     })()}
                   </div>
                 </div>
@@ -886,7 +1098,9 @@ export default function ShiftsPage() {
       <Modal
         isOpen={isShiftModalOpen}
         onClose={() => setShiftModalOpen(false)}
-        title={`${shiftForm?.id ? 'Edit shift' : 'Add shift'} · ${outlet?.name || ''}`}
+        title={`${isOdc(shiftForm)
+          ? (shiftForm?.id ? 'Edit ODC' : 'Send to ODC')
+          : (shiftForm?.id ? 'Edit shift' : 'Add shift')} · ${outlet?.name || ''}`}
       >
         {shiftForm && (
           <form onSubmit={saveShift} className="flex flex-col gap-4">
@@ -944,6 +1158,22 @@ export default function ShiftsPage() {
               </div>
             </div>
 
+            {isOdc(shiftForm) ? (
+            <div className="form-group">
+              <label className="form-label">Event / place</label>
+              <input
+                className="form-input"
+                placeholder="e.g. Wedding, Dumas Road"
+                value={shiftForm.note}
+                onChange={(e) => setShiftForm((p) => ({ ...p, note: e.target.value }))}
+              />
+              <p className="text-xs text-muted mt-1">
+                Outdoor catering is punched and paid like any shift, but not counted as
+                restaurant staffing. Someone with a restaurant shift that day has to be
+                moved off it first.
+              </p>
+            </div>
+            ) : (
             <div className="form-group">
               <label className="form-label">Station</label>
               <select
@@ -971,9 +1201,11 @@ export default function ShiftsPage() {
                 </p>
               )}
             </div>
+            )}
 
             <div className="modal-footer" style={{ padding: 0, marginTop: 'var(--space-4)' }}>
-              {shiftForm.id && canDeleteShift && (
+              {/* A restaurant shift is Admin's to delete; an ODC is the head's own. */}
+              {shiftForm.id && (isOdc(shiftForm) ? canOdc : canDeleteShift) && (
                 <button type="button" className="btn btn-ghost" style={{ color: 'var(--ink-crit)', marginRight: 'auto' }}
                   onClick={deleteShift}>
                   <Trash2 size={16} />
@@ -981,7 +1213,7 @@ export default function ShiftsPage() {
                 </button>
               )}
               <button type="button" className="btn btn-ghost" onClick={() => setShiftModalOpen(false)}>Cancel</button>
-              <button type="submit" className="btn btn-primary">{shiftForm.id ? 'Save changes' : 'Add Shift'}</button>
+              <button type="submit" className="btn btn-primary">{shiftForm.id ? 'Save changes' : isOdc(shiftForm) ? 'Send to ODC' : 'Add Shift'}</button>
             </div>
           </form>
         )}

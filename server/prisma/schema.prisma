@@ -23,6 +23,14 @@ enum Department {
   HOUSEKEEPING
 }
 
+/// Where a shift is worked. ODC (outdoor catering) is real work — it is punched
+/// and counts toward hours and overtime — but it is not the restaurant's
+/// staffing, so coverage, the allocator and the dashboard leave it out.
+enum ShiftKind {
+  RESTAURANT
+  ODC
+}
+
 enum ShiftStatus {
   ASSIGNED
   COMPLETED
@@ -181,6 +189,9 @@ model Shift {
   endTime    String
   section    String?
   status     ShiftStatus @default(ASSIGNED)
+  kind       ShiftKind   @default(RESTAURANT)
+  /// For ODC: the event or place, e.g. "Wedding, Dumas Road".
+  note       String?
   employeeId String
   employee   Employee    @relation(fields: [employeeId], references: [id])
   outletId   String
