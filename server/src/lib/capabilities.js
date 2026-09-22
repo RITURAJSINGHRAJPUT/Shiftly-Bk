@@ -86,6 +86,13 @@ export const CAPABILITIES = {
       'whose password it had handed them. A department head still cannot — they enrol clock-in-only ' +
       'records, which have no sign-in to take over.',
   },
+  EMPLOYEE_REACTIVATE: {
+    group: 'People', label: 'See, reactivate, or free the code of a deactivated employee',
+    roles: ['SUPER_ADMIN'],
+    note: 'Deactivation hides a person everywhere and keeps their employee code, so without this ' +
+      'nobody could bring them back or give their code to someone new. Super Admin only: ' +
+      'undoing a lockout is a bigger step than applying one.',
+  },
   EMPLOYEE_DEACTIVATE: {
     group: 'People', label: 'Deactivate an employee', minRole: 'HR',
     note: 'Deactivation is a real lockout — the login handler refuses an inactive account. ' +

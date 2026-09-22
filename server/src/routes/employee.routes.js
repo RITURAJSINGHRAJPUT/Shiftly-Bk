@@ -141,7 +141,13 @@ router.get('/', authenticateToken, async (req, res) => {
 
     // outletScope() resolves ?org/?brand/?outlet and pins non-global roles to
     // their own outlet, so it must be spread last.
-    const where = { isActive: true, ...outletScope(req) };
+    // Deactivated people are a separate list, and only a Super Admin sees it —
+    // they are the only ones who can bring anyone back.
+    const inactive = req.query.status === 'inactive';
+    if (inactive && !holdsCapability(req.user, 'EMPLOYEE_REACTIVATE')) {
+      return res.status(403).json({ error: 'Only a Super Admin can see deactivated employees' });
+    }
+    const where = { isActive: !inactive, ...outletScope(req) };
 
     if (department) where.department = department;
     if (role) where.role = role;
@@ -212,7 +218,7 @@ router.get('/lookup', authenticateToken, can('EMPLOYEE_ENROL'), async (req, res)
       code,
       takenBy: holder
         ? (mine
-          ? { name: holder.name, outlet: holder.outlet?.name ?? null, department: holder.department, isActive: holder.isActive }
+          ? { id: holder.id, name: holder.name, outlet: holder.outlet?.name ?? null, department: holder.department, isActive: holder.isActive }
           : { name: null, outlet: null, department: null, isActive: holder.isActive })
         : null,
       elsewhere: Boolean(holder && !mine),
@@ -220,6 +226,76 @@ router.get('/lookup', authenticateToken, can('EMPLOYEE_ENROL'), async (req, res)
       lastSeen: identity?.lastSeen ?? null,
       punchCount: identity?.punchCount ?? 0,
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/employees/:id/reactivate — undo a deactivation.
+ *
+ * Everything the record held comes back with it: login, password, employee
+ * code and history. The code is what makes this better than adding them again
+ * — a new record would be refused the code the old one still holds, and would
+ * start with no history. Their punches are re-pulled at once, as for any code
+ * newly in use.
+ */
+router.post('/:id/reactivate', authenticateToken, can('EMPLOYEE_REACTIVATE'), async (req, res) => {
+  try {
+    const target = await prisma.employee.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, name: true, isActive: true, employeeCode: true },
+    });
+    if (!target) return res.status(404).json({ error: 'Employee not found' });
+    if (target.isActive) return res.status(400).json({ error: `${target.name} is already active` });
+
+    const employee = await prisma.employee.update({
+      where: { id: target.id },
+      data: { isActive: true },
+      include: outletInclude,
+    });
+    if (employee.employeeCode) requestBackfill([employee.employeeCode]);
+
+    logAudit({
+      action: 'EMPLOYEE_REACTIVATE', entity: 'Employee', entityId: target.id, actor: req.user,
+      details: { employeeName: target.name, employeeCode: target.employeeCode },
+    });
+
+    const { password, ...sanitized } = employee;
+    res.json(sanitized);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/employees/:id/release-code — take the code off a deactivated
+ * record, so it can be given to someone new.
+ *
+ * Only for someone deactivated: an active person's code is how their punches
+ * find them, and removing it would silently lose their hours. Their history
+ * stays on the old record; it is simply no longer linked to that code.
+ */
+router.post('/:id/release-code', authenticateToken, can('EMPLOYEE_REACTIVATE'), async (req, res) => {
+  try {
+    const target = await prisma.employee.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, name: true, isActive: true, employeeCode: true },
+    });
+    if (!target) return res.status(404).json({ error: 'Employee not found' });
+    if (target.isActive) {
+      return res.status(400).json({ error: `${target.name} is active — change their code from their profile instead` });
+    }
+    if (!target.employeeCode) return res.status(400).json({ error: `${target.name} has no code to release` });
+
+    await prisma.employee.update({ where: { id: target.id }, data: { employeeCode: null } });
+
+    logAudit({
+      action: 'EMPLOYEE_CODE_RELEASED', entity: 'Employee', entityId: target.id, actor: req.user,
+      details: { employeeName: target.name, employeeCode: target.employeeCode },
+    });
+
+    res.json({ message: `${target.employeeCode} is free to use`, code: target.employeeCode });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
