@@ -28,6 +28,10 @@ const DEFAULTS = {
   source: 'source_detail',
   // Neon marks double-taps within two minutes as not counted.
   counted: 'counted',
+  // The working day Neon assigns each punch — a 00:30 punch belongs to the
+  // evening before. Read so Shiftly's days are exactly Neon's days rather than
+  // a second opinion from our own cutoff arithmetic.
+  businessDate: 'business_date',
   // punched_at is timestamptz. Without a zone it would be read as UTC and
   // every punch would land 5h30m early — verified against the KGAPI export:
   // 1,142 exact matches as IST, none as UTC.
@@ -71,6 +75,12 @@ function config() {
     counted: (() => {
       const col = setting('ATTENDANCE_SOURCE_COUNTED_COL', DEFAULTS.counted);
       return col ? ident(col, 'counted column') : null;
+    })(),
+    // Optional date column naming each punch's working day. "none" for a
+    // source without one, which then falls back to the cutoff hour.
+    businessDate: (() => {
+      const col = setting('ATTENDANCE_SOURCE_BUSINESS_DATE_COL', DEFAULTS.businessDate);
+      return col ? ident(col, 'business date column') : null;
     })(),
   };
 }
@@ -132,6 +142,15 @@ export async function fetchPunches({ from, to, userIds }) {
 
   try {
     await client.connect();
+    // With the source's own working day, the range is simply those days. The
+    // cutoff-offset window below is only for a source that has no such column.
+    // `$3 IS NOT NULL` keeps the cutoff parameter referenced: Postgres refuses a
+    // query with a parameter it cannot type, and the numbering stays fixed.
+    const range = c.businessDate
+      ? `${c.businessDate} BETWEEN $1::date AND $2::date AND $3::int IS NOT NULL`
+      : `${local} >= ($1::date + make_interval(hours => $3::int))
+          AND ${local} <  ($2::date + INTERVAL '1 day' + make_interval(hours => $3::int))`;
+
     const { rows } = await client.query(
       // Bounded by *working* days, not calendar days. A range starting at the
       // 16th's midnight would include a 00:30 punch that belongs to the 15th's
@@ -144,9 +163,9 @@ export async function fetchPunches({ from, to, userIds }) {
               ${c.name} AS emp_name,
               to_char(${local}, 'YYYY-MM-DD HH24:MI:SS') AS edatetime,
               ${c.source} AS evtsourcedet
+              ${c.businessDate ? `, to_char(${c.businessDate}, 'YYYY-MM-DD') AS business_date` : ''}
          FROM ${c.table}
-        WHERE ${local} >= ($1::date + make_interval(hours => $3::int))
-          AND ${local} <  ($2::date + INTERVAL '1 day' + make_interval(hours => $3::int))
+        WHERE ${range}
           ${c.counted ? `AND ${c.counted}` : ''}
           ${onlyThese}
         ORDER BY ${c.timestamp}
@@ -161,6 +180,7 @@ export async function fetchPunches({ from, to, userIds }) {
       emp_name: r.emp_name ?? null,
       edatetime: r.edatetime,
       evtsourcedet: r.evtsourcedet ?? null,
+      business_date: r.business_date ?? null,
     }));
   } finally {
     // A client per run, never a pool: both ends of this connection go away on

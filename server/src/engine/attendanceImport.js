@@ -1,6 +1,6 @@
-import { attendanceDayFor, localDateKey } from '../lib/dates.js';
+import { attendanceDayFor, localDateKey, startOfLocalDay } from '../lib/dates.js';
 import { statusFor } from './geoAttendance.js';
-import { resolveOvertime } from './overtime.js';
+import { resolveOvertime, pairSessions } from './overtime.js';
 
 /**
  * Punch-log timestamps look like "2026-07-02 08:41:21.0" — space separated, no
@@ -44,9 +44,11 @@ function dedupe(punches) {
  * The external system has no concept of "check-in" vs "check-out" — every tap
  * is just a punch. Shiftly's Attendance table is one row per employee per
  * working day with two DateTime columns, so each employee's punches for a day
- * are collapsed: earliest punch -> checkIn, latest -> checkOut (only once
- * there's more than one distinct punch — a single punch is still mid-shift,
- * not a completed day). employeeCode is the join key against the log's
+ * are paired into in/out sessions (1–2, 3–4, …) as Neon's
+ * matrix.attendance_session does: checkIn is the first punch, checkOut the out
+ * of the last closed session, and workedMinutes adds up only the closed ones —
+ * breaks are unpaid, and an odd final punch is an open session (see
+ * pairSessions in overtime.js). employeeCode is the join key against the log's
  * `userid`; it has to be set on the Employee record beforehand.
  *
  * `punches` is the raw array, e.g.
@@ -73,7 +75,12 @@ export async function importPunches(prisma, punches, { source = 'external attend
     if (punch.emp_name && !nameByUserId.has(userId)) nameByUserId.set(userId, punch.emp_name);
     punchCountByUserId.set(userId, (punchCountByUserId.get(userId) || 0) + 1);
 
-    const day = attendanceDayFor(time);
+    // The source's own working day when it gives one (Neon's business_date),
+    // so a day here is exactly a day there. Our cutoff hour only decides for a
+    // source that does not say — a CSV, the older KGAPI feed.
+    const day = punch.business_date
+      ? startOfLocalDay(punch.business_date)
+      : attendanceDayFor(time);
     const key = `${userId}::${day.getTime()}`;
 
     if (!byEmployeeDay.has(key)) {
@@ -162,19 +169,23 @@ export async function importPunches(prisma, punches, { source = 'external attend
 
     const dayPunches = dedupe(rawDayPunches);
     const first = dayPunches[0];
-    const last = dayPunches[dayPunches.length - 1];
-    const hasCheckOut = dayPunches.length > 1;
+
+    // Paired into in/out sessions the way Neon's matrix.attendance_session
+    // does: breaks between sessions are not worked time, and an odd last punch
+    // is an unclosed session, not the end of the day.
+    const { checkIn, checkOut, workedMinutes, sessions, missingOutPunch } =
+      pairSessions(dayPunches.map((p) => p.time));
+    const hasCheckOut = checkOut != null;
 
     const key = rowKey(employee.id, day);
     const status = statusFor(shiftByKey.get(key), day, first.time, hasCheckOut);
-
-    const checkIn = first.time;
-    const checkOut = hasCheckOut ? last.time : null;
 
     const existing = existingByKey.get(key) || null;
     const { fields: overtime, reopened: wasReopened } = resolveOvertime({
       checkIn,
       checkOut,
+      worked: workedMinutes,
+      missingOutPunch,
       role: employee.role,
       date: day,
       existing,
@@ -192,6 +203,9 @@ export async function importPunches(prisma, punches, { source = 'external attend
     const data = {
       checkIn,
       checkOut,
+      workedMinutes,
+      sessions,
+      missingOutPunch,
       // No GPS from an external device — presence is verified by the device
       // itself, so this isn't a geofence violation the way a missing/failed
       // self-check-in coordinate would be.

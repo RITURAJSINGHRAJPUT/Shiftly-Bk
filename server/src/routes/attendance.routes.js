@@ -158,6 +158,8 @@ router.get('/summary', authenticateToken, async (req, res) => {
         date: true,
         checkIn: true,
         checkOut: true,
+        workedMinutes: true,
+        missingOutPunch: true,
         overtimeMinutes: true,
         overtimeStatus: true,
         employee: {
@@ -192,14 +194,15 @@ router.get('/summary', authenticateToken, async (req, res) => {
       const b = buckets.get(key);
 
       b.days += 1;
-      if (r.checkIn && r.checkOut) {
-        b.completeDays += 1;
-        b.minutes += Math.floor((r.checkOut - r.checkIn) / 60000);
-      } else if (r.checkIn) {
-        // Counted rather than silently dropped: a day nobody closed is the one
-        // thing in here that needs a person to go and fix it.
-        b.missingPunchOut += 1;
-      }
+      // Session-summed minutes where the importer stored them (breaks unpaid,
+      // as in Neon); first-to-last only for a self check-in row.
+      const worked = r.workedMinutes ?? (r.checkIn && r.checkOut
+        ? Math.floor((r.checkOut - r.checkIn) / 60000) : null);
+      if (worked != null) b.minutes += worked;
+      if (r.checkIn && r.checkOut && !r.missingOutPunch) b.completeDays += 1;
+      // Counted rather than silently dropped: a day nobody closed is the one
+      // thing in here that needs a person to go and fix it.
+      if (r.missingOutPunch || (r.checkIn && !r.checkOut)) b.missingPunchOut += 1;
 
       b.overtimeMinutes += r.overtimeMinutes || 0;
       if (r.overtimeStatus === 'APPROVED') b.overtimeApproved += r.overtimeMinutes || 0;

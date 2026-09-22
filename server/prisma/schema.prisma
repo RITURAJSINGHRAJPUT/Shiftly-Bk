@@ -241,8 +241,18 @@ model Attendance {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
-  /// Minutes worked beyond the standard nine-hour day, from the first punch to
-  /// the last. Columns on Attendance rather than a table of its own, because
+  /// Minutes actually worked: the punches paired into in/out sessions (1–2,
+  /// 3–4, …) and only the closed ones added up, so a break is not paid — the
+  /// same rule as Neon's matrix.attendance_session. Null while no session has
+  /// closed, and for a self check-in row, which falls back to checkOut-checkIn.
+  workedMinutes   Int?
+  /// How many in/out pairs the day had. Over 1 means a break was taken.
+  sessions        Int?
+  /// An odd number of punches: the last session was opened and never closed.
+  missingOutPunch Boolean @default(false)
+
+  /// Minutes worked beyond the standard nine-hour day, from workedMinutes
+  /// (or the first punch to the last, where that is not known). Columns on Attendance rather than a table of its own, because
   /// overtime here is a pure function of checkIn/checkOut rather than a record
   /// anyone authors: a separate row derived from fields that two engines
   /// blind-upsert could drift from its own source, and this cannot.

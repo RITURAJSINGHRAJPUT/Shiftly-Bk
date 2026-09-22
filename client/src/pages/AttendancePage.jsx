@@ -10,6 +10,7 @@ import {
   format, subDays, subWeeks, subMonths, startOfWeek, startOfMonth, parseISO,
 } from 'date-fns';
 import Segmented from '../components/Segmented';
+import Modal from '../components/Modal';
 import {
   ATTENDANCE_VIEW_ALL_ROLES, ATTENDANCE_SYNC_ROLES,
   DEPARTMENT_APPROVERS, GLOBAL_SCOPE_ROLES, WORKDAY_MINUTES,
@@ -43,8 +44,15 @@ function rangeFor(view) {
   return { startDate: dayKey(start), endDate: dayKey(end) };
 }
 
-/** Minutes from first punch to last, or null while the day is still open. */
+/**
+ * Minutes worked, or null while the day is still open.
+ *
+ * The importer stores the closed in/out sessions added up — breaks unpaid, the
+ * same figure as Neon's attendance_daily. First punch to last is only for a
+ * self check-in row, which has no sessions.
+ */
 function workedMinutes(rec) {
+  if (rec.workedMinutes != null) return rec.workedMinutes;
   if (!rec.checkIn || !rec.checkOut) return null;
   return Math.floor((new Date(rec.checkOut) - new Date(rec.checkIn)) / 60000);
 }
@@ -64,7 +72,11 @@ function formatDuration(minutes) {
  * punch will arrive for it — which means someone has to notice.
  */
 function missingPunchOut(rec) {
-  if (rec.checkOut || !rec.checkIn) return false;
+  if (!rec.checkIn) return false;
+  // An odd number of punches: a later session was opened and never closed,
+  // even though an earlier one gave the day a check-out time.
+  if (rec.missingOutPunch) return dayKey(new Date(rec.date)) < dayKey(new Date());
+  if (rec.checkOut) return false;
   return dayKey(new Date(rec.date)) < dayKey(new Date());
 }
 
@@ -108,16 +120,25 @@ function DailyTable({ records }) {
                 <td data-label="Date">{format(new Date(rec.date), 'EEE d MMM')}</td>
                 <td data-label="First">{rec.checkIn ? format(new Date(rec.checkIn), 'hh:mm a') : '—'}</td>
                 <td data-label="Last">
-                  {rec.checkOut
-                    ? format(new Date(rec.checkOut), 'hh:mm a')
-                    : open
-                      ? <span className="badge badge-warn">Missing</span>
-                      : '—'}
+                  {rec.checkOut && format(new Date(rec.checkOut), 'hh:mm a')}
+                  {open && (
+                    <span className="badge badge-warn" style={{ marginLeft: rec.checkOut ? 6 : 0 }}
+                      title="An odd number of punches — the last session was never closed">
+                      Missing out
+                    </span>
+                  )}
+                  {!rec.checkOut && !open && '—'}
                 </td>
                 <td data-label="Hours">
                   {worked == null ? '—' : (
                     <span className={worked > WORKDAY_MINUTES ? 'font-semibold text-strong' : ''}>
                       {formatDuration(worked)}
+                    </span>
+                  )}
+                  {rec.sessions > 1 && (
+                    <span className="text-2xs text-muted" style={{ marginLeft: 6 }}
+                      title="Breaks between sessions are not counted as worked">
+                      {rec.sessions} sessions
                     </span>
                   )}
                 </td>
@@ -246,6 +267,11 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState(null);
+
+  /** The person whose pending overtime is open in the review dialog. */
+  const [overtimeFor, setOvertimeFor] = useState(null);
+  /** Bulk approve/reject in progress: { verdict, done, total }. */
+  const [bulk, setBulk] = useState(null);
 
   /** null while the grid is showing; an employee id once one is opened. */
   const [openId, setOpenId] = useState(null);
@@ -383,6 +409,25 @@ export default function AttendancePage() {
     [queue, canDecide]
   );
 
+  /**
+   * Pending overtime, one entry per person — the queue as cards rather than a
+   * row for every day. Biggest claim first: that is where a decision matters most.
+   */
+  const overtimeByPerson = useMemo(() => {
+    const map = new Map();
+    for (const rec of pendingOvertime) {
+      const e = rec.employee;
+      if (!map.has(e.id)) map.set(e.id, { employee: e, days: [], minutes: 0 });
+      const row = map.get(e.id);
+      row.days.push(rec);
+      row.minutes += rec.overtimeMinutes || 0;
+    }
+    for (const row of map.values()) row.days.sort((a, b) => new Date(a.date) - new Date(b.date));
+    return [...map.values()].sort((a, b) => b.minutes - a.minutes || a.employee.name.localeCompare(b.employee.name));
+  }, [pendingOvertime]);
+
+  const overtimeOpen = overtimeFor ? overtimeByPerson.find((r) => r.employee.id === overtimeFor) : null;
+
   /** Each person's fortnight, added up from the records already on the page. */
   const totals = useMemo(() => {
     const map = new Map();
@@ -474,6 +519,38 @@ export default function AttendancePage() {
       alert(err.message || 'Could not record that decision');
     }
   };
+
+  /**
+   * Approve or reject every pending day for one person.
+   *
+   * One request per day through the same endpoint as the single buttons, so
+   * each day still passes the server's per-record check. Anything refused is
+   * reported rather than silently left pending.
+   */
+  const decideAll = async (row, verdict) => {
+    const total = row.days.length;
+    const verb = verdict === 'approve' ? 'Approve' : 'Reject';
+    if (!window.confirm(`${verb} all ${total} day${total === 1 ? '' : 's'} of overtime `
+      + `(+${formatDuration(row.minutes)}) for ${row.employee.name}?`)) return;
+    setBulk({ verdict, done: 0, total, id: row.employee.id });
+    const failed = [];
+    for (const [i, rec] of row.days.entries()) {
+      try {
+        await api.post(`/attendance/${rec.id}/overtime/${verdict}`);
+      } catch (err) {
+        failed.push(`${format(new Date(rec.date), 'd MMM')}: ${err.message}`);
+      }
+      setBulk({ verdict, done: i + 1, total, id: row.employee.id });
+    }
+    setBulk(null);
+    await loadData();
+    if (failed.length) alert(`Some days could not be ${verdict}d:\n\n${failed.join('\n')}`);
+    else if (overtimeFor === row.employee.id) setOvertimeFor(null);
+  };
+
+  const bulkLabel = (row, verdict) => (bulk && bulk.id === row.employee.id && bulk.verdict === verdict
+    ? `${verdict === 'approve' ? 'Approving' : 'Rejecting'} ${bulk.done} of ${bulk.total}…`
+    : `${verdict === 'approve' ? 'Approve' : 'Reject'} all`);
 
   if (loading) {
     return <div className="page-content text-center text-muted">Loading attendance…</div>;
@@ -672,49 +749,172 @@ export default function AttendancePage() {
             </div>
           </div>
 
-          {/* The approval queue, above the list — it is the only part that needs doing. */}
-          {pendingOvertime.length > 0 && (
-            <div className="card mb-4">
+          {/* The approval queue, above the list — it is the only part that needs
+              doing. One card per person, laid out like the employee cards below. */}
+          {overtimeByPerson.length > 0 && (
+            <div className="mb-4">
               <div className="card-header">
                 <h3 className="card-title">Overtime awaiting your approval</h3>
-                <span className="badge badge-warn">{pendingOvertime.length}</span>
+                <span className="text-xs text-muted">
+                  {overtimeByPerson.length} {overtimeByPerson.length === 1 ? 'person' : 'people'}
+                  {' · '}{pendingOvertime.length} {pendingOvertime.length === 1 ? 'day' : 'days'}
+                </span>
               </div>
-              <div className="divided-list">
-                {pendingOvertime.map((rec) => (
-                  <div key={rec.id} className="flex items-center gap-3 flex-wrap">
-                    <div style={{ minWidth: 0 }}>
-                      <div className="font-semibold text-strong">{rec.employee.name}</div>
-                      <div className="text-xs text-muted">
-                        {format(new Date(rec.date), 'EEE d MMM')} · {rec.employee.department} ·
-                        {' '}worked {formatDuration(workedMinutes(rec))}
+              <div className="stats-grid">
+                {overtimeByPerson.map((row) => {
+                  const e = row.employee;
+                  const first = new Date(row.days[0].date);
+                  const last = new Date(row.days[row.days.length - 1].date);
+                  const busy = bulk?.id === e.id;
+                  return (
+                    <div
+                      key={e.id}
+                      className="card group-card"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setOvertimeFor(e.id)}
+                      onKeyDown={(ev) => { if (ev.key === 'Enter') setOvertimeFor(e.id); }}
+                      aria-label={`Review overtime for ${e.name}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="user-avatar">{initialsOf(e.name)}</div>
+                        <div style={{ minWidth: 0 }}>
+                          <div className="card-title truncate">{e.name}</div>
+                          <div className="text-xs text-muted truncate">
+                            {[e.department, e.employeeCode].filter(Boolean).join(' · ')}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="person-stats">
+                        <div className="person-stat">
+                          <span className="person-stat-value" style={{ color: 'var(--ink-warn)' }}>
+                            +{formatDuration(row.minutes)}
+                          </span>
+                          <span className="person-stat-label">pending</span>
+                        </div>
+                        <div className="person-stat">
+                          <span className="person-stat-value">{row.days.length}</span>
+                          <span className="person-stat-label">{row.days.length === 1 ? 'day' : 'days'}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap mt-3">
+                        <span className="text-xs text-muted">
+                          {row.days.length === 1
+                            ? format(first, 'EEE d MMM')
+                            : `${format(first, 'd MMM')} – ${format(last, 'd MMM')}`}
+                        </span>
+                        <div className="flex gap-2" style={{ marginLeft: 'auto' }}>
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-sm"
+                            onClick={(ev) => { ev.stopPropagation(); setOvertimeFor(e.id); }}
+                          >
+                            Review
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-accent btn-sm"
+                            disabled={Boolean(bulk)}
+                            onClick={(ev) => { ev.stopPropagation(); decideAll(row, 'approve'); }}
+                          >
+                            <CheckCircle size={14} />
+                            <span>{busy ? bulkLabel(row, 'approve') : 'Approve all'}</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    <span className="badge badge-warn" style={{ marginLeft: 'auto' }}>
-                      +{formatDuration(rec.overtimeMinutes)}
-                    </span>
-                    <div className="flex gap-2">
-                      <button
-                        className="btn btn-ghost btn-sm btn-icon"
-                        style={{ color: 'var(--accent-400)' }}
-                        title="Approve"
-                        onClick={() => decide(rec, 'approve')}
-                      >
-                        <CheckCircle size={15} />
-                      </button>
-                      <button
-                        className="btn btn-ghost btn-sm btn-icon"
-                        style={{ color: 'var(--error-400)' }}
-                        title="Reject"
-                        onClick={() => decide(rec, 'reject')}
-                      >
-                        <XCircle size={15} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
+
+          {/* One person's pending days, decided one at a time or all together. */}
+          <Modal
+            isOpen={Boolean(overtimeOpen)}
+            onClose={() => setOvertimeFor(null)}
+            title={overtimeOpen ? `Overtime · ${overtimeOpen.employee.name}` : ''}
+            wide
+          >
+            {overtimeOpen && (
+              <>
+                <p className="text-sm text-secondary mb-3">
+                  +{formatDuration(overtimeOpen.minutes)} over {overtimeOpen.days.length}
+                  {overtimeOpen.days.length === 1 ? ' day' : ' days'}, beyond
+                  a {WORKDAY_MINUTES / 60}-hour day. Breaks between sessions are not counted.
+                </p>
+                <div className="divided-list">
+                  {overtimeOpen.days.map((rec) => (
+                    <div key={rec.id} className="flex items-center gap-3 flex-wrap">
+                      <div style={{ minWidth: 0 }}>
+                        <div className="font-semibold text-strong">
+                          {format(new Date(rec.date), 'EEE d MMM')}
+                        </div>
+                        <div className="text-xs text-muted">
+                          {rec.checkIn ? format(new Date(rec.checkIn), 'hh:mm a') : '—'}
+                          {' – '}
+                          {rec.checkOut ? format(new Date(rec.checkOut), 'hh:mm a') : '—'}
+                          {' · worked '}{formatDuration(workedMinutes(rec))}
+                          {rec.sessions > 1 ? ` · ${rec.sessions} sessions` : ''}
+                        </div>
+                      </div>
+                      <span className="badge badge-warn" style={{ marginLeft: 'auto' }}>
+                        +{formatDuration(rec.overtimeMinutes)}
+                      </span>
+                      <div className="flex gap-2">
+                        <button
+                          className="btn btn-ghost btn-sm btn-icon"
+                          style={{ color: 'var(--accent-400)' }}
+                          title="Approve"
+                          aria-label={`Approve ${format(new Date(rec.date), 'd MMM')}`}
+                          disabled={Boolean(bulk)}
+                          onClick={() => decide(rec, 'approve')}
+                        >
+                          <CheckCircle size={15} />
+                        </button>
+                        <button
+                          className="btn btn-ghost btn-sm btn-icon"
+                          style={{ color: 'var(--error-400)' }}
+                          title="Reject"
+                          aria-label={`Reject ${format(new Date(rec.date), 'd MMM')}`}
+                          disabled={Boolean(bulk)}
+                          onClick={() => decide(rec, 'reject')}
+                        >
+                          <XCircle size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="modal-footer" style={{ padding: 0, marginTop: 'var(--space-4)' }}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{ color: 'var(--ink-crit)', marginRight: 'auto' }}
+                    disabled={Boolean(bulk)}
+                    onClick={() => decideAll(overtimeOpen, 'reject')}
+                  >
+                    <XCircle size={16} />
+                    <span>{bulkLabel(overtimeOpen, 'reject')}</span>
+                  </button>
+                  <button type="button" className="btn btn-ghost" onClick={() => setOvertimeFor(null)}>
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-accent"
+                    disabled={Boolean(bulk)}
+                    onClick={() => decideAll(overtimeOpen, 'approve')}
+                  >
+                    <CheckCircle size={16} />
+                    <span>{bulkLabel(overtimeOpen, 'approve')}</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </Modal>
 
           {canViewAll ? (
             <>

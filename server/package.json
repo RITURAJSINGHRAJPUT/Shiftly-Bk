@@ -16,6 +16,7 @@
     "reset:superadmin": "node src/scripts/resetToSuperAdmin.js",
     "access:doc": "node src/scripts/generateAccessDoc.js",
     "access:check": "node src/scripts/generateAccessDoc.js --check",
+    "attendance:resync": "node src/scripts/resyncAttendance.js",
     "postinstall": "prisma generate",
     "migrate:structure": "node src/scripts/migrateStructure.js",
     "seed:crew": "node src/scripts/seedOutletCrew.js",

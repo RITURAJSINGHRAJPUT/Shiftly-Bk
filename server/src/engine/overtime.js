@@ -58,7 +58,10 @@ function minutesBetween(from, to) {
  * caller to write an audit trail, which is the one thing columns cannot keep
  * that a separate table would have.
  */
-export function resolveOvertime({ checkIn, checkOut, role, date, existing = null, now = new Date() }) {
+export function resolveOvertime({
+  checkIn, checkOut, role, date, existing = null, now = new Date(),
+  worked: workedGiven = null, missingOutPunch = false,
+}) {
   const idle = {
     overtimeMinutes: 0,
     overtimeStatus: null,
@@ -71,7 +74,9 @@ export function resolveOvertime({ checkIn, checkOut, role, date, existing = null
   if (!checkIn || !checkOut) return { fields: idle, reopened: null };
   if (OVERTIME_EXEMPT_ROLES.includes(role)) return { fields: idle, reopened: null };
 
-  const worked = minutesBetween(checkIn, checkOut);
+  // Session-summed minutes when the importer knows them (breaks unpaid, as in
+  // Neon); first punch to last for a self check-in, which has only two times.
+  const worked = workedGiven ?? minutesBetween(checkIn, checkOut);
   const overtimeMinutes = Math.max(0, worked - WORKDAY_MINUTES);
   if (overtimeMinutes === 0) return { fields: idle, reopened: null };
 
@@ -82,7 +87,10 @@ export function resolveOvertime({ checkIn, checkOut, role, date, existing = null
   const effectiveFrom = process.env.OVERTIME_EFFECTIVE_FROM;
   const inScope = !effectiveFrom || startOfLocalDay(date) >= startOfLocalDay(effectiveFrom);
 
-  const queueable = settled && plausible && inScope;
+  // A day with an unclosed session has hours missing, so its overtime is not
+  // a number anyone should sign off yet — it is shown for review instead, the
+  // same way an implausible span is, until the punch is corrected.
+  const queueable = settled && plausible && inScope && !missingOutPunch;
 
   // Nothing decided yet: this is a fresh claim, or an update to a pending one.
   const decided = existing?.overtimeStatus === 'APPROVED' || existing?.overtimeStatus === 'REJECTED';
@@ -135,7 +143,37 @@ export function resolveOvertime({ checkIn, checkOut, role, date, existing = null
 }
 
 /** Hours worked on a completed day, or null while it is still open. */
-export function workedMinutes({ checkIn, checkOut }) {
+export function workedMinutes({ checkIn, checkOut, workedMinutes: stored = null }) {
+  if (stored != null) return stored;
   if (!checkIn || !checkOut) return null;
   return minutesBetween(checkIn, checkOut);
+}
+
+/**
+ * A day's punches as Neon pairs them: 1–2, 3–4, … Only closed pairs count
+ * toward the hours, so a break between sessions is unpaid and an odd final
+ * punch is an open session rather than the end of the day.
+ *
+ * `times` must be sorted. Returns the fields the Attendance row stores.
+ */
+export function pairSessions(times) {
+  // Summed in milliseconds and floored once, as Neon sums seconds — flooring
+  // each session would drift a minute per break.
+  let workedMs = 0;
+  let closed = 0;
+  for (let i = 0; i + 1 < times.length; i += 2) {
+    workedMs += times[i + 1].getTime() - times[i].getTime();
+    closed += 1;
+  }
+  const worked = Math.floor(workedMs / 60000);
+  const missingOutPunch = times.length % 2 === 1;
+  return {
+    checkIn: times[0] || null,
+    // Neon's last_out: the out of the last *closed* session. With an odd count
+    // the final punch opened a session, so it is not a check-out.
+    checkOut: closed > 0 ? times[closed * 2 - 1] : null,
+    workedMinutes: closed > 0 ? worked : null,
+    sessions: Math.ceil(times.length / 2),
+    missingOutPunch,
+  };
 }
