@@ -432,6 +432,17 @@ async function decideOvertime(req, res, decision) {
   const denied = overtimeApprovalDenied(req, record);
   if (denied) return res.status(403).json({ error: denied });
 
+  // Required both ways. An approval is a pay decision as much as a rejection
+  // is, and "why" is the one thing the columns could not otherwise answer.
+  const reason = String(req.body?.reason ?? '').trim();
+  const verb = decision === 'APPROVED' ? 'approving' : 'rejecting';
+  if (reason.length < 3) {
+    return res.status(400).json({ error: `Give a reason for ${verb} this overtime` });
+  }
+  if (reason.length > 500) {
+    return res.status(400).json({ error: 'Keep the reason under 500 characters' });
+  }
+
   const updated = await prisma.attendance.update({
     where: { id: record.id },
     data: {
@@ -441,6 +452,20 @@ async function decideOvertime(req, res, decision) {
       overtimeMinutesAtDecision: record.overtimeMinutes,
       overtimeApprovedBy: req.user.id,
       overtimeDecidedAt: new Date(),
+      overtimeReason: reason,
+    },
+  });
+
+  const h = Math.floor(record.overtimeMinutes / 60);
+  const m = record.overtimeMinutes % 60;
+  const amount = h ? `${h}h ${m}m` : `${m}m`;
+  await prisma.notification.create({
+    data: {
+      employeeId: record.employeeId,
+      type: 'GENERAL',
+      title: decision === 'APPROVED' ? 'Overtime Approved' : 'Overtime Rejected',
+      message: `Your overtime on ${localDateKey(record.date)} (+${amount}) was `
+        + `${decision === 'APPROVED' ? 'approved' : 'rejected'}: ${reason}`,
     },
   });
 
@@ -453,6 +478,7 @@ async function decideOvertime(req, res, decision) {
       employeeName: record.employee.name,
       date: localDateKey(record.date),
       minutes: record.overtimeMinutes,
+      reason,
     },
   });
 

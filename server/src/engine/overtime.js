@@ -68,6 +68,7 @@ export function resolveOvertime({
     overtimeMinutesAtDecision: null,
     overtimeApprovedBy: null,
     overtimeDecidedAt: null,
+    overtimeReason: null,
   };
 
   // An open day has no span to measure yet.
@@ -103,6 +104,7 @@ export function resolveOvertime({
         overtimeMinutesAtDecision: null,
         overtimeApprovedBy: null,
         overtimeDecidedAt: null,
+        overtimeReason: null,
       },
       reopened: null,
     };
@@ -118,6 +120,7 @@ export function resolveOvertime({
         overtimeMinutesAtDecision: existing.overtimeMinutesAtDecision,
         overtimeApprovedBy: existing.overtimeApprovedBy,
         overtimeDecidedAt: existing.overtimeDecidedAt,
+        overtimeReason: existing.overtimeReason ?? null,
       },
       reopened: null,
     };
@@ -132,12 +135,14 @@ export function resolveOvertime({
       overtimeMinutesAtDecision: null,
       overtimeApprovedBy: null,
       overtimeDecidedAt: null,
+      overtimeReason: null,
     },
     reopened: {
       was: existing.overtimeMinutesAtDecision,
       now: overtimeMinutes,
       priorStatus: existing.overtimeStatus,
       priorApprovedBy: existing.overtimeApprovedBy,
+      priorReason: existing.overtimeReason ?? null,
     },
   };
 }

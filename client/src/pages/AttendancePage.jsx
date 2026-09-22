@@ -159,6 +159,12 @@ function DailyTable({ records }) {
                       {rec.overtimeStatus ? ` · ${rec.overtimeStatus.toLowerCase()}` : ' · review'}
                     </span>
                   ) : '—'}
+                  {rec.overtimeReason && (
+                    <div className="text-2xs text-muted truncate" style={{ maxWidth: 240, marginTop: 2 }}
+                      title={rec.overtimeReason}>
+                      “{rec.overtimeReason}”
+                    </div>
+                  )}
                 </td>
                 <td data-label="Status">
                   <span className={`badge ${
@@ -270,6 +276,13 @@ export default function AttendancePage() {
 
   /** The person whose pending overtime is open in the review dialog. */
   const [overtimeFor, setOvertimeFor] = useState(null);
+  /**
+   * A decision waiting for its reason: { verdict, rec } for one day or
+   * { verdict, row } for all of a person's days. Every approval and rejection
+   * goes through this — the server refuses one without a reason.
+   */
+  const [asking, setAsking] = useState(null);
+  const [reasonText, setReasonText] = useState('');
   /** Bulk approve/reject in progress: { verdict, done, total }. */
   const [bulk, setBulk] = useState(null);
 
@@ -511,9 +524,14 @@ export default function AttendancePage() {
     }
   };
 
-  const decide = async (rec, verdict) => {
+  const askReason = (verdict, target) => {
+    setReasonText('');
+    setAsking({ verdict, ...target });
+  };
+
+  const decide = async (rec, verdict, reason) => {
     try {
-      await api.post(`/attendance/${rec.id}/overtime/${verdict}`);
+      await api.post(`/attendance/${rec.id}/overtime/${verdict}`, { reason });
       loadData();
     } catch (err) {
       alert(err.message || 'Could not record that decision');
@@ -527,16 +545,13 @@ export default function AttendancePage() {
    * each day still passes the server's per-record check. Anything refused is
    * reported rather than silently left pending.
    */
-  const decideAll = async (row, verdict) => {
+  const decideAll = async (row, verdict, reason) => {
     const total = row.days.length;
-    const verb = verdict === 'approve' ? 'Approve' : 'Reject';
-    if (!window.confirm(`${verb} all ${total} day${total === 1 ? '' : 's'} of overtime `
-      + `(+${formatDuration(row.minutes)}) for ${row.employee.name}?`)) return;
     setBulk({ verdict, done: 0, total, id: row.employee.id });
     const failed = [];
     for (const [i, rec] of row.days.entries()) {
       try {
-        await api.post(`/attendance/${rec.id}/overtime/${verdict}`);
+        await api.post(`/attendance/${rec.id}/overtime/${verdict}`, { reason });
       } catch (err) {
         failed.push(`${format(new Date(rec.date), 'd MMM')}: ${err.message}`);
       }
@@ -546,6 +561,15 @@ export default function AttendancePage() {
     await loadData();
     if (failed.length) alert(`Some days could not be ${verdict}d:\n\n${failed.join('\n')}`);
     else if (overtimeFor === row.employee.id) setOvertimeFor(null);
+  };
+
+  const confirmReason = () => {
+    const reason = reasonText.trim();
+    if (reason.length < 3 || !asking) return;
+    const { verdict, rec, row } = asking;
+    setAsking(null);
+    if (rec) decide(rec, verdict, reason);
+    else decideAll(row, verdict, reason);
   };
 
   const bulkLabel = (row, verdict) => (bulk && bulk.id === row.employee.id && bulk.verdict === verdict
@@ -817,7 +841,7 @@ export default function AttendancePage() {
                             type="button"
                             className="btn btn-accent btn-sm"
                             disabled={Boolean(bulk)}
-                            onClick={(ev) => { ev.stopPropagation(); decideAll(row, 'approve'); }}
+                            onClick={(ev) => { ev.stopPropagation(); askReason('approve', { row }); }}
                           >
                             <CheckCircle size={14} />
                             <span>{busy ? bulkLabel(row, 'approve') : 'Approve all'}</span>
@@ -870,7 +894,7 @@ export default function AttendancePage() {
                           title="Approve"
                           aria-label={`Approve ${format(new Date(rec.date), 'd MMM')}`}
                           disabled={Boolean(bulk)}
-                          onClick={() => decide(rec, 'approve')}
+                          onClick={() => askReason('approve', { rec })}
                         >
                           <CheckCircle size={15} />
                         </button>
@@ -880,7 +904,7 @@ export default function AttendancePage() {
                           title="Reject"
                           aria-label={`Reject ${format(new Date(rec.date), 'd MMM')}`}
                           disabled={Boolean(bulk)}
-                          onClick={() => decide(rec, 'reject')}
+                          onClick={() => askReason('reject', { rec })}
                         >
                           <XCircle size={15} />
                         </button>
@@ -894,7 +918,7 @@ export default function AttendancePage() {
                     className="btn btn-ghost"
                     style={{ color: 'var(--ink-crit)', marginRight: 'auto' }}
                     disabled={Boolean(bulk)}
-                    onClick={() => decideAll(overtimeOpen, 'reject')}
+                    onClick={() => askReason('reject', { row: overtimeOpen })}
                   >
                     <XCircle size={16} />
                     <span>{bulkLabel(overtimeOpen, 'reject')}</span>
@@ -906,13 +930,72 @@ export default function AttendancePage() {
                     type="button"
                     className="btn btn-accent"
                     disabled={Boolean(bulk)}
-                    onClick={() => decideAll(overtimeOpen, 'approve')}
+                    onClick={() => askReason('approve', { row: overtimeOpen })}
                   >
                     <CheckCircle size={16} />
                     <span>{bulkLabel(overtimeOpen, 'approve')}</span>
                   </button>
                 </div>
               </>
+            )}
+          </Modal>
+
+          {/* The reason, asked for every approval and rejection alike. */}
+          <Modal
+            isOpen={Boolean(asking)}
+            onClose={() => setAsking(null)}
+            title={asking
+              ? `${asking.verdict === 'approve' ? 'Approve' : 'Reject'} overtime · `
+                + `${(asking.rec || asking.row?.days[0])?.employee?.name || ''}`
+              : ''}
+          >
+            {asking && (
+              <form
+                className="flex flex-col gap-4"
+                onSubmit={(ev) => { ev.preventDefault(); confirmReason(); }}
+              >
+                <p className="text-sm text-secondary">
+                  {asking.rec
+                    ? `${format(new Date(asking.rec.date), 'EEE d MMM')} · +${formatDuration(asking.rec.overtimeMinutes)}`
+                    : `${asking.row.days.length} ${asking.row.days.length === 1 ? 'day' : 'days'}`
+                      + ` · +${formatDuration(asking.row.minutes)} — the same reason is recorded for each`}
+                </p>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="overtime-reason">
+                    {asking.verdict === 'approve' ? 'Reason for approval' : 'Reason for rejection'}
+                  </label>
+                  <textarea
+                    id="overtime-reason"
+                    className="form-textarea"
+                    rows={3}
+                    maxLength={500}
+                    autoFocus
+                    required
+                    placeholder={asking.verdict === 'approve'
+                      ? 'e.g. Stayed back for the banquet; covered a late closing'
+                      : 'e.g. Did not stay back — forgot to punch out; not authorised'}
+                    value={reasonText}
+                    onChange={(ev) => setReasonText(ev.target.value)}
+                  />
+                  <p className="text-xs text-muted mt-1">
+                    Required. The employee sees this with the decision.
+                  </p>
+                </div>
+                <div className="modal-footer" style={{ padding: 0 }}>
+                  <button type="button" className="btn btn-ghost" onClick={() => setAsking(null)}>Cancel</button>
+                  <button
+                    type="submit"
+                    className={`btn ${asking.verdict === 'approve' ? 'btn-accent' : 'btn-danger'}`}
+                    disabled={reasonText.trim().length < 3}
+                  >
+                    {asking.verdict === 'approve' ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                    <span>
+                      {asking.verdict === 'approve' ? 'Approve' : 'Reject'}
+                      {asking.row ? ` all ${asking.row.days.length}` : ''}
+                    </span>
+                  </button>
+                </div>
+              </form>
             )}
           </Modal>
 

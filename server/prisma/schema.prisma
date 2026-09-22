@@ -268,6 +268,10 @@ model Attendance {
   /// Employee id of whoever decided. No FK, matching Leave.approvedBy.
   overtimeApprovedBy        String?
   overtimeDecidedAt         DateTime?
+  /// Why the approver decided as they did — required for both approval and
+  /// rejection, shown to the employee. Cleared with the decision if a
+  /// re-import changes the minutes and reopens it.
+  overtimeReason            String?
 
   @@unique([employeeId, date])
   @@index([date])

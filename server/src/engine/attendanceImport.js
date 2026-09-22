@@ -151,6 +151,7 @@ export async function importPunches(prisma, punches, { source = 'external attend
           select: {
             employeeId: true, date: true, overtimeStatus: true,
             overtimeMinutesAtDecision: true, overtimeApprovedBy: true, overtimeDecidedAt: true,
+            overtimeReason: true,
           },
         }),
       ])
