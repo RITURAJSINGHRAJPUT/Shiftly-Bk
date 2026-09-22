@@ -63,6 +63,7 @@ query parameter, so it cannot be widened by asking differently.
 | Edit an employee | ✅ | ✅ | ✅ | — | — | — | — |
 | Add or correct an entry in the punch directory | ✅ | ✅ | ✅ | — | — | — | — |
 | Issue a new one-time password | ✅ | ✅ | ✅ | — | — | — | — |
+| See, reactivate, or free the code of a deactivated employee | ✅ | — | — | — | — | — | — |
 | Deactivate an employee | ✅ | ✅ | ✅ | — | — | — | — |
 | See what a staff wipe would delete | ✅ | — | — | — | — | — | — |
 | Delete every staff account and their history | ✅ | — | — | — | — | — | — |
@@ -74,6 +75,8 @@ query parameter, so it cannot be widened by asking differently.
 > **Add or correct an entry in the punch directory** — The directory is who the biometric feed knows about, and it is what the enrolment form reads to turn a code into a name. Department heads read it; only head office writes to it. Enforced with hasGlobalScope() rather than this floor, because OUTLET_MANAGER shares HR’s rank and would otherwise clear it.
 
 > **Issue a new one-time password** — The same floor as enrolment, because it is the same act from the other end: HR issues the first one-time password when they enrol someone, and a lost password is simply that again. Holding this above enrolment meant the role that creates accounts could not help the person whose password it had handed them. A department head still cannot — they enrol clock-in-only records, which have no sign-in to take over.
+
+> **See, reactivate, or free the code of a deactivated employee** — Deactivation hides a person everywhere and keeps their employee code, so without this nobody could bring them back or give their code to someone new. Super Admin only: undoing a lockout is a bigger step than applying one.
 
 > **Deactivate an employee** — Deactivation is a real lockout — the login handler refuses an inactive account. HR can deactivate anyone except management accounts (Super Admin, Admin, HR), matching the rule that HR cannot assign those roles.
 

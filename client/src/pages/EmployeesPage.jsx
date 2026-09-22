@@ -5,7 +5,7 @@ import DirectoryPicker from '../components/DirectoryPicker';
 import { useScope } from '../contexts/ScopeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { GLOBAL_SCOPE_ROLES, STATIONS, DEPARTMENTS as ALL_DEPARTMENTS, departmentHasStations, departmentsFor } from '../constants';
-import { Plus, Search, Filter, Edit, Trash2, Store, ShieldCheck, Users, KeyRound, Copy, Check, Hash } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Trash2, Store, ShieldCheck, Users, KeyRound, Copy, Check, Hash, UserCheck, Archive } from 'lucide-react';
 
 /**
  * Role options for the Add/Edit modal, split by which "side" of the
@@ -116,6 +116,8 @@ export default function EmployeesPage() {
    * blind entry into a confirmation.
    */
   const [codeLookup, setCodeLookup] = useState(null);
+  /** Bumped to re-run the lookup for the same code, e.g. after freeing it. */
+  const [lookupNonce, setLookupNonce] = useState(0);
 
   useEffect(() => {
     const code = formData.employeeCode?.trim();
@@ -150,7 +152,7 @@ export default function EmployeesPage() {
       }
     }, 400);
     return () => { cancelled = true; clearTimeout(t); };
-  }, [formData.employeeCode, editingEmployee]);
+  }, [formData.employeeCode, editingEmployee, lookupNonce]);
 
   // "Copied" feedback for the one-time-password reveal's Copy button.
   const [copied, setCopied] = useState(false);
@@ -173,21 +175,58 @@ export default function EmployeesPage() {
     copyTimeoutRef.current = setTimeout(() => setCopied(false), 1800);
   }, [issued]);
 
+  /**
+   * Mirrors EMPLOYEE_REACTIVATE: only a Super Admin sees deactivated people,
+   * brings them back, or frees a code one of them still holds.
+   */
+  const canReactivate = user?.role === 'SUPER_ADMIN';
+  const [inactive, setInactive] = useState([]);
+  const [showInactive, setShowInactive] = useState(false);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const empRes = await api.get('/employees?limit=500');
+      const [empRes, inactiveRes] = await Promise.all([
+        api.get('/employees?limit=500'),
+        canReactivate ? api.get('/employees?status=inactive&limit=500') : Promise.resolve(null),
+      ]);
       setEmployees(empRes.employees);
+      setInactive(inactiveRes?.employees || []);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [canReactivate]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const reactivate = async (emp) => {
+    if (!window.confirm(`Reactivate ${emp.name}? Their login, employee code and history all come back.`)) return false;
+    try {
+      await api.post(`/employees/${emp.id}/reactivate`, {});
+      await loadData();
+      return true;
+    } catch (err) {
+      alert(err.message || 'Could not reactivate');
+      return false;
+    }
+  };
+
+  const releaseCode = async (emp, code) => {
+    if (!window.confirm(`${code} will be removed from ${emp.name}'s old record so it can be given to `
+      + 'someone else. Their history is kept, but it will no longer be linked to this code.')) return false;
+    try {
+      await api.post(`/employees/${emp.id}/release-code`, {});
+      await loadData();
+      return true;
+    } catch (err) {
+      alert(err.message || 'Could not free the code');
+      return false;
+    }
+  };
 
   const handleOpenAdd = () => {
     if (!addMode) return;
@@ -493,9 +532,61 @@ export default function EmployeesPage() {
               <span>Assign Codes</span>
             </button>
           )}
+          {canReactivate && (
+            <button
+              className={`btn ${showInactive ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setShowInactive((v) => !v)}
+              aria-pressed={showInactive}
+            >
+              <Archive size={16} />
+              <span>{showInactive ? 'Hide' : 'Show'} deactivated ({inactive.length})</span>
+            </button>
+          )}
         </div>
         )}
       </div>
+
+      {canReactivate && showInactive && (
+        <div className="card mb-4">
+          <div className="card-header">
+            <div className="flex items-center gap-2">
+              <Archive size={17} className="icon-brand" />
+              <h3 className="card-title">Deactivated employees</h3>
+            </div>
+            <span className="text-xs text-muted">Hidden everywhere else · only a Super Admin sees this</span>
+          </div>
+          {inactive.length === 0 ? (
+            <p className="text-sm text-muted">Nobody is deactivated.</p>
+          ) : (
+            <div className="divided-list">
+              {inactive.map((emp) => (
+                <div key={emp.id} className="flex items-center gap-3 flex-wrap">
+                  <div style={{ minWidth: 0 }}>
+                    <div className="font-semibold text-strong">{emp.name}</div>
+                    <div className="text-xs text-muted">
+                      {[emp.employeeCode, emp.role?.replace(/_/g, ' ').toLowerCase(), emp.department, emp.outlet?.name]
+                        .filter(Boolean).join(' · ')}
+                    </div>
+                  </div>
+                  <div className="flex gap-2" style={{ marginLeft: 'auto' }}>
+                    {emp.employeeCode && (
+                      <button className="btn btn-ghost btn-sm" onClick={() => releaseCode(emp, emp.employeeCode)}
+                        title="Remove the code from this record so a new person can have it">
+                        <Hash size={14} />
+                        <span>Free {emp.employeeCode}</span>
+                      </button>
+                    )}
+                    <button className="btn btn-accent btn-sm" onClick={() => reactivate(emp)}>
+                      <UserCheck size={14} />
+                      <span>Reactivate</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="card mb-4">
         <div className="flex gap-4 items-center flex-wrap">
@@ -841,7 +932,36 @@ export default function EmployeesPage() {
               <p className="text-xs mt-1" style={{ color: 'var(--ink-crit)' }}>
                 Belongs to {codeLookup.takenBy.name}
                 {codeLookup.takenBy.isActive ? '' : ' (deactivated)'}.
+                {!codeLookup.takenBy.isActive && !canReactivate && ' Ask a Super Admin to reactivate them or free the code.'}
               </p>
+            )}
+            {/* The two ways out of a code held by someone deactivated: it is the
+                same person coming back, or the code now belongs to someone new. */}
+            {codeLookup?.takenBy?.id && !codeLookup.takenBy.isActive && canReactivate && (
+              <div className="flex gap-2 flex-wrap mt-2">
+                <button
+                  type="button"
+                  className="btn btn-accent btn-sm"
+                  onClick={async () => {
+                    const holder = { id: codeLookup.takenBy.id, name: codeLookup.takenBy.name };
+                    if (await reactivate(holder)) setIsModalOpen(false);
+                  }}
+                >
+                  <UserCheck size={14} />
+                  <span>Same person — reactivate {codeLookup.takenBy.name}</span>
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={async () => {
+                    const holder = { id: codeLookup.takenBy.id, name: codeLookup.takenBy.name };
+                    if (await releaseCode(holder, codeLookup.code)) setLookupNonce((n) => n + 1);
+                  }}
+                >
+                  <Hash size={14} />
+                  <span>New person — free this code</span>
+                </button>
+              </div>
             )}
             {codeLookup?.suggestedName && !codeLookup.takenBy && (
               <p className="text-xs mt-1" style={{ color: 'var(--ink-good)' }}>
