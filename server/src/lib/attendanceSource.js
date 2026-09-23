@@ -162,6 +162,11 @@ export async function fetchPunches({ from, to, userIds }) {
       `SELECT ${c.userId} AS userid,
               ${c.name} AS emp_name,
               to_char(${local}, 'YYYY-MM-DD HH24:MI:SS') AS edatetime,
+              -- The same punch as an exact moment. edatetime is a wall clock
+              -- with no zone, so whoever parses it decides what it means — and
+              -- a server running on UTC read every Indian punch 5h30m late.
+              -- This leaves nothing to interpret.
+              (extract(epoch from ${c.timestamp}) * 1000)::bigint AS epoch_ms,
               ${c.source} AS evtsourcedet
               ${c.businessDate ? `, to_char(${c.businessDate}, 'YYYY-MM-DD') AS business_date` : ''}
          FROM ${c.table}
@@ -179,6 +184,7 @@ export async function fetchPunches({ from, to, userIds }) {
       userid: r.userid == null ? null : String(r.userid),
       emp_name: r.emp_name ?? null,
       edatetime: r.edatetime,
+      epoch_ms: r.epoch_ms == null ? null : Number(r.epoch_ms),
       evtsourcedet: r.evtsourcedet ?? null,
       business_date: r.business_date ?? null,
     }));

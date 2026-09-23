@@ -13,7 +13,10 @@ import { resolveOvertime, pairSessions } from './overtime.js';
  * `pg` driver arrives as one — and `String(aDate).split(' ')[0]` would be the
  * weekday name, which parses to NaN and poisons the day key.
  */
-export function parsePunchTimestamp(edatetime) {
+export function parsePunchTimestamp(edatetime, epochMs = null) {
+  // An exact moment, where the source could give one. Nothing about the
+  // server's own timezone enters into it.
+  if (epochMs != null && Number.isFinite(epochMs)) return new Date(epochMs);
   if (edatetime instanceof Date) return edatetime;
 
   const [datePart, timePart] = String(edatetime).split(' ');
@@ -69,7 +72,7 @@ export async function importPunches(prisma, punches, { source = 'external attend
     const userId = punch.userid == null ? null : String(punch.userid);
     if (!userId || !punch.edatetime) continue;
 
-    const time = parsePunchTimestamp(punch.edatetime);
+    const time = parsePunchTimestamp(punch.edatetime, punch.epoch_ms);
     if (Number.isNaN(time.getTime())) continue;
 
     if (punch.emp_name && !nameByUserId.has(userId)) nameByUserId.set(userId, punch.emp_name);
