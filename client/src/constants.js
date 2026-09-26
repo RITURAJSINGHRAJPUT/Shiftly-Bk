@@ -30,12 +30,11 @@ export const departmentHasStations = (department) => department === 'KITCHEN';
  * Shift rows per station on the sheet.
  *
  * Two by default, because that is how the paper sheets are drawn and an empty
- * third row on every station is noise. Stations that need a late close can grow
- * to six — beyond that the grid stops being readable, and a station running
- * seven distinct shifts is a sign the station itself should be split.
+ * third row on every station is noise. A station that splits its day finely —
+ * a late close, staggered starts — can grow to ten.
  */
 export const MIN_SHIFT_SLOTS = 2;
-export const MAX_SHIFT_SLOTS = 6;
+export const MAX_SHIFT_SLOTS = 10;
 
 /** `[1, 2, … n]` — the slot numbers to draw for one station. */
 export const slotsUpTo = (n) => Array.from({ length: n }, (_, i) => i + 1);

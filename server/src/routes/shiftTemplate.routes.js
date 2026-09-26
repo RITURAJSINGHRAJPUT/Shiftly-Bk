@@ -67,7 +67,7 @@ function departmentWriteDenied(req, department) {
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6];
 
 /** Shift rows a station can run. Mirrors MAX_SHIFT_SLOTS on the client. */
-const MAX_SLOT = 6;
+const MAX_SLOT = 10;
 
 /**
  * Shared validation for create and update. Returns { data } or { error }.
@@ -131,9 +131,8 @@ function readTemplateBody(body, { partial = false, currentDepartment = null } = 
 
   if (slot !== undefined) {
     const n = Number(slot);
-    // Six, matching the sheet's ceiling. Two is the default a station draws;
-    // beyond six the grid stops being readable, and a station running seven
-    // distinct shifts is really two stations.
+    // MAX_SLOT, matching the sheet's ceiling. Two is the default a station
+    // draws; the rest are added a row at a time when a station splits its day.
     if (!Number.isInteger(n) || n < 1 || n > MAX_SLOT) {
       return { error: `slot must be a whole number between 1 and ${MAX_SLOT}` };
     }
