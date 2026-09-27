@@ -2,20 +2,22 @@ import { GLOBAL_SCOPE_ROLES } from '../lib/scope.js';
 import { startOfLocalDay } from '../lib/dates.js';
 
 /**
- * Overtime against a fixed nine-hour day.
+ * Overtime against a fixed twelve-hour day.
  *
- * The working day is nine hours whatever time it starts: every minute past that
- * is overtime, and a department head signs it off. Hours worked are measured
- * from the first punch of the day to the last, breaks included — the punch log
- * has no concept of a break, and the importer keeps only the outer two punches.
+ * The working day is twelve hours whatever time it starts: every minute past
+ * that is overtime, and a department head signs it off. A restaurant day
+ * regularly runs past nine hours, which is what this used to measure against —
+ * at that length the queue filled with ordinary days and the approval meant
+ * nothing. Hours worked are the closed in/out sessions added up, so a break
+ * between them is not paid (see pairSessions).
  *
  * This module is deliberately pure: no database, no clock beyond the `now` it is
  * given. It is the piece that decides what someone gets paid for, so it should
  * be readable and testable on its own.
  */
 
-/** The standard day. Nine hours, regardless of when the shift starts or ends. */
-export const WORKDAY_MINUTES = 9 * 60;
+/** The standard day. Twelve hours, regardless of when the shift starts or ends. */
+export const WORKDAY_MINUTES = 12 * 60;
 
 /**
  * Roles that accrue no overtime.

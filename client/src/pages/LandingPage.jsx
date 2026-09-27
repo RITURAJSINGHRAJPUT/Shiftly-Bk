@@ -67,7 +67,7 @@ const FEATURES = [
   {
     icon: MapPin,
     title: 'Smart Attendance',
-    body: 'A nine-hour day however it falls. Every minute past it is overtime, routed to the department head who owns that section to approve or reject.',
+    body: 'A twelve-hour day however it falls. Every minute past it is overtime, routed to the department head who owns that section to approve or reject — with a written reason either way.',
     live: true,
   },
   {

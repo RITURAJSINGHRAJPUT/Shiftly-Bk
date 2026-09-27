@@ -130,7 +130,7 @@ export function canManageLeaveOf(user, employee) {
 export const AUTO_OFF_REASON = 'Weekly off (auto-assigned)';
 
 /** The standard working day, in minutes. Mirrors WORKDAY_MINUTES on the server. */
-export const WORKDAY_MINUTES = 9 * 60;
+export const WORKDAY_MINUTES = 12 * 60;
 
 /**
  * Weekday numbering matches `Date.getDay()` — Sunday is 0 — which is what the
