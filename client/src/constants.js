@@ -130,7 +130,14 @@ export function canManageLeaveOf(user, employee) {
 export const AUTO_OFF_REASON = 'Weekly off (auto-assigned)';
 
 /** The standard working day, in minutes. Mirrors WORKDAY_MINUTES on the server. */
-export const WORKDAY_MINUTES = 12 * 60;
+export const WORKDAY_MINUTES = 9 * 60;
+
+/**
+ * The grace past the standard day. Mirrors MIN_OVERTIME_MINUTES on the server:
+ * a shorter spill is neither recorded nor sent for approval, and once the day
+ * passes it the minutes are counted from the end of the standard day.
+ */
+export const MIN_OVERTIME_MINUTES = 150;
 
 /**
  * Weekday numbering matches `Date.getDay()` — Sunday is 0 — which is what the

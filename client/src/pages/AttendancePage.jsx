@@ -13,7 +13,7 @@ import Segmented from '../components/Segmented';
 import Modal from '../components/Modal';
 import {
   ATTENDANCE_VIEW_ALL_ROLES, ATTENDANCE_SYNC_ROLES,
-  DEPARTMENT_APPROVERS, GLOBAL_SCOPE_ROLES, WORKDAY_MINUTES,
+  DEPARTMENT_APPROVERS, GLOBAL_SCOPE_ROLES, WORKDAY_MINUTES, MIN_OVERTIME_MINUTES,
 } from '../constants';
 
 /** YYYY-MM-DD from local parts — never toISOString(), which shifts the day. */
@@ -586,7 +586,9 @@ export default function AttendancePage() {
         <div>
           <h1 className="page-title">Attendance</h1>
           <p className="page-subtitle">
-            Hours worked against a {WORKDAY_MINUTES / 60}-hour day — anything beyond it is overtime
+            Hours worked against a {WORKDAY_MINUTES / 60}-hour day — past
+            {' '}{(WORKDAY_MINUTES + MIN_OVERTIME_MINUTES) / 60} hours it is overtime, counted from
+            the {WORKDAY_MINUTES / 60}-hour mark
           </p>
         </div>
         {canSync && !openRow && (
@@ -867,7 +869,9 @@ export default function AttendancePage() {
                 <p className="text-sm text-secondary mb-3">
                   +{formatDuration(overtimeOpen.minutes)} over {overtimeOpen.days.length}
                   {overtimeOpen.days.length === 1 ? ' day' : ' days'}, beyond
-                  a {WORKDAY_MINUTES / 60}-hour day. Breaks between sessions are not counted.
+                  a {WORKDAY_MINUTES / 60}-hour day, raised once the day passes
+                  {' '}{(WORKDAY_MINUTES + MIN_OVERTIME_MINUTES) / 60} hours. Breaks between sessions
+                  are not counted.
                 </p>
                 <div className="divided-list">
                   {overtimeOpen.days.map((rec) => (

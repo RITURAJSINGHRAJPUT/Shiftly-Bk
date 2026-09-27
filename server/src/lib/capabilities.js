@@ -195,7 +195,8 @@ export const CAPABILITIES = {
   OVERTIME_APPROVE: {
     group: 'Attendance', label: 'Approve overtime', minRole: 'HEAD_CHEF',
     note: 'Only for your own department, at your own restaurant, and never your own ' +
-      'overtime — enforced per record. A Master of House or Head Chef signs off the hours of the ' +
+      'overtime — enforced per record. A day reaches this queue only once it passes eleven and a ' +
+      'half hours; the claim is then everything past the ninth hour, grace included. A Master of House or Head Chef signs off the hours of the ' +
       'people they run; an Outlet Manager sees those hours but does not decide them, which is the ' +
       'point of the two being separate roles.',
   },

@@ -2,22 +2,22 @@ import { GLOBAL_SCOPE_ROLES } from '../lib/scope.js';
 import { startOfLocalDay } from '../lib/dates.js';
 
 /**
- * Overtime against a fixed twelve-hour day.
+ * Overtime against a nine-hour day, with two and a half hours of grace.
  *
- * The working day is twelve hours whatever time it starts: every minute past
- * that is overtime, and a department head signs it off. A restaurant day
- * regularly runs past nine hours, which is what this used to measure against —
- * at that length the queue filled with ordinary days and the approval meant
- * nothing. Hours worked are the closed in/out sessions added up, so a break
- * between them is not paid (see pairSessions).
+ * The working day is nine hours whatever time it starts, and a restaurant day
+ * regularly runs a little past it — so nothing is raised until the day reaches
+ * eleven and a half. Once it does, the overtime is everything past the ninth
+ * hour, the grace included: an 11h 31m day is 2h 31m, a 13h day is 4h. A
+ * department head signs it off. Hours worked are the closed in/out sessions
+ * added up, so a break between them is not paid (see pairSessions).
  *
  * This module is deliberately pure: no database, no clock beyond the `now` it is
  * given. It is the piece that decides what someone gets paid for, so it should
  * be readable and testable on its own.
  */
 
-/** The standard day. Twelve hours, regardless of when the shift starts or ends. */
-export const WORKDAY_MINUTES = 12 * 60;
+/** The standard day. Nine hours, regardless of when the shift starts or ends. */
+export const WORKDAY_MINUTES = 9 * 60;
 
 /**
  * Roles that accrue no overtime.
@@ -30,6 +30,19 @@ export const WORKDAY_MINUTES = 12 * 60;
  * their hours, they simply never accrue.
  */
 export const OVERTIME_EXEMPT_ROLES = [...GLOBAL_SCOPE_ROLES, 'MASTER_OF_HOUSE', 'HEAD_CHEF'];
+
+/**
+ * The grace: overtime smaller than this is not overtime.
+ *
+ * A service finishes when the last table leaves, and twenty minutes past nine
+ * hours is the tail of an ordinary day rather than a claim anyone should sign
+ * off. Below this the day reads as a plain day — no minutes, nothing queued.
+ *
+ * Note what it does *not* do: once the day passes it, the grace is part of the
+ * claim rather than deducted from it. The minutes are counted from the ninth
+ * hour, so the smallest overtime ever recorded is this value itself.
+ */
+export const MIN_OVERTIME_MINUTES = 150;
 
 /**
  * A span this long is a missed punch-out, not a day's work.
@@ -81,7 +94,9 @@ export function resolveOvertime({
   // Neon); first punch to last for a self check-in, which has only two times.
   const worked = workedGiven ?? minutesBetween(checkIn, checkOut);
   const overtimeMinutes = Math.max(0, worked - WORKDAY_MINUTES);
-  if (overtimeMinutes === 0) return { fields: idle, reopened: null };
+  // Under the minimum it is not recorded and never queues, so the day looks
+  // exactly like one that finished on time.
+  if (overtimeMinutes < MIN_OVERTIME_MINUTES) return { fields: idle, reopened: null };
 
   // A day still under way would raise an approval item that then changes under
   // the approver as the evening's punches arrive. Only settled days queue.
