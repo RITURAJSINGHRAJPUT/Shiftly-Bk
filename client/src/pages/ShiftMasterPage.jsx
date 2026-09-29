@@ -263,12 +263,21 @@ export default function ShiftMasterPage() {
       );
       return;
     }
+    // A sheet with nothing on it saves perfectly well and wipes the
+    // department's patterns, after which allocation has nothing to do and says
+    // so in a way nobody connects back to this screen. Say it here instead.
+    const templates = cellsToTemplates(times, counts, rows, slotsFor);
+    if (templates.length === 0 && !window.confirm(
+      `This sheet has no shifts on it. Saving removes every pattern${ownedDepartments ? ` for ${ownedDepartments.join(' and ').toLowerCase()}` : ''}`
+      + ` at ${outlet?.name || 'this restaurant'}, and nobody will be rostered. Save anyway?`
+    )) return;
+
     setGridSaving(true);
     setGridError('');
     try {
       const res = await api.put('/shift-templates/grid', {
         outletIds,
-        templates: cellsToTemplates(times, counts, rows, slotsFor),
+        templates,
       });
       setGridResult({ ...res, outletIds });
       setApplyOpen(false);

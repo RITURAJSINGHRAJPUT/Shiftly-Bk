@@ -234,14 +234,39 @@ async function checkShiftSlot(req, slot, overrideLeave) {
   return { leavesToFree: conflict.leaves };
 }
 
-/** The kitchen-only rule for stations. Returns an error string or null. */
+/**
+ * The section a Service or Housekeeping shift carries: its department's own
+ * name, copied from the pattern it was allocated from (Shift Master keys those
+ * rows by it). It names the department, not a station.
+ */
+const DEPARTMENT_ROW_SECTION = { SERVICE: 'service', HOUSEKEEPING: 'housekeeping' };
+
+/**
+ * The kitchen-only rule for stations. Returns an error string or null.
+ *
+ * A department's own name is allowed only for someone who works in it or, as a
+ * head, runs it — a Master of House may take a "Housekeeping" shift, a waiter
+ * or a cook may not. Refusing every section outside the kitchen meant no
+ * allocated Service or Housekeeping shift could be edited at all.
+ */
 async function stationDenied(employeeId, section) {
   if (!section) return null;
   const employee = await prisma.employee.findUnique({
     where: { id: employeeId },
-    select: { name: true, department: true },
+    select: { name: true, department: true, role: true },
   });
   if (!employee) return 'Employee not found';
+
+  const wanted = String(section).trim().toLowerCase();
+  const rowDepartment = Object.keys(DEPARTMENT_ROW_SECTION)
+    .find((d) => DEPARTMENT_ROW_SECTION[d] === wanted);
+  if (rowDepartment) {
+    const own = [employee.department, ...departmentsFor(employee.role)];
+    return own.includes(rowDepartment)
+      ? null
+      : `${employee.name} works in ${employee.department?.toLowerCase()}, not ${rowDepartment.toLowerCase()}`;
+  }
+
   if (employee.department !== 'KITCHEN') {
     return `${employee.name} works in ${employee.department} — stations apply to kitchen shifts only`;
   }
@@ -617,6 +642,296 @@ router.put('/:id', authenticateToken, can('SHIFT_EDIT'), async (req, res) => {
     });
 
     res.json(shift);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** "Pass shift on 2026-10-05 (12:30-21:30)" — for notification text. */
+const describeShift = (s) =>
+  `${s.section || 'general'} shift on ${localDateKey(s.date)} (${s.startTime}-${s.endTime})`;
+
+const shiftWithPeople = {
+  employee: { select: { id: true, name: true, department: true, outletId: true } },
+};
+
+/**
+ * POST /api/shifts/swap — two people exchange shifts.
+ *
+ * Each shift keeps its day, hours and station; only who works it changes. This
+ * is what dropping one name on another does in Shift Planning. Every check a
+ * single edit runs is run for both people on the shift they are taking, and
+ * the two writes are one transaction, so a swap never half-happens.
+ *
+ * The same call again swaps them back, which is how the page's Undo works.
+ * Status is left alone, as an edit leaves it: marking these SWAPPED would make
+ * the next auto-allocation keep them as if they were fixed.
+ */
+router.post('/swap', authenticateToken, can('SHIFT_EDIT'), async (req, res) => {
+  try {
+    const { shiftId, withShiftId, overrideLeave } = req.body;
+    if (!shiftId || !withShiftId || shiftId === withShiftId) {
+      return res.status(400).json({ error: 'Pick two different shifts to swap' });
+    }
+
+    const [a, b] = await Promise.all([shiftId, withShiftId].map((id) =>
+      prisma.shift.findUnique({ where: { id }, include: shiftWithPeople })));
+    if (!a || !b) return res.status(404).json({ error: 'Shift not found' });
+    if (a.kind === 'ODC' || b.kind === 'ODC') {
+      return res.status(400).json({ error: 'ODC jobs are not swapped — change them from the ODC form' });
+    }
+    if (a.status === 'CANCELLED' || b.status === 'CANCELLED') {
+      return res.status(400).json({ error: 'A cancelled shift cannot be swapped' });
+    }
+    if (a.employeeId === b.employeeId) {
+      return res.status(400).json({ error: `Both shifts are ${a.employee.name}'s` });
+    }
+    if (a.outletId !== b.outletId) {
+      return res.status(400).json({ error: 'Both shifts must be at the same restaurant' });
+    }
+
+    for (const s of [a, b]) {
+      const denied = await shiftWriteDenied(req, { outletId: s.outletId, employeeId: s.employeeId });
+      if (denied) return res.status(403).json({ error: denied });
+    }
+
+    // Each person on the shift they are taking. Their own current shift is the
+    // one they are giving away, so it is excluded from their clash check.
+    const moves = [
+      { person: a.employee, gives: a, takes: b },
+      { person: b.employee, gives: b, takes: a },
+    ];
+    const toFree = [];
+    for (const { person, gives, takes } of moves) {
+      const badStation = await stationDenied(person.id, takes.section);
+      if (badStation) return res.status(400).json({ error: badStation });
+
+      const check = await checkShiftSlot(req, {
+        employeeId: person.id,
+        date: takes.date,
+        startTime: takes.startTime,
+        endTime: takes.endTime,
+        kind: 'RESTAURANT',
+        excludeShiftId: gives.id,
+      }, overrideLeave);
+      if (check.body) return res.status(check.status).json(check.body);
+      if (check.leavesToFree.length) toFree.push({ leaves: check.leavesToFree, date: takes.date });
+    }
+
+    const include = {
+      employee: { select: { id: true, name: true, department: true, skills: true, avatar: true } },
+      outlet: outletSelect,
+    };
+    const swapped = await prisma.$transaction([
+      prisma.shift.update({ where: { id: a.id }, data: { employeeId: b.employeeId }, include }),
+      prisma.shift.update({ where: { id: b.id }, data: { employeeId: a.employeeId }, include }),
+    ]);
+
+    for (const { leaves, date } of toFree) await freeDayFromLeaves(req, leaves, date);
+
+    await prisma.notification.createMany({
+      data: moves.map(({ person, gives, takes }) => ({
+        employeeId: person.id,
+        type: 'SHIFT_CHANGED',
+        title: 'Shift Swapped',
+        message: `You now work the ${describeShift(takes)}, swapped with `
+          + `${gives === a ? b.employee.name : a.employee.name}.`,
+      })),
+    });
+
+    for (const { gives, takes } of moves) {
+      logAudit({
+        action: 'SHIFT_EDIT', entity: 'Shift', entityId: gives.id, actor: req.user,
+        details: {
+          from: { employeeName: gives.employee.name },
+          to: { employeeName: takes.employee.name },
+          date: localDateKey(gives.date), startTime: gives.startTime, endTime: gives.endTime,
+          section: gives.section, swapWith: takes.id,
+        },
+      });
+    }
+
+    res.json({ shifts: swapped });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** A generated one-day weekly off — the only leave a roster swap may move. */
+const isWeeklyOff = (leave) =>
+  leave.status === 'APPROVED' && leave.reason === AUTO_OFF_REASON
+  && localDateKey(leave.startDate) === localDateKey(leave.endDate);
+
+/**
+ * POST /api/shifts/:id/swap-off — someone on their weekly off trades places
+ * with someone working that day.
+ *
+ * The shift's person goes off and takes over the weekly off; the off person
+ * comes in and takes over the shift. The day's headcount is unchanged.
+ *
+ * `mode: 'week'` also trades back on the other day: the person going off gives
+ * up their own weekly off that week, and the person coming in hands them their
+ * shift on it — so both still have exactly one day off. Refused, with the
+ * reason, when that other day cannot be traded.
+ *
+ * Deciding who works a day the roster and the leave disagree on is the
+ * department head's call (LEAVE_ROSTER_OVERRIDE), for both people. The same
+ * call again reverses it, which is how the page's Undo works.
+ */
+router.post('/:id/swap-off', authenticateToken, can('LEAVE_ROSTER_OVERRIDE'), async (req, res) => {
+  try {
+    const mode = req.body.mode === 'week' ? 'week' : 'day';
+    const [shift, leave] = await Promise.all([
+      prisma.shift.findUnique({ where: { id: req.params.id }, include: shiftWithPeople }),
+      prisma.leave.findUnique({ where: { id: req.body.leaveId || '' }, include: shiftWithPeople }),
+    ]);
+    if (!shift) return res.status(404).json({ error: 'Shift not found' });
+    if (!leave) return res.status(404).json({ error: 'Day off not found' });
+    if (shift.kind === 'ODC' || shift.status === 'CANCELLED') {
+      return res.status(400).json({ error: 'Only a restaurant shift can be traded for a day off' });
+    }
+    if (!isWeeklyOff(leave)) {
+      return res.status(400).json({ error: 'Only a weekly day off can be swapped — other leave stays where it is' });
+    }
+    if (localDateKey(leave.startDate) !== localDateKey(shift.date)) {
+      return res.status(400).json({ error: 'The day off and the shift must be on the same day' });
+    }
+    if (leave.employeeId === shift.employeeId) {
+      return res.status(400).json({ error: `${shift.employee.name} cannot swap with themselves` });
+    }
+
+    // X is working and goes off; P is off and comes in.
+    const X = shift.employee;
+    const P = leave.employee;
+    if (X.outletId !== shift.outletId || P.outletId !== shift.outletId) {
+      return res.status(400).json({ error: 'Both people must work at this restaurant' });
+    }
+    for (const [person, reason] of [[X, 'is rostered that day'], [P, 'is on their weekly off that day']]) {
+      const denied = await shiftWriteDenied(req, { outletId: shift.outletId, employeeId: person.id })
+        || rosterOverrideDenied(req.user, person, reason);
+      if (denied) return res.status(403).json({ error: denied });
+    }
+
+    const trades = [{ shift, goesOff: X, comesIn: P, leave }];
+
+    if (mode === 'week') {
+      // X's own weekly off elsewhere in the same Monday–Sunday week.
+      const weekStart = startOfLocalDay(shift.date);
+      weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 7);
+      const xOffs = await prisma.leave.findMany({
+        where: { employeeId: X.id, startDate: { gte: weekStart, lt: weekEnd } },
+        include: shiftWithPeople,
+      });
+      const otherOff = xOffs.find((l) => isWeeklyOff(l) && localDateKey(l.startDate) !== localDateKey(shift.date));
+      if (!otherOff) {
+        return res.status(409).json({ error: `${X.name} has no other weekly off this week to trade back` });
+      }
+      const otherDay = localDateKey(otherOff.startDate);
+      const pShifts = await prisma.shift.findMany({
+        where: { employeeId: P.id, date: localDateRange(otherDay), status: { not: 'CANCELLED' } },
+        include: shiftWithPeople,
+      });
+      if (pShifts.length !== 1 || pShifts[0].kind !== 'RESTAURANT') {
+        return res.status(409).json({
+          error: `${P.name} needs exactly one restaurant shift on ${otherDay} for ${X.name} to take — `
+            + `they have ${pShifts.length === 0 ? 'none' : pShifts.length > 1 ? pShifts.length : 'an ODC job'}`,
+        });
+      }
+      trades.push({ shift: pShifts[0], goesOff: P, comesIn: X, leave: otherOff });
+    }
+
+    for (const t of trades) {
+      const day = localDateRange(t.shift.date);
+
+      // The person going off must be left with nothing else that day.
+      const [otherShifts, otherLeave] = await Promise.all([
+        prisma.shift.findMany({
+          where: { employeeId: t.goesOff.id, date: day, status: { not: 'CANCELLED' }, id: { not: t.shift.id } },
+        }),
+        prisma.leave.findMany({
+          where: { employeeId: t.goesOff.id, status: 'APPROVED', startDate: { lt: day.lt }, endDate: { gte: day.gte } },
+        }),
+      ]);
+      if (otherShifts.length) {
+        const s = otherShifts[0];
+        return res.status(409).json({
+          error: `${t.goesOff.name} also works ${s.startTime}–${s.endTime} on ${localDateKey(t.shift.date)} — move that first`,
+        });
+      }
+      if (otherLeave.length) {
+        return res.status(409).json({ error: `${t.goesOff.name} is already on leave on ${localDateKey(t.shift.date)}` });
+      }
+
+      // The person coming in must be able to work it, with only this weekly
+      // off in the way.
+      const badStation = await stationDenied(t.comesIn.id, t.shift.section);
+      if (badStation) return res.status(400).json({ error: badStation });
+      const conflict = await shiftConflict({
+        employeeId: t.comesIn.id, date: t.shift.date, startTime: t.shift.startTime,
+        endTime: t.shift.endTime, kind: 'RESTAURANT',
+      });
+      const onlyThisOff = conflict?.code === 'ON_LEAVE'
+        && conflict.leaves.every((l) => l.id === t.leave.id);
+      if (conflict && !onlyThisOff) {
+        return res.status(409).json({ error: conflict.error });
+      }
+    }
+
+    const include = {
+      employee: { select: { id: true, name: true, department: true, skills: true, avatar: true } },
+      outlet: outletSelect,
+    };
+    const writes = await prisma.$transaction(trades.flatMap((t) => [
+      prisma.shift.update({ where: { id: t.shift.id }, data: { employeeId: t.comesIn.id }, include }),
+      prisma.leave.update({ where: { id: t.leave.id }, data: { employeeId: t.goesOff.id } }),
+    ]));
+
+    const [first, second] = trades;
+    const offDay = (t) => localDateKey(t.shift.date);
+    await prisma.notification.createMany({
+      data: [
+        {
+          employeeId: P.id,
+          type: 'SHIFT_ASSIGNED',
+          title: 'Day Off Swapped',
+          message: `You now work the ${describeShift(first.shift)} in place of ${X.name}`
+            + (second ? `, and have ${offDay(second)} off instead.` : `. ${offDay(first)} is no longer your day off.`),
+        },
+        {
+          employeeId: X.id,
+          type: 'SHIFT_CHANGED',
+          title: 'Day Off Swapped',
+          message: `You are now off on ${offDay(first)} (weekly off) — ${P.name} works your shift`
+            + (second ? `, and you work the ${describeShift(second.shift)} instead.` : '.'),
+        },
+      ],
+    });
+
+    for (const t of trades) {
+      logAudit({
+        action: 'SHIFT_EDIT', entity: 'Shift', entityId: t.shift.id, actor: req.user,
+        details: {
+          from: { employeeName: t.goesOff.name }, to: { employeeName: t.comesIn.name },
+          date: localDateKey(t.shift.date), startTime: t.shift.startTime, endTime: t.shift.endTime,
+          section: t.shift.section, swapOff: t.leave.id,
+        },
+      });
+      logAudit({
+        action: 'LEAVE_EDIT', entity: 'Leave', entityId: t.leave.id, actor: req.user,
+        details: {
+          employeeName: t.goesOff.name, weeklyOffFrom: t.comesIn.name,
+          day: localDateKey(t.leave.startDate), mode,
+        },
+      });
+    }
+
+    res.json({
+      mode,
+      shifts: writes.filter((_, i) => i % 2 === 0),
+      days: trades.map((t) => localDateKey(t.shift.date)),
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

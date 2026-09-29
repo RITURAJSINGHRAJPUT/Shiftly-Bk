@@ -748,10 +748,9 @@ export default function EmployeesPage() {
                               >
                                 <Edit size={14} />
                               </button>
-                              {/* Both are HR-and-above actions, so for a
-                                  department head they would 403 on click. A
-                                  head can correct their own staff; taking over
-                                  or locking out an account is not theirs. */}
+                              {/* HR-and-above, so for a department head it
+                                  would 403 on click: taking over an account is
+                                  not theirs. */}
                               {!isDepartmentHead && (
                               <>
                               {/* A clock-in-only record has no sign-in address,
@@ -773,6 +772,15 @@ export default function EmployeesPage() {
                               >
                                 <KeyRound size={14} />
                               </button>
+                              </>
+                              )}
+                              {/* A department head deactivates staff who leave,
+                                  but only the people they could have enrolled —
+                                  Staff in their own department. The server holds
+                                  the same line; this only hides a button that
+                                  would 403 on every other row. */}
+                              {(!isDepartmentHead
+                                || (emp.role === 'STAFF' && ownedDepartments.includes(emp.department))) && (
                               <button
                                 className="btn btn-ghost btn-icon btn-sm icon-crit"
                                 onClick={() => handleDelete(emp.id)}
@@ -780,7 +788,6 @@ export default function EmployeesPage() {
                               >
                                 <Trash2 size={14} />
                               </button>
-                              </>
                               )}
                             </div>
                           </td>

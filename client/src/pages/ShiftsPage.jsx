@@ -3,13 +3,17 @@ import { Link } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { useScope } from '../contexts/ScopeContext';
-import { ALL_WEEKDAYS, STATIONS, departmentHasStations, departmentsFor, canManageLeaveOf, AUTO_OFF_REASON } from '../constants';
+import { ALL_WEEKDAYS, STATIONS, departmentHasStations, departmentsFor, canManageLeaveOf, AUTO_OFF_REASON, gridRows } from '../constants';
 import Modal from '../components/Modal';
 import LeaveFormModal from '../components/LeaveFormModal';
+import { RosterName, DropZone, useRosterSensors, rosterCollision } from '../components/RosterDnd';
+import StationWeekGrid, { buildStationGrid } from '../components/StationWeekGrid';
+import Segmented from '../components/Segmented';
+import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { format, startOfWeek, endOfWeek, addDays, isSameDay, isToday, parseISO } from 'date-fns';
 import {
   Calendar, CalendarDays, Plus, RefreshCw, CheckCircle2, AlertTriangle,
-  Layers, Store, ChevronLeft, ChevronRight, Eraser, Trash2, Copy, Check, Truck,
+  Layers, Store, ChevronLeft, ChevronRight, Eraser, Trash2, Copy, Check, Truck, Undo2, X,
 } from 'lucide-react';
 
 
@@ -55,6 +59,129 @@ const isOdc = (shift) => shift?.kind === 'ODC';
 const slotKey = (startTime, endTime, section, department) =>
   `${startTime}|${endTime}|${normSection(section)}|${department}`;
 
+/**
+ * Group one day's restaurant shifts under the pattern each one fills.
+ *
+ * Shifts matching no pattern are kept in their own bucket rather than dropped:
+ * the seeder generated ad-hoc times that correspond to no pattern, so this is
+ * real content, and it doubles as a view of scheduling outside the plan.
+ *
+ * A plain function rather than the memo body it used to be, so the weekly
+ * calendar can group any of its seven days the same way the daily card does.
+ */
+export function coverageFor(templates, restaurantShifts) {
+  const buckets = new Map();
+  templates.forEach((t) => {
+    buckets.set(slotKey(t.startTime, t.endTime, t.section, t.department), {
+      template: t,
+      shifts: [],
+    });
+  });
+
+  const unmatched = [];
+  for (const s of restaurantShifts) {
+    let bucket = buckets.get(
+      slotKey(s.startTime, s.endTime, s.section, s.employee?.department)
+    );
+    // A shift carries no department of its own — it is inferred from whoever
+    // works it. That breaks for a department head covering outside the
+    // section they personally work: a Master of House stored Service filling
+    // a Housekeeping slot produced a key matching no bucket, so the row read
+    // "0/2 unfilled" while the allocation banner above said it was filled.
+    // Widened only for the departments their role owns, so two same-time
+    // same-section patterns in different departments still cannot merge.
+    if (!bucket) {
+      for (const d of departmentsFor(s.employee?.role)) {
+        bucket = buckets.get(slotKey(s.startTime, s.endTime, s.section, d));
+        if (bucket) break;
+      }
+    }
+    if (bucket) bucket.shifts.push(s);
+    else unmatched.push(s);
+  }
+
+  const groups = [...buckets.values()];
+  return {
+    groups,
+    unmatched,
+    filled: groups.reduce((sum, g) => sum + Math.min(g.shifts.length, g.template.headcount), 0),
+    assigned: groups.reduce((sum, g) => sum + g.shifts.length, 0),
+  };
+}
+
+/**
+ * One day as plain text, for pasting into WhatsApp — asterisks are its bold,
+ * underscores its italics. Built from exactly what the coverage card shows, so
+ * the message and the screen cannot disagree. Shared by "Copy day" and the
+ * weekly views.
+ *
+ * One heading per station (or department) in Shift Master's order, each person
+ * with their hours — the shape the kitchen's own sheet uses. Pattern names are
+ * deliberately not used: Shift Master names a pattern after the days it runs
+ * ("Pass Shift 1 · Mon–Thu"), which reads as nonsense in a single day's message.
+ */
+export function dayText({ outletName, day, coverage, odc, leaves, stations = [] }) {
+  const lines = [`*${outletName || 'Shifts'} — ${format(day, 'EEE, d MMM yyyy')}*`];
+
+  const rowKey = (department, section) =>
+    (department === 'KITCHEN' ? `KITCHEN|${normSection(section)}` : department);
+  const rows = gridRows(stations);
+  const order = rows.map((r) => rowKey(r.department, r.section));
+
+  const byStation = new Map();
+  for (const { template, shifts } of coverage.groups) {
+    const key = rowKey(template.department, template.section);
+    if (!byStation.has(key)) {
+      const known = rows.find((r) => rowKey(r.department, r.section) === key);
+      byStation.set(key, {
+        label: known?.label || template.section || 'Kitchen',
+        rank: order.includes(key) ? order.indexOf(key) : order.length,
+        entries: [],
+      });
+    }
+    const hours = `${template.startTime}–${template.endTime}`;
+    const entries = byStation.get(key).entries;
+    for (const s of shifts) entries.push({ start: template.startTime, text: `• ${s.employee?.name} · ${hours}` });
+    const missing = template.headcount - shifts.length;
+    if (missing > 0) entries.push({ start: template.startTime, text: `• _${missing} more needed_ · ${hours}` });
+  }
+
+  for (const { label, entries } of [...byStation.values()].sort((a, b) => a.rank - b.rank)) {
+    if (entries.length === 0) continue;
+    lines.push('', `*${label}*`);
+    // Stable, so people keep the coverage card's order within an hour.
+    for (const e of entries.sort((a, b) => a.start.localeCompare(b.start))) lines.push(e.text);
+  }
+
+  if (coverage.unmatched.length) {
+    lines.push('', '*Other shifts*');
+    for (const s of coverage.unmatched) {
+      lines.push(`• ${s.employee?.name} · ${s.startTime}–${s.endTime}${s.section ? ` · ${s.section}` : ''}`);
+    }
+  }
+
+  if (coverage.groups.length === 0 && coverage.unmatched.length === 0) {
+    lines.push('', 'No shifts scheduled');
+  }
+
+  if (odc.length) {
+    lines.push('', '*ODC (outdoor catering)*');
+    for (const s of odc) {
+      lines.push(`• ${s.employee?.name} · ${s.startTime}–${s.endTime}${s.note ? ` · ${s.note}` : ''}`);
+    }
+  }
+
+  if (leaves.length) {
+    lines.push('', '*Off*');
+    for (const l of leaves) {
+      const why = l.reason === AUTO_OFF_REASON ? 'weekly off' : `${l.type.toLowerCase()} leave`;
+      lines.push(`• ${l.employee?.name} — ${why}`);
+    }
+  }
+
+  return lines.join('\n');
+}
+
 export default function ShiftsPage() {
   const { user, isManager } = useAuth();
   const { outlets, locked } = useScope();
@@ -74,6 +201,8 @@ export default function ShiftsPage() {
   const [dayShifts, setDayShifts] = useState([]);
   const [dayLeaves, setDayLeaves] = useState([]);
   const [copied, setCopied] = useState(false);
+  // Which weekly-calendar card was just copied, so only that one shows the tick.
+  const [copiedDayKey, setCopiedDayKey] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -87,6 +216,27 @@ export default function ShiftsPage() {
   const [shiftForm, setShiftForm] = useState(null);
 
   const [editingLeave, setEditingLeave] = useState(null);
+
+  // Drag and drop: the name being carried, a day-off trade waiting for its
+  // choice of mode, and the last change with the way to take it back.
+  const dndSensors = useRosterSensors();
+  const [dragging, setDragging] = useState(null);
+  const [offTrade, setOffTrade] = useState(null);
+  const [rosterNotice, setRosterNotice] = useState(null);
+  const [rosterBusy, setRosterBusy] = useState(false);
+
+  /**
+   * The week by station (rows line up across days, which is what makes
+   * dragging easy) or as day cards. Remembered per device; storage can be
+   * missing or refuse, and the page must not care.
+   */
+  const [weekView, setWeekView] = useState(() => {
+    try { return localStorage.getItem('shiftly_week_view') === 'day' ? 'day' : 'station'; } catch { return 'station'; }
+  });
+  const chooseWeekView = (view) => {
+    setWeekView(view);
+    try { localStorage.setItem('shiftly_week_view', view); } catch { /* private mode — just not remembered */ }
+  };
 
   const [resetPreview, setResetPreview] = useState(null);
   const [isResetModalOpen, setResetModalOpen] = useState(false);
@@ -172,16 +322,25 @@ export default function ShiftsPage() {
   const loadWeek = useCallback(async () => {
     if (!selectedOutletId) return;
     try {
-      const start = dayKey(startOfWeek(weekAnchor, { weekStartsOn: 1 }));
-      const end = dayKey(endOfWeek(weekAnchor, { weekStartsOn: 1 }));
+      const monday = startOfWeek(weekAnchor, { weekStartsOn: 1 });
+      const sunday = endOfWeek(weekAnchor, { weekStartsOn: 1 });
+      const start = dayKey(monday);
+      const end = dayKey(sunday);
       // Explicit ?outlet= rather than the global scope, so the grid is always
       // exactly one restaurant.
+      //
+      // Leave is asked for a day either side and narrowed here, as in loadDay:
+      // the endpoint bounds at UTC midnight, which dropped every leave ending
+      // on the Monday — each Monday weekly off included — and it has no outlet
+      // filter, so a global role saw every restaurant's leave on this one.
       const [shifts, leaves] = await Promise.all([
         api.get(`/shifts?outlet=${selectedOutletId}&startDate=${start}&endDate=${end}`),
-        api.get(`/leaves?status=APPROVED&startDate=${start}&endDate=${end}`),
+        api.get(`/leaves?status=APPROVED&startDate=${dayKey(addDays(monday, -1))}&endDate=${dayKey(addDays(sunday, 1))}`),
       ]);
       setWeekShifts(shifts);
-      setWeekLeaves(leaves);
+      setWeekLeaves(leaves.filter((l) =>
+        l.employee?.outletId === selectedOutletId
+        && dayKey(new Date(l.startDate)) <= end && dayKey(new Date(l.endDate)) >= start));
     } catch (err) {
       console.error(err);
     }
@@ -242,9 +401,25 @@ export default function ShiftsPage() {
   useEffect(() => {
     setAllocationSummary(null);
     setResetResult(null);
+    setRosterNotice(null);
   }, [selectedOutletId]);
 
+  // A drag's notice — and its Undo — stays for ten seconds.
+  useEffect(() => {
+    if (!rosterNotice) return undefined;
+    const t = setTimeout(() => setRosterNotice(null), 10000);
+    return () => clearTimeout(t);
+  }, [rosterNotice]);
+
   const activeTemplates = useMemo(() => templates.filter((t) => t.isActive), [templates]);
+
+  /** The week by station and shift time, in Shift Master's row order. */
+  const stationGrid = useMemo(() => buildStationGrid({
+    stations: outlet?.brand?.stations ?? [],
+    templates: activeTemplates,
+    shifts: weekShifts.filter((s) => !isOdc(s)),
+    days: weekDays,
+  }), [outlet?.brand?.stations, activeTemplates, weekShifts, weekDays]);
 
   /**
    * The patterns that actually run on a given date, and the slots they ask for.
@@ -282,105 +457,52 @@ export default function ShiftsPage() {
   const dayTemplates = useMemo(() => templatesForDay(selectedDay), [templatesForDay, selectedDay]);
   const slotsToday = dayTemplates.reduce((sum, t) => sum + t.headcount, 0);
 
-  /**
-   * Group the selected day's shifts under the pattern each one fills.
-   *
-   * Shifts matching no pattern are kept in their own bucket rather than dropped:
-   * the seeder generated ad-hoc times that correspond to no pattern, so this is
-   * real content, and it doubles as a view of scheduling outside the plan.
-   */
-  const coverage = useMemo(() => {
-    const buckets = new Map();
-    dayTemplates.forEach((t) => {
-      buckets.set(slotKey(t.startTime, t.endTime, t.section, t.department), {
-        template: t,
-        shifts: [],
-      });
-    });
+  const coverage = useMemo(
+    () => coverageFor(dayTemplates, restaurantDayShifts),
+    [restaurantDayShifts, dayTemplates]
+  );
 
-    const unmatched = [];
-    for (const s of restaurantDayShifts) {
-      let bucket = buckets.get(
-        slotKey(s.startTime, s.endTime, s.section, s.employee?.department)
-      );
-      // A shift carries no department of its own — it is inferred from whoever
-      // works it. That breaks for a department head covering outside the
-      // section they personally work: a Master of House stored Service filling
-      // a Housekeeping slot produced a key matching no bucket, so the row read
-      // "0/2 unfilled" while the allocation banner above said it was filled.
-      // Widened only for the departments their role owns, so two same-time
-      // same-section patterns in different departments still cannot merge.
-      if (!bucket) {
-        for (const d of departmentsFor(s.employee?.role)) {
-          bucket = buckets.get(slotKey(s.startTime, s.endTime, s.section, d));
-          if (bucket) break;
-        }
-      }
-      if (bucket) bucket.shifts.push(s);
-      else unmatched.push(s);
-    }
-
-    const groups = [...buckets.values()];
-    return {
-      groups,
-      unmatched,
-      filled: groups.reduce((sum, g) => sum + Math.min(g.shifts.length, g.template.headcount), 0),
-      assigned: groups.reduce((sum, g) => sum + g.shifts.length, 0),
-    };
-  }, [restaurantDayShifts, dayTemplates]);
-
-  /**
-   * The selected day as plain text, for pasting into WhatsApp — asterisks are
-   * its bold. Built from exactly what the coverage card shows, so the message
-   * and the screen cannot disagree.
-   */
-  const buildDayText = () => {
-    const lines = [`*${outlet?.name || 'Shifts'} — ${format(selectedDay, 'EEE, d MMM yyyy')}*`];
-
-    for (const { template, shifts } of coverage.groups) {
-      const count = shifts.length === template.headcount ? '' : ` · ${shifts.length} of ${template.headcount} filled`;
-      lines.push('', `*${template.name}* · ${template.startTime}–${template.endTime}${count}`);
-      if (shifts.length === 0) lines.push('• (nobody assigned)');
-      for (const s of shifts) lines.push(`• ${s.employee?.name}`);
-    }
-
-    if (coverage.unmatched.length) {
-      lines.push('', '*Other shifts*');
-      for (const s of coverage.unmatched) {
-        lines.push(`• ${s.employee?.name} · ${s.startTime}–${s.endTime}${s.section ? ` · ${s.section}` : ''}`);
-      }
-    }
-
-    if (coverage.groups.length === 0 && coverage.unmatched.length === 0) {
-      lines.push('', 'No shifts scheduled');
-    }
-
-    if (odcDayShifts.length) {
-      lines.push('', '*ODC (outdoor catering)*');
-      for (const s of odcDayShifts) {
-        lines.push(`• ${s.employee?.name} · ${s.startTime}–${s.endTime}${s.note ? ` · ${s.note}` : ''}`);
-      }
-    }
-
-    if (dayLeaves.length) {
-      lines.push('', '*Off*');
-      for (const l of dayLeaves) {
-        const why = l.reason === AUTO_OFF_REASON ? 'weekly off' : `${l.type.toLowerCase()} leave`;
-        lines.push(`• ${l.employee?.name} — ${why}`);
-      }
-    }
-
-    return lines.join('\n');
+  /** Copy, or — where no clipboard route worked — show the text to copy by hand. */
+  const copyOrShow = async (text) => {
+    if (await copyText(text)) return true;
+    window.prompt('Copy the day\'s shifts:', text);
+    return false;
   };
 
   const handleCopyDay = async () => {
-    const text = buildDayText();
-    if (await copyText(text)) {
+    const text = dayText({
+      outletName: outlet?.name,
+      stations: outlet?.brand?.stations,
+      day: selectedDay,
+      coverage,
+      odc: odcDayShifts,
+      leaves: dayLeaves,
+    });
+    if (await copyOrShow(text)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } else {
-      // Last resort: the text in a box the user can copy from by hand.
-      window.prompt('Copy the day\'s shifts:', text);
+    }
+  };
+
+  /**
+   * The same message for any day in the weekly calendar, built from what the
+   * week already loaded — so a card's copy matches "Copy day" for that date.
+   */
+  const handleCopyWeekDay = async (day) => {
+    const key = dayKey(day);
+    const shifts = shiftsForDay(day);
+    const text = dayText({
+      outletName: outlet?.name,
+      stations: outlet?.brand?.stations,
+      day,
+      coverage: coverageFor(templatesForDay(day), shifts.filter((s) => !isOdc(s))),
+      odc: shifts.filter(isOdc),
+      leaves: weekLeaves.filter((l) =>
+        dayKey(new Date(l.startDate)) <= key && dayKey(new Date(l.endDate)) >= key),
+    });
+    if (await copyOrShow(text)) {
+      setCopiedDayKey(key);
+      setTimeout(() => setCopiedDayKey((k) => (k === key ? null : k)), 2000);
     }
   };
 
@@ -497,28 +619,205 @@ export default function ShiftsPage() {
     loadResetPreview();
   };
 
+  /**
+   * Run a roster write. Approved leave or a weekly off is the one refusal a
+   * manager can overrule — calling someone in takes that day off their leave —
+   * so on that refusal ask once and resend with the override. Shared by the
+   * shift form and every drag and drop. Resolves 'saved', 'overridden' or
+   * 'cancelled'.
+   */
+  const withLeaveOverride = async (send) => {
+    try {
+      await send({});
+      return 'saved';
+    } catch (err) {
+      if (err.code !== 'ON_LEAVE') throw err;
+      if (!window.confirm(`${err.message}.\n\nCall them in? That day will be taken off their leave, and they will be notified.`)) return 'cancelled';
+      await send({ overrideLeave: true });
+      return 'overridden';
+    }
+  };
+
   const saveShift = async (e) => {
     e.preventDefault();
     // `kind` is fixed once created, so an edit does not send it.
     const { id, originalName, kind, ...rest } = shiftForm;
     const body = id ? rest : { ...rest, kind };
-    const send = (extra = {}) => (id
+    const send = (extra) => (id
       ? api.put(`/shifts/${id}`, { ...body, ...extra })
       : api.post('/shifts', { ...body, ...extra }));
     try {
-      try {
-        await send();
-      } catch (err) {
-        // Approved leave or a weekly off is the one refusal a manager can
-        // overrule: calling someone in takes that day off their leave.
-        if (err.code !== 'ON_LEAVE') throw err;
-        if (!window.confirm(`${err.message}.\n\nCall them in? That day will be taken off their leave, and they will be notified.`)) return;
-        await send({ overrideLeave: true });
-      }
+      if (await withLeaveOverride(send) === 'cancelled') return;
       setShiftModalOpen(false);
       refreshRoster();
     } catch (err) {
       alert(err.message || (id ? 'Failed to update shift' : 'Failed to create shift'));
+    }
+  };
+
+  // ---- Drag and drop -------------------------------------------------------
+  //
+  // Dropping a name on a block, pattern row or day moves the shift there; on
+  // another name, the two swap; a weekly off dropped on someone working that
+  // day (or the reverse) trades places. The server runs every check a single
+  // edit does — these only choose the call and say what happened.
+
+  /** A restaurant shift this user may pick up, or drop another name onto. */
+  const canDragShift = (s) => !isOdc(s) && canEditShift(s);
+
+  /**
+   * A weekly off this user may trade for a shift: generated, one day, in a
+   * department they head, never their own — LEAVE_ROSTER_OVERRIDE's rule.
+   */
+  const canTradeOff = (l) =>
+    l.reason === AUTO_OFF_REASON
+    && dayKey(new Date(l.startDate)) === dayKey(new Date(l.endDate))
+    && ['HEAD_CHEF', 'MASTER_OF_HOUSE'].includes(user?.role)
+    && departmentsFor(user?.role).includes(l.employee?.department)
+    && l.employeeId !== user?.id;
+
+  /**
+   * A cook put on a station they don't list. A manual change may do that — the
+   * allocator never does — so it is asked rather than refused.
+   */
+  const confirmStation = (person, section) =>
+    !(person?.department === 'KITCHEN' && section
+      && !(person.skills || []).includes(normSection(section)))
+    || window.confirm(`${person.name} doesn't work ${section}. Put them there anyway?`);
+
+  /** What just changed, with the way to take it back when there is one. */
+  const noteChange = (message, undo = null) => setRosterNotice({ message, undo, at: Date.now() });
+
+  const runRosterChange = async (work) => {
+    setRosterBusy(true);
+    try {
+      await work();
+    } catch (err) {
+      alert(err.message || 'Could not change the roster');
+    } finally {
+      setRosterBusy(false);
+      refreshRoster();
+    }
+  };
+
+  /**
+   * Into a slot (its day, hours and station) or onto a day (same hours and
+   * station). Undo puts the old values back — except after a call-in, since
+   * the day it took off their leave does not come back with it.
+   */
+  const moveShift = (shift, to) => runRosterChange(async () => {
+    const from = {
+      date: dayKey(new Date(shift.date)),
+      startTime: shift.startTime,
+      endTime: shift.endTime,
+      section: shift.section || '',
+    };
+    const next = {
+      date: dayKey(to.date),
+      startTime: to.startTime ?? from.startTime,
+      endTime: to.endTime ?? from.endTime,
+      section: to.section !== undefined ? (to.section || '') : from.section,
+    };
+    const unchanged = next.date === from.date && next.startTime === from.startTime
+      && next.endTime === from.endTime && normSection(next.section) === normSection(from.section);
+    if (unchanged || !confirmStation(shift.employee, next.section)) return;
+
+    const outcome = await withLeaveOverride((extra) => api.put(`/shifts/${shift.id}`, { ...next, ...extra }));
+    if (outcome === 'cancelled') return;
+    noteChange(
+      `Moved ${shift.employee?.name} to ${format(to.date, 'EEE d MMM')}, ${next.startTime}–${next.endTime}`
+        + (next.section ? ` · ${next.section}` : ''),
+      outcome === 'saved' ? () => api.put(`/shifts/${shift.id}`, from) : null,
+    );
+  });
+
+  /** Two people exchange shifts. The same call again swaps them back. */
+  const swapShifts = (a, b) => runRosterChange(async () => {
+    if (!confirmStation(a.employee, b.section) || !confirmStation(b.employee, a.section)) return;
+    const send = (extra) => api.post('/shifts/swap', { shiftId: a.id, withShiftId: b.id, ...extra });
+    const outcome = await withLeaveOverride(send);
+    if (outcome === 'cancelled') return;
+    noteChange(
+      `Swapped ${a.employee?.name} and ${b.employee?.name}`,
+      outcome === 'saved' ? () => send({}) : null,
+    );
+  });
+
+  /**
+   * What "swap days off too" would trade back, read from the week already on
+   * screen: the working person's other weekly off, and the one shift the off
+   * person has that day for them to take. Or why there is none — the choice is
+   * shown disabled with that reason. The server checks again either way.
+   */
+  const weekTradeFor = (shift, leave) => {
+    const day = dayKey(new Date(shift.date));
+    const otherOff = weekLeaves.find((l) => l.employeeId === shift.employeeId
+      && l.reason === AUTO_OFF_REASON
+      && dayKey(new Date(l.startDate)) === dayKey(new Date(l.endDate))
+      && dayKey(new Date(l.startDate)) !== day);
+    if (!otherOff) return { why: `${shift.employee?.name} has no other weekly off this week` };
+
+    const otherDate = new Date(otherOff.startDate);
+    const theirs = weekShifts.filter((s) => s.employeeId === leave.employeeId
+      && s.status !== 'CANCELLED' && isSameDay(new Date(s.date), otherDate));
+    if (theirs.length !== 1 || isOdc(theirs[0])) {
+      return {
+        why: `${leave.employee?.name} ${theirs.length === 0 ? 'has no shift' : 'has more than one shift or an ODC job'} `
+          + `on ${format(otherDate, 'EEE d MMM')} for ${shift.employee?.name} to take`,
+      };
+    }
+    return { date: otherDate, shift: theirs[0] };
+  };
+
+  const openOffTrade = (shift, leave) => {
+    if (!isSameDay(new Date(shift.date), new Date(leave.startDate))) {
+      noteChange(`${leave.employee?.name} is off on ${format(new Date(leave.startDate), 'EEE d MMM')} — drop them on someone working that day`);
+      return;
+    }
+    if (!confirmStation(leave.employee, shift.section)) return;
+    setOffTrade({ shift, leave, week: weekTradeFor(shift, leave) });
+  };
+
+  /** The chosen trade. The same call again reverses it, which is its Undo. */
+  const tradeOff = (mode) => {
+    const { shift, leave } = offTrade;
+    setOffTrade(null);
+    runRosterChange(async () => {
+      const send = () => api.post(`/shifts/${shift.id}/swap-off`, { leaveId: leave.id, mode });
+      await send();
+      noteChange(
+        `${leave.employee?.name} now works ${format(new Date(shift.date), 'EEE d MMM')} and `
+          + `${shift.employee?.name} is off${mode === 'week' ? ' — swapped back on the other day off too' : ''}`,
+        send,
+      );
+    });
+  };
+
+  const undoRosterChange = () => {
+    const { undo } = rosterNotice;
+    setRosterNotice(null);
+    runRosterChange(async () => {
+      await undo();
+      noteChange('Undone');
+    });
+  };
+
+  const dragName = (d) => (d?.type === 'off' ? d.leave.employee?.name : d?.shift?.employee?.name);
+
+  const handleDragEnd = ({ active, over }) => {
+    setDragging(null);
+    const from = active?.data?.current;
+    const to = over?.data?.current;
+    if (!from || !to || rosterBusy) return;
+
+    if (from.type === 'shift') {
+      if (to.type === 'shift' && to.shift.id !== from.shift.id) swapShifts(from.shift, to.shift);
+      else if (to.type === 'slot') moveShift(from.shift, to);
+      else if (to.type === 'day') moveShift(from.shift, { date: to.date });
+      else if (to.type === 'off') openOffTrade(from.shift, to.leave);
+    } else if (from.type === 'off') {
+      if (to.type === 'shift') openOffTrade(to.shift, from.leave);
+      else if (to.type !== 'off') noteChange(`Drop ${from.leave.employee?.name} on the person who should go off instead`);
     }
   };
 
@@ -547,6 +846,15 @@ export default function ShiftsPage() {
   }
 
   return (
+    // One context for the daily card, the week and the Leave Schedule, so a
+    // name can be carried from one into another.
+    <DndContext
+      sensors={dndSensors}
+      collisionDetection={rosterCollision}
+      onDragStart={({ active }) => setDragging(dragName(active.data.current))}
+      onDragEnd={handleDragEnd}
+      onDragCancel={() => setDragging(null)}
+    >
     <div className="page-content animate-in">
       <div className="page-header">
         <div>
@@ -693,21 +1001,39 @@ export default function ShiftsPage() {
                   <div className="text-xs uppercase text-muted mb-1">
                     {allocationSummary.shortfalls.length} slot group(s) could not be filled
                   </div>
+                  {/* The commonest reason, said once. The list below can run to
+                      forty lines of the same sentence, and the one thing the
+                      manager has to act on is what that sentence says. */}
+                  {(() => {
+                    const tally = new Map();
+                    for (const s of allocationSummary.shortfalls) {
+                      if (s.reason) tally.set(s.reason, (tally.get(s.reason) || 0) + 1);
+                    }
+                    const top = [...tally.entries()].sort((a, b) => b[1] - a[1])[0];
+                    return top ? (
+                      <p className="text-xs mb-2" style={{ color: 'var(--ink-warn)' }}>
+                        {tally.size > 1 ? 'Mostly: ' : ''}{top[0]}.
+                      </p>
+                    ) : null;
+                  })()}
                   <div className="divided-list">
-                    {allocationSummary.shortfalls.slice(0, 6).map((s, i) => (
-                      <div key={i} className="flex items-center gap-2 text-xs">
-                        <span className="text-secondary">
-                          {format(parseISO(s.date), 'EEE d MMM')} · {s.template}
-                        </span>
-                        <span className="badge badge-warn" style={{ marginLeft: 'auto' }}>
-                          {s.filled}/{s.needed}
-                        </span>
+                    {allocationSummary.shortfalls.slice(0, 10).map((s, i) => (
+                      <div key={i} style={{ minWidth: 0 }}>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-secondary">
+                            {format(parseISO(s.date), 'EEE d MMM')} · {s.template}
+                          </span>
+                          <span className="badge badge-warn" style={{ marginLeft: 'auto' }}>
+                            {s.filled}/{s.needed}
+                          </span>
+                        </div>
+                        {s.reason && <div className="text-2xs text-muted">{s.reason}</div>}
                       </div>
                     ))}
                   </div>
-                  {allocationSummary.shortfalls.length > 6 && (
+                  {allocationSummary.shortfalls.length > 10 && (
                     <div className="text-xs text-muted mt-2">
-                      and {allocationSummary.shortfalls.length - 6} more…
+                      and {allocationSummary.shortfalls.length - 10} more…
                     </div>
                   )}
                 </div>
@@ -788,7 +1114,17 @@ export default function ShiftsPage() {
                 const short = shifts.length < template.headcount;
                 const over = shifts.length > template.headcount;
                 return (
-                  <div key={template.id} className="coverage-row">
+                  <DropZone
+                    key={template.id}
+                    id={`day-row:${template.id}`}
+                    className="coverage-row"
+                    // An empty "Nobody assigned" row is the most useful target
+                    // of all: drop a name here to fill it.
+                    data={isManager ? {
+                      type: 'slot', date: selectedDay, startTime: template.startTime,
+                      endTime: template.endTime, section: template.section,
+                    } : null}
+                  >
                     <div className="coverage-head">
                       <span className="font-semibold text-strong">{template.name}</span>
                       <span className="text-xs text-muted">
@@ -810,10 +1146,13 @@ export default function ShiftsPage() {
                         </span>
                       ) : (
                         shifts.map((s) => canEditShift(s) ? (
-                          <button key={s.id} type="button" className="badge badge-ghost name-button"
-                            onClick={() => openEditShift(s)} title={`Edit ${s.employee?.name}'s shift`}>
+                          <RosterName key={s.id} id={`day:${s.id}`} className="badge badge-ghost name-button"
+                            dragData={canDragShift(s) ? { type: 'shift', shift: s } : null}
+                            dropData={canDragShift(s) ? { type: 'shift', shift: s } : null}
+                            onClick={() => openEditShift(s)}
+                            title={`Edit ${s.employee?.name}'s shift — or drag onto another row, or onto someone to swap`}>
                             {s.employee?.name}
-                          </button>
+                          </RosterName>
                         ) : (
                           <span key={s.id} className="badge badge-ghost">
                             {s.employee?.name}
@@ -821,7 +1160,7 @@ export default function ShiftsPage() {
                         ))
                       )}
                     </div>
-                  </div>
+                  </DropZone>
                 );
               })}
             </div>
@@ -838,10 +1177,13 @@ export default function ShiftsPage() {
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   {coverage.unmatched.map((s) => canEditShift(s) ? (
-                    <button key={s.id} type="button" className="badge badge-ghost name-button"
-                      onClick={() => openEditShift(s)} title={`Edit ${s.employee?.name}'s shift`}>
+                    <RosterName key={s.id} id={`day-other:${s.id}`} className="badge badge-ghost name-button"
+                      dragData={canDragShift(s) ? { type: 'shift', shift: s } : null}
+                      dropData={canDragShift(s) ? { type: 'shift', shift: s } : null}
+                      onClick={() => openEditShift(s)}
+                      title={`Edit ${s.employee?.name}'s shift — or drag it into a pattern row`}>
                       {s.employee?.name} · {s.startTime}–{s.endTime}
-                    </button>
+                    </RosterName>
                   ) : (
                     <span key={s.id} className="badge badge-ghost" title={`${s.employee?.department} · ${s.section || s.employee?.department || 'Unassigned'}`}>
                       {s.employee?.name} · {s.startTime}–{s.endTime}
@@ -888,8 +1230,17 @@ export default function ShiftsPage() {
               {format(weekDays[0], 'd MMM')} – {format(weekDays[6], 'd MMM yyyy')}
             </h3>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <span className="text-xs text-muted">{weekShifts.filter((s) => !isOdc(s)).length} shifts this week</span>
+            <Segmented
+              ariaLabel="Week view"
+              value={weekView}
+              onChange={chooseWeekView}
+              options={[
+                { value: 'station', label: 'By station' },
+                { value: 'day', label: 'By day' },
+              ]}
+            />
             <div className="flex gap-1">
               <button className="btn btn-ghost btn-sm" onClick={() => setWeekAnchor(addDays(weekAnchor, -7))}>Prev</button>
               <button className="btn btn-ghost btn-sm" onClick={() => setWeekAnchor(new Date())}>This week</button>
@@ -900,6 +1251,22 @@ export default function ShiftsPage() {
 
         {loading ? (
           <div className="text-center py-8 text-muted">Loading schedule…</div>
+        ) : weekView === 'station' ? (
+          <StationWeekGrid
+            grid={stationGrid}
+            days={weekDays}
+            leaves={weekLeaves}
+            odcShifts={weekShifts.filter(isOdc)}
+            isManager={isManager}
+            canEditShift={canEditShift}
+            canDragShift={canDragShift}
+            openEditShift={openEditShift}
+            canTradeOff={canTradeOff}
+            canManageLeave={(l) => canManageLeaveOf(user, l.employee) && user?.role !== 'OUTLET_MANAGER'}
+            onEditLeave={setEditingLeave}
+            onCopyDay={handleCopyWeekDay}
+            copiedDayKey={copiedDayKey}
+          />
         ) : (
           <div className="shift-calendar">
             {weekDays.map((day) => {
@@ -911,24 +1278,39 @@ export default function ShiftsPage() {
               const today = isSameDay(day, new Date());
               const isSelected = isSameDay(day, selectedDay);
               return (
-                <div
+                <DropZone
                   key={day.toISOString()}
+                  id={`week-day:${dayKey(day)}`}
                   className={`calendar-day ${today ? 'today' : ''} ${isSelected ? 'is-selected' : ''}`}
+                  // Anywhere on the card outside a block: same hours, this day.
+                  data={isManager ? { type: 'day', date: day } : null}
                 >
                   <div className="flex justify-between items-center">
                     <div>
                       <span className="calendar-day-header">{format(day, 'eee')}</span>
                       <div className="calendar-day-number">{format(day, 'd')}</div>
                     </div>
-                    {isManager && (
+                    <div className="flex gap-1">
+                      {/* Everyone, unlike Add: it copies only what this card
+                          already shows them. */}
                       <button
                         className="btn btn-ghost btn-icon btn-sm"
-                        onClick={() => openShiftModal(day)}
-                        aria-label={`Add shift on ${format(day, 'EEEE d MMMM')}`}
+                        onClick={() => handleCopyWeekDay(day)}
+                        aria-label={`Copy shifts for ${format(day, 'EEEE d MMMM')}`}
+                        title="Copy this day's shifts, timings and who is off — ready to paste into WhatsApp"
                       >
-                        <Plus size={12} />
+                        {copiedDayKey === dayKey(day) ? <Check size={12} /> : <Copy size={12} />}
                       </button>
-                    )}
+                      {isManager && (
+                        <button
+                          className="btn btn-ghost btn-icon btn-sm"
+                          onClick={() => openShiftModal(day)}
+                          aria-label={`Add shift on ${format(day, 'EEEE d MMMM')}`}
+                        >
+                          <Plus size={12} />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* This day's own denominator — a Fri–Sun pattern must not
@@ -980,11 +1362,15 @@ export default function ShiftsPage() {
                         return <div className="text-2xs text-muted text-center py-4">No shifts</div>;
                       }
                       return [...[...groups.values()].map((g) => (
-                        <div
+                        <DropZone
                           key={`${g.startTime}-${g.endTime}-${normSection(g.section)}`}
+                          id={`week-slot:${dayKey(day)}:${g.startTime}-${g.endTime}-${normSection(g.section)}`}
                           className="calendar-shift"
                           data-section={getSection(g.section)}
                           title={g.shifts.map((s) => s.employee?.name).join(', ')}
+                          data={isManager ? {
+                            type: 'slot', date: day, startTime: g.startTime, endTime: g.endTime, section: g.section,
+                          } : null}
                         >
                           <div className="font-semibold truncate text-xs text-strong">
                             {g.section || g.shifts[0]?.employee?.department || 'Unassigned'}
@@ -994,27 +1380,29 @@ export default function ShiftsPage() {
                           </div>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {g.shifts.map((s) => canEditShift(s) ? (
-                              <button
+                              <RosterName
                                 key={s.id}
-                                type="button"
+                                id={`week:${s.id}`}
                                 className="name-button text-2xs"
                                 style={{ opacity: 0.85 }}
+                                dragData={canDragShift(s) ? { type: 'shift', shift: s } : null}
+                                dropData={canDragShift(s) ? { type: 'shift', shift: s } : null}
                                 onClick={() => openEditShift(s)}
-                                title={`Edit ${s.employee?.name}'s shift`}
+                                title={`Edit ${s.employee?.name}'s shift — or drag to another block or day, or onto someone to swap`}
                               >
                                 {s.employee?.name}
-                              </button>
+                              </RosterName>
                             ) : (
                               <span key={s.id} className="text-2xs" style={{ opacity: 0.85 }}>
                                 {s.employee?.name}
                               </span>
                             ))}
                           </div>
-                        </div>
+                        </DropZone>
                       )), odcBlock];
                     })()}
                   </div>
-                </div>
+                </DropZone>
               );
             })}
           </div>
@@ -1066,16 +1454,24 @@ export default function ShiftsPage() {
                       <div className="font-semibold truncate text-xs text-strong">{station}</div>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {leaves.map(l => canManageLeaveOf(user, l.employee) && user?.role !== 'OUTLET_MANAGER' ? (
-                          <button
+                          // A weekly off can also be dragged onto someone
+                          // working that day — or have them dropped on it — to
+                          // trade places. Keyed per station: one person with
+                          // several stations is listed under each.
+                          <RosterName
                             key={l.id}
-                            type="button"
+                            id={`off:${l.id}:${station}`}
                             className="name-button text-2xs"
                             style={{ opacity: 0.85 }}
+                            dragData={canTradeOff(l) ? { type: 'off', leave: l } : null}
+                            dropData={canTradeOff(l) ? { type: 'off', leave: l } : null}
                             onClick={() => setEditingLeave(l)}
-                            title={`Move or cancel ${l.employee?.name}'s leave`}
+                            title={canTradeOff(l)
+                              ? `Move or cancel ${l.employee?.name}'s leave — or drag onto someone working this day to swap`
+                              : `Move or cancel ${l.employee?.name}'s leave`}
                           >
                             {l.employee?.name}{!l.approvedBy ? ' ✓' : ''}
-                          </button>
+                          </RosterName>
                         ) : (
                           <span key={l.id} className="text-2xs" style={{ opacity: 0.85 }}>
                             {l.employee?.name}{!l.approvedBy ? ' ✓' : ''}
@@ -1312,6 +1708,79 @@ export default function ShiftsPage() {
         </div>
       </Modal>
 
+      {/* ---- Trade a weekly off for a shift (drag and drop) ---- */}
+      <Modal isOpen={!!offTrade} onClose={() => setOffTrade(null)} title="Swap a day off">
+        {offTrade && (() => {
+          const { shift, leave, week } = offTrade;
+          const comesIn = leave.employee?.name;
+          const goesOff = shift.employee?.name;
+          const day = format(new Date(shift.date), 'EEEE d MMM');
+          const what = (s) => `${s.section || 'shift'} ${s.startTime}–${s.endTime}`;
+          return (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm">
+                <strong>{comesIn}</strong> is off on {day}. <strong>{goesOff}</strong> works {what(shift)}.
+                Either way {comesIn} works it, {goesOff} is off, and {day}'s headcount stays the same.
+              </p>
+
+              <div className="card">
+                <div className="flex justify-between items-center gap-3 flex-wrap">
+                  <div>
+                    <div className="font-semibold text-strong">Swap {format(new Date(shift.date), 'EEE')} only</div>
+                    <p className="text-xs text-muted">
+                      {comesIn} gives up this day off and {goesOff} gets it — so this week {comesIn} has one day off
+                      fewer and {goesOff} one more.
+                    </p>
+                  </div>
+                  <button type="button" className="btn btn-ghost" onClick={() => tradeOff('day')} disabled={rosterBusy}>
+                    Swap this day
+                  </button>
+                </div>
+              </div>
+
+              <div className="card">
+                <div className="flex justify-between items-center gap-3 flex-wrap">
+                  <div>
+                    <div className="font-semibold text-strong">Swap their days off too</div>
+                    <p className="text-xs" style={week.why ? { color: 'var(--ink-crit)' } : undefined}>
+                      {week.why
+                        ? `Not possible: ${week.why}.`
+                        : `Also on ${format(week.date, 'EEEE d MMM')}: ${goesOff} works ${comesIn}'s ${what(week.shift)} `
+                          + `and ${comesIn} is off. Both keep one day off this week.`}
+                    </p>
+                  </div>
+                  <button type="button" className="btn btn-primary" onClick={() => tradeOff('week')}
+                    disabled={rosterBusy || !!week.why}>
+                    Swap both days
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </Modal>
+
+      {/* What the last drag did, with Undo while it can still be taken back. */}
+      {rosterNotice && (
+        <div className="roster-toast" role="status" key={rosterNotice.at}>
+          <span className="text-sm">{rosterNotice.message}</span>
+          {rosterNotice.undo && (
+            <button type="button" className="btn btn-ghost btn-sm" onClick={undoRosterChange} disabled={rosterBusy}>
+              <Undo2 size={14} />
+              <span>Undo</span>
+            </button>
+          )}
+          <button type="button" className="btn btn-ghost btn-icon btn-sm" aria-label="Dismiss"
+            onClick={() => setRosterNotice(null)}>
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
     </div>
+    <DragOverlay dropAnimation={null}>
+      {dragging ? <span className="badge roster-drag-chip">{dragging}</span> : null}
+    </DragOverlay>
+    </DndContext>
   );
 }

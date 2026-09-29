@@ -64,7 +64,7 @@ query parameter, so it cannot be widened by asking differently.
 | Add or correct an entry in the punch directory | ✅ | ✅ | ✅ | — | — | — | — |
 | Issue a new one-time password | ✅ | ✅ | ✅ | — | — | — | — |
 | See, reactivate, or free the code of a deactivated employee | ✅ | — | — | — | — | — | — |
-| Deactivate an employee | ✅ | ✅ | ✅ | — | — | — | — |
+| Deactivate an employee | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
 | See what a staff wipe would delete | ✅ | — | — | — | — | — | — |
 | Delete every staff account and their history | ✅ | — | — | — | — | — | — |
 
@@ -78,7 +78,7 @@ query parameter, so it cannot be widened by asking differently.
 
 > **See, reactivate, or free the code of a deactivated employee** — Deactivation hides a person everywhere and keeps their employee code, so without this nobody could bring them back or give their code to someone new. Super Admin only: undoing a lockout is a bigger step than applying one.
 
-> **Deactivate an employee** — Deactivation is a real lockout — the login handler refuses an inactive account. HR can deactivate anyone except management accounts (Super Admin, Admin, HR), matching the rule that HR cannot assign those roles.
+> **Deactivate an employee** — Deactivation is a real lockout — the login handler refuses an inactive account. A department head deactivates the same people they enrol, for when someone leaves: their own restaurant, their own department (Head Chef → Kitchen, Master of House → Service and Housekeeping), and the Staff role only — never another head or themselves. HR can deactivate anyone except management accounts (Super Admin, Admin, HR), matching the rule that HR cannot assign those roles. Only a Super Admin can bring anyone back.
 
 > **Delete every staff account and their history** — Irreversible, and behind a typed confirmation as well as this role.
 

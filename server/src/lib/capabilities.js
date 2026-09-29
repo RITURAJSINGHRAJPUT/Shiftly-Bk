@@ -94,10 +94,13 @@ export const CAPABILITIES = {
       'undoing a lockout is a bigger step than applying one.',
   },
   EMPLOYEE_DEACTIVATE: {
-    group: 'People', label: 'Deactivate an employee', minRole: 'HR',
+    group: 'People', label: 'Deactivate an employee', minRole: 'HEAD_CHEF',
     note: 'Deactivation is a real lockout — the login handler refuses an inactive account. ' +
-      'HR can deactivate anyone except management accounts (Super Admin, Admin, HR), matching ' +
-      'the rule that HR cannot assign those roles.',
+      'A department head deactivates the same people they enrol, for when someone leaves: their ' +
+      'own restaurant, their own department (Head Chef → Kitchen, Master of House → Service and ' +
+      'Housekeeping), and the Staff role only — never another head or themselves. HR can ' +
+      'deactivate anyone except management accounts (Super Admin, Admin, HR), matching the rule ' +
+      'that HR cannot assign those roles. Only a Super Admin can bring anyone back.',
   },
   STAFF_WIPE_PREVIEW: {
     group: 'People', label: 'See what a staff wipe would delete', minRole: 'SUPER_ADMIN',

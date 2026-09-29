@@ -97,17 +97,13 @@ export function scoreEmployee(employee, slot, existingShifts, allAttendance) {
   score += Math.round(hoursScore);
 
   // 4. AVAILABILITY (+15) — not on leave, not already assigned
-  const isOnLeave = employee.leaves?.some(l => {
-    const leaveStart = new Date(l.startDate);
-    const leaveEnd = new Date(l.endDate);
-    const shiftDate = new Date(slot.date);
-    return l.status === 'APPROVED' && shiftDate >= leaveStart && shiftDate <= leaveEnd;
-  });
+  const isOnLeave = employee.leaves?.some(l => leaveCoversDay(l, slot.date));
   if (isOnLeave) return -1000; // hard constraint
 
+  const slotDay = localDateKey(startOfLocalDay(slot.date));
   const isAlreadyAssigned = existingShifts.some(s => {
     return s.employeeId === employee.id &&
-      new Date(s.date).toDateString() === new Date(slot.date).toDateString() &&
+      localDateKey(new Date(s.date)) === slotDay &&
       hasTimeOverlap(s.startTime, s.endTime, slot.startTime, slot.endTime);
   });
   if (isAlreadyAssigned) return -1000; // hard constraint
@@ -290,10 +286,8 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
     // Seed from existing approved leaves
     for (const emp of employees) {
       for (const l of (emp.leaves || [])) {
-        if (l.status !== 'APPROVED') continue;
         for (const wd of weekDays) {
-          const d = startOfLocalDay(wd);
-          if (d >= new Date(l.startDate) && d <= new Date(l.endDate)) {
+          if (leaveCoversDay(l, wd)) {
             for (const d of coordinatedDepartments(emp)) deptDayTaken.add(`${d}:${wd}`);
             dayCount.set(wd, (dayCount.get(wd) || 0) + 1);
           }
@@ -302,15 +296,7 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
     }
 
     for (const emp of employees) {
-      const hasOff = emp.leaves?.some(l => {
-        if (l.status !== 'APPROVED') return false;
-        const ls = new Date(l.startDate);
-        const le = new Date(l.endDate);
-        return weekDays.some(wd => {
-          const d = startOfLocalDay(wd);
-          return d >= ls && d <= le;
-        });
-      });
+      const hasOff = emp.leaves?.some(l => weekDays.some(wd => leaveCoversDay(l, wd)));
       if (hasOff) continue;
 
       // Prefer days where no same-department colleague is off
@@ -388,10 +374,16 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
        * one. A station is a hard rule, not a preference: a Pizza cook is never
        * put on Pasta, even when the Pasta cook is off — the slot is left empty
        * and reported instead. That includes heads, who must list the station on
-       * their profile to be rostered on it. Templates without a section
-       * (Service, Housekeeping) are unaffected.
+       * their profile to be rostered on it.
+       *
+       * Stations are a kitchen concept only. Shift Master stores Service and
+       * Housekeeping patterns with their department's name as the section
+       * (that is its grid row key), and nobody lists "service" as a skill — so
+       * reading that as a station left every such slot unfilled.
        */
-      const station = template.section?.trim().toLowerCase();
+      const station = template.department === 'KITCHEN'
+        ? template.section?.trim().toLowerCase()
+        : null;
       const worksStation = (e) => !station || e.skills.includes(station);
 
       const deptEmployees = employees.filter(
@@ -523,45 +515,92 @@ function hasTimeOverlap(s1Start, s1End, s2Start, s2End) {
   return a2 < b1 || a1 < b2;
 }
 
+/**
+ * Whether an approved leave covers `day` (a Date or YYYY-MM-DD), compared as
+ * local calendar days.
+ *
+ * Instants cannot be compared directly: `new Date('2026-09-28')` is 05:30 IST,
+ * already past a leave ending at local midnight that day, so every one-day
+ * leave — each auto weekly off included — never blocked anyone. And leave rows
+ * are not stored consistently either: the manager routes write local midnight,
+ * processLeaveRequest() writes UTC midnight (05:30 IST).
+ */
+function leaveCoversDay(leave, day) {
+  if (leave.status !== 'APPROVED') return false;
+  const d = localDateKey(startOfLocalDay(day));
+  return localDateKey(new Date(leave.startDate)) <= d
+    && d <= localDateKey(new Date(leave.endDate));
+}
+
+/**
+ * Length of the unbroken run of working days that would include `currentDate`,
+ * counting both directions: kept shifts (manual, ODC, swapped) can sit later in
+ * the week than the day being filled.
+ *
+ * Walks the calendar rather than sorting date strings — toDateString() sorts by
+ * weekday name ("Fri" < "Mon" < "Sat"), so the old run never counted past one.
+ */
 function getConsecutiveDays(employeeId, shifts, currentDate) {
-  const empShifts = shifts.filter(s => s.employeeId === employeeId);
-  const dates = empShifts.map(s => new Date(s.date).toDateString());
-  dates.push(new Date(currentDate).toDateString());
-  const unique = [...new Set(dates)].sort();
+  const worked = new Set(
+    shifts.filter(s => s.employeeId === employeeId).map(s => localDateKey(new Date(s.date)))
+  );
+  const today = startOfLocalDay(currentDate);
   let consecutive = 1;
-  for (let i = unique.length - 1; i > 0; i--) {
-    const curr = new Date(unique[i]);
-    const prev = new Date(unique[i - 1]);
-    const diff = (curr - prev) / (1000 * 60 * 60 * 24);
-    if (diff === 1) consecutive++;
-    else break;
+  for (const step of [-1, 1]) {
+    const d = new Date(today);
+    for (;;) {
+      d.setDate(d.getDate() + step);
+      if (!worked.has(localDateKey(d))) break;
+      consecutive++;
+    }
   }
   return consecutive;
 }
 
+const MIN_REST_HOURS = 8;
+
+/**
+ * A shift's real start and end instants. Minutes count, and an overnight shift
+ * (end at or before start) ends the next morning.
+ */
+function shiftInterval(date, startTime, endTime) {
+  const toMin = (t) => {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + (m || 0);
+  };
+  const start = startOfLocalDay(date);
+  const end = new Date(start);
+  start.setMinutes(toMin(startTime));
+  end.setMinutes(toMin(endTime));
+  if (end <= start) end.setDate(end.getDate() + 1);
+  return { start, end };
+}
+
+/**
+ * At least MIN_REST_HOURS between this slot and the person's shifts on other
+ * days.
+ *
+ * Measured on real instants. The old version read the slot's date with
+ * `new Date(str)` — 05:30 IST — so the previous day's shift looked more than a
+ * day away and was skipped, and it also ignored minutes and treated an
+ * overnight shift's 02:00 end as the same day's.
+ */
 function checkRestPeriod(employeeId, shifts, slot) {
-  const empShifts = shifts.filter(s => s.employeeId === employeeId);
-  const slotDate = new Date(slot.date);
+  const slotDay = localDateKey(startOfLocalDay(slot.date));
+  const next = shiftInterval(slot.date, slot.startTime, slot.endTime);
+  const minGap = MIN_REST_HOURS * 60 * 60 * 1000;
 
-  for (const s of empShifts) {
-    const sDate = new Date(s.date);
-    const dayDiff = Math.abs((slotDate - sDate) / (1000 * 60 * 60 * 24));
-    if (dayDiff > 1) continue;
+  for (const s of shifts) {
+    if (s.employeeId !== employeeId) continue;
+    // Two shifts on one day are a split shift, not a turnaround. Whether they
+    // overlap is scoreEmployee()'s isAlreadyAssigned check.
+    if (localDateKey(new Date(s.date)) === slotDay) continue;
 
-    // Check if rest period is adequate
-    const [seh] = s.endTime.split(':').map(Number);
-    const [ssh] = slot.startTime.split(':').map(Number);
-
-    if (sDate.toDateString() === slotDate.toDateString()) continue;
-
-    let gap;
-    if (sDate < slotDate) {
-      gap = (24 - seh) + ssh;
-    } else {
-      const [slotEnd] = slot.endTime.split(':').map(Number);
-      gap = (24 - slotEnd) + parseInt(s.startTime);
-    }
-    if (gap < 8) return false;
+    const other = shiftInterval(s.date, s.startTime, s.endTime);
+    const gap = other.end <= next.start ? next.start - other.end
+      : next.end <= other.start ? other.start - next.end
+      : -1; // overlapping across midnight
+    if (gap < minGap) return false;
   }
   return true;
 }

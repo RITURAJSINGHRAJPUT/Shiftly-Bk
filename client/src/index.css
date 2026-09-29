@@ -1778,6 +1778,148 @@ tbody tr:last-child td {
 .calendar-shift[data-section='pass'] { border-left-color: var(--series-7); }
 .calendar-shift[data-section='service'] { border-left-color: var(--series-8, #8b5cf6); }
 .calendar-shift[data-section='housekeeping'] { border-left-color: var(--series-9, #14b8a6); }
+
+/* ---- Drag and drop on Shift Planning ---- */
+
+/* A long press picks a name up on touch, so the browser's own long-press —
+   text selection, the iOS callout — must not claim it first. `manipulation`
+   rather than `none`, so a plain swipe across a name still scrolls the page. */
+.is-draggable {
+  cursor: grab;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.is-dragging { opacity: 0.35; }
+
+/* primary-500 at low alpha, not primary-50: the tint has to read on the dark
+   theme's surfaces too, and primary-50 is not redefined there. */
+.is-drop-target {
+  outline: 2px dashed var(--primary-400);
+  outline-offset: 2px;
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.roster-drag-chip {
+  cursor: grabbing;
+  background: var(--surface-raised);
+  color: var(--ink-strong);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Above the phone's bottom bar (z 100), below dialogs (z 200). */
+.roster-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--space-5) + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 160;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: calc(100vw - 32px);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  background: var(--surface-raised);
+  color: var(--ink-strong);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-lg);
+}
+
+@media (max-width: 768px) {
+  .roster-toast {
+    bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + var(--space-3));
+  }
+}
+
+/* ---- Shift Planning: the week by station ---- */
+
+/* Eight columns do not fit a phone, so the grid scrolls sideways inside its
+   card with the row labels pinned — @dnd-kit auto-scrolls this box while a
+   name is dragged near its edge. */
+.station-grid-wrap {
+  overflow-x: auto;
+  margin: 0 calc(var(--space-2) * -1);
+}
+
+.station-grid {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--text-xs);
+}
+
+.station-grid th,
+.station-grid td {
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--line-subtle);
+  text-align: left;
+  vertical-align: top;
+}
+
+.station-grid thead th {
+  font-weight: 600;
+  color: var(--ink-strong);
+  border-bottom-color: var(--line-default);
+}
+
+.station-grid .sg-label {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 96px;
+  white-space: nowrap;
+  background: var(--surface-card);
+}
+
+.station-grid .sg-corner { z-index: 2; color: var(--ink-muted); }
+
+.station-grid .sg-today { color: var(--primary-500); }
+
+.sg-day {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
+.sg-total { font-size: var(--text-2xs); font-weight: 500; color: var(--ink-muted); }
+
+.station-grid .sg-station-row th {
+  padding-top: var(--space-3);
+  font-weight: 600;
+  color: var(--ink-strong);
+  border-bottom-color: var(--line-default);
+}
+
+.station-grid .sg-station-row td { border-bottom-color: var(--line-default); }
+
+.station-grid .sg-time { font-weight: 400; font-size: var(--text-2xs); color: var(--ink-muted); }
+
+.sg-cell { min-width: 104px; }
+
+/* Nothing planned and nobody on it — still a drop target, just quiet. */
+.sg-idle { background: var(--surface-sunken); }
+
+.sg-names { display: flex; flex-wrap: wrap; gap: 2px var(--space-2); }
+
+.sg-dash { color: var(--ink-faint); }
+
+.sg-count,
+.sg-total { display: block; }
+
+.sg-count {
+  margin-top: 2px;
+  font-size: var(--text-2xs);
+  color: var(--ink-faint);
+}
+
+.sg-count.is-short,
+.sg-total.is-short { color: var(--ink-crit); font-weight: 600; }
+
+.sg-off { background: var(--surface-sunken); }
 .calendar-shift[data-section='kitchen'] { border-left-color: var(--line-strong); }
 .calendar-shift[data-section='unassigned'] { border-left-color: var(--line-strong); }
 /* Outdoor catering: dashed, so it reads as away from the restaurant rather than another station. */

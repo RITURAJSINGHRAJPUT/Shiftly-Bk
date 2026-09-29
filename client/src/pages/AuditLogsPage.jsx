@@ -34,6 +34,7 @@ const ACTION_COLORS = {
   BRAND_CREATE: 'good',
   BRAND_EDIT: 'info',
   PATTERN_CREATE: 'good',
+  PATTERN_GRID: 'info',
   PATTERN_CLEAR: 'warn',
 };
 
@@ -45,7 +46,7 @@ const ACTION_OPTIONS = [
   'ATTENDANCE_IMPORT', 'OVERTIME_APPROVE', 'OVERTIME_REJECT', 'OVERTIME_RECOMPUTED',
   'OUTLET_CREATE', 'OUTLET_EDIT',
   'BRAND_CREATE', 'BRAND_EDIT',
-  'PATTERN_CREATE', 'PATTERN_CLEAR',
+  'PATTERN_CREATE', 'PATTERN_GRID', 'PATTERN_CLEAR',
 ];
 
 const ENTITY_OPTIONS = ['Employee', 'Shift', 'Leave', 'Attendance', 'Outlet', 'Brand', 'ShiftTemplate', 'Auth'];

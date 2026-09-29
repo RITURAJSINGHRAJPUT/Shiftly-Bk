@@ -198,7 +198,11 @@ async function findBestReplacement(prisma, shift, excludeEmployeeId) {
     where: { id: excludeEmployeeId },
     select: { department: true },
   });
-  const station = shift.section?.trim().toLowerCase();
+  // Kitchen only, as in the allocator: a Service or Housekeeping shift carries
+  // its department's name as the section, which is no one's skill.
+  const station = absent?.department === 'KITCHEN'
+    ? shift.section?.trim().toLowerCase()
+    : null;
 
   const employees = await prisma.employee.findMany({
     where: {

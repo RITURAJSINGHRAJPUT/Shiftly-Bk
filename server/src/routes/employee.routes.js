@@ -118,7 +118,7 @@ function assignmentDenied(req, { outletId, role, department }) {
     // admin — the right refusal with a misleading reason, and that string is
     // what the client shows the user.
     if (role !== 'STAFF') {
-      return 'You can only add staff members';
+      return 'You can only manage staff members';
     }
     if (!ownsDepartment(req.user.role, department)) {
       return 'You can only manage employees in your own department';
@@ -764,7 +764,11 @@ router.post('/:id/reset-password', authenticateToken, can('EMPLOYEE_RESET_PW'), 
 // for weeks that already happened) and would need a foreign-key cascade
 // through TransferRequest as well. Bulk removal at that scope already exists,
 // gated at SUPER_ADMIN with a typed confirmation (see wipe-staff below); this
-// single-employee action stays reversible and ADMIN-level.
+// single-employee action stays reversible.
+//
+// Department heads hold it too, for staff who leave. assignmentDenied() below
+// is what keeps that narrow — the same limits as enrolment: own restaurant,
+// own department, STAFF only.
 router.delete('/:id', authenticateToken, can('EMPLOYEE_DEACTIVATE'), async (req, res) => {
   try {
     const id = req.params.id;

@@ -70,6 +70,13 @@ const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6];
 const MAX_SLOT = 10;
 
 /**
+ * The section a non-kitchen pattern is stored with: the `section` of its row in
+ * gridRows() (client/src/constants.js). It names the grid row, not a station —
+ * the allocator and leave cover read sections as stations for KITCHEN only.
+ */
+const DEPARTMENT_ROW_SECTION = { SERVICE: 'Service', HOUSEKEEPING: 'Housekeeping' };
+
+/**
  * Shared validation for create and update. Returns { data } or { error }.
  *
  * `currentDepartment` is the department the row already has, needed because PUT
@@ -100,15 +107,23 @@ function readTemplateBody(body, { partial = false, currentDepartment = null } = 
   // don't run stations. Judge against the *effective* department: whichever
   // this request sets, or the row's existing one on a partial update that
   // doesn't touch department.
+  //
+  // The one section they may carry is their own department's name, which is
+  // the key Shift Master's grid row uses for them. Refusing it meant the grid
+  // could not save a single Service or Housekeeping hour.
   const effectiveDepartment = data.department !== undefined ? data.department : currentDepartment;
   if (effectiveDepartment && effectiveDepartment !== 'KITCHEN') {
-    if (data.section) {
+    const rowSection = DEPARTMENT_ROW_SECTION[effectiveDepartment];
+    if (data.section && data.section.toLowerCase() === rowSection.toLowerCase()) {
+      data.section = rowSection;
+    } else if (data.section) {
       return { error: 'section only applies to KITCHEN patterns' };
+    } else if (data.department !== undefined) {
+      // Department just changed away from KITCHEN in this request — drop any
+      // station left over from when it was one, even though this request
+      // didn't explicitly touch section.
+      data.section = null;
     }
-    // Department just changed away from KITCHEN in this request — drop any
-    // station left over from when it was one, even though this request
-    // didn't explicitly touch section.
-    if (data.department !== undefined) data.section = null;
   }
 
   const time = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -357,6 +372,19 @@ router.put('/grid', authenticateToken, can('PATTERN_GRID'), async (req, res) => 
         where: { outletId: { in: ids }, isActive: false, ...gridScope },
       });
       return { replaced: removed.count, created: created.count, keptInactive: kept };
+    });
+
+    // Audited like /clear and /create. Without this the one write that rebuilds
+    // a whole week left no trace, so "the sheet is empty and nobody knows who
+    // saved what" had no answer.
+    logAudit({
+      action: 'PATTERN_GRID', entity: 'ShiftTemplate', actor: req.user,
+      details: {
+        outletIds: ids,
+        departments: owned?.length ? owned : 'all',
+        rows: rows.length,
+        ...result,
+      },
     });
 
     res.json({ ...result, outlets: ids.length });
