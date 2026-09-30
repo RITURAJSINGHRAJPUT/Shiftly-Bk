@@ -65,8 +65,8 @@ query parameter, so it cannot be widened by asking differently.
 | Issue a new one-time password | ✅ | ✅ | ✅ | — | — | — | — |
 | See, reactivate, or free the code of a deactivated employee | ✅ | — | — | — | — | — | — |
 | Deactivate an employee | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
-| See what a staff wipe would delete | ✅ | — | — | — | — | — | — |
-| Delete every staff account and their history | ✅ | — | — | — | — | — | — |
+| See what a bulk delete would remove | ✅ | — | — | — | — | — | — |
+| Delete staff, heads, outlet managers or every shift, across all restaurants | ✅ | — | — | — | — | — | — |
 
 > **Enrol a staff member at your own restaurant** — A department head knows who works for them and HR does not, so this floor is low on purpose — but it is narrow: their own restaurant, their own department (Head Chef → Kitchen, Master of House → Service and Housekeeping), and the Staff role only. The record is clock-in-only: identified by employee code, with no email and no sign-in.
 
@@ -80,7 +80,7 @@ query parameter, so it cannot be widened by asking differently.
 
 > **Deactivate an employee** — Deactivation is a real lockout — the login handler refuses an inactive account. A department head deactivates the same people they enrol, for when someone leaves: their own restaurant, their own department (Head Chef → Kitchen, Master of House → Service and Housekeeping), and the Staff role only — never another head or themselves. HR can deactivate anyone except management accounts (Super Admin, Admin, HR), matching the rule that HR cannot assign those roles. Only a Super Admin can bring anyone back.
 
-> **Delete every staff account and their history** — Irreversible, and behind a typed confirmation as well as this role.
+> **Delete staff, heads, outlet managers or every shift, across all restaurants** — Irreversible, and behind a typed confirmation as well as this role. Chosen by tick box; the accounts go with their shifts, attendance, leave and notifications. Super Admin, Admin and HR accounts are never deleted, and neither is your own.
 
 ### Shifts
 

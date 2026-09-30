@@ -103,11 +103,14 @@ export const CAPABILITIES = {
       'that HR cannot assign those roles. Only a Super Admin can bring anyone back.',
   },
   STAFF_WIPE_PREVIEW: {
-    group: 'People', label: 'See what a staff wipe would delete', minRole: 'SUPER_ADMIN',
+    group: 'People', label: 'See what a bulk delete would remove', minRole: 'SUPER_ADMIN',
   },
   STAFF_WIPE: {
-    group: 'People', label: 'Delete every staff account and their history', minRole: 'SUPER_ADMIN',
-    note: 'Irreversible, and behind a typed confirmation as well as this role.',
+    group: 'People', label: 'Delete staff, heads, outlet managers or every shift, across all restaurants',
+    minRole: 'SUPER_ADMIN',
+    note: 'Irreversible, and behind a typed confirmation as well as this role. Chosen by tick box; ' +
+      'the accounts go with their shifts, attendance, leave and notifications. Super Admin, Admin ' +
+      'and HR accounts are never deleted, and neither is your own.',
   },
 
   SHIFT_CREATE: {

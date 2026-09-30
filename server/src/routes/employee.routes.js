@@ -8,6 +8,7 @@ import { ownsDepartment, departmentsFor } from '../lib/departments.js';
 import { generateTemporaryPassword } from '../lib/passwords.js';
 import { logAudit } from '../lib/audit.js';
 import { requestBackfill } from '../lib/attendanceSync.js';
+import { AUTO_OFF_REASON } from '../engine/shiftAllocator.js';
 
 const router = Router();
 
@@ -804,51 +805,119 @@ router.delete('/:id', authenticateToken, can('EMPLOYEE_DEACTIVATE'), async (req,
 });
 
 /**
- * Bulk staff wipe — SUPER_ADMIN only.
+ * Bulk wipe — SUPER_ADMIN only. The caller ticks what goes: Staff, the two
+ * department heads, Outlet Managers, and/or every shift at every restaurant.
  *
- * Scope is deliberately STAFF-only. Deleting every employee would remove the
- * caller's own row while their JWT stayed valid, so every subsequent request
- * would 500 and nobody could sign back in without terminal access. Keeping the
- * 15 management accounts also preserves the rule that each outlet has a Master
- * of House and a Head Chef.
+ * Super Admin, Admin and HR are in no tick box, and the caller is always
+ * excluded. Deleting your own row would leave your token valid, so every
+ * later request would 500 and nobody could sign back in without terminal
+ * access — and the organisation-level accounts are what enrol everyone again.
  *
  * Guarded by STAFF_WIPE, whose floor is SUPER_ADMIN. That used to be an exact
  * `requireRole('SUPER_ADMIN')`, to say "only this role" — identical today, since
  * SUPER_ADMIN tops ROLE_HIERARCHY. Adding a role above it would widen this, so
  * that is the moment to reach for an exact match again.
  */
-const WIPE_CONFIRMATION = 'DELETE ALL STAFF';
+const WIPE_CONFIRMATION = 'DELETE SELECTED DATA';
 
-/** The employees a wipe targets. Used by both the preview and the wipe itself. */
-const wipeTarget = (req) => ({ role: 'STAFF', id: { not: req.user.id } });
+/** Who each tick box deletes. Super Admin, Admin and HR are in none of them. */
+const WIPE_ROLES = {
+  staff: ['STAFF'],
+  heads: ['HEAD_CHEF', 'MASTER_OF_HOUSE'],
+  managers: ['OUTLET_MANAGER'],
+};
+const WIPE_CHOICES = [...Object.keys(WIPE_ROLES), 'shifts'];
 
-// GET /api/employees/stats/wipe-preview
+/**
+ * The tick boxes, from a query string ("staff,shifts") or a JSON array.
+ *
+ * Missing means ['staff'] — all this ever deleted, so an older client, or
+ * anything scripted against it, keeps getting exactly that. Returns
+ * { include } or { error }.
+ */
+function readWipeSelection(raw) {
+  if (raw === undefined) return { include: ['staff'] };
+  const list = (Array.isArray(raw) ? raw : String(raw).split(','))
+    .map((s) => String(s).trim())
+    .filter(Boolean);
+  const unknown = list.filter((s) => !WIPE_CHOICES.includes(s));
+  if (unknown.length) {
+    return { error: `Unknown choice: ${unknown.join(', ')}. Pick from ${WIPE_CHOICES.join(', ')}.` };
+  }
+  if (list.length === 0) return { error: 'Pick at least one thing to delete' };
+  return { include: [...new Set(list)] };
+}
+
+/** The accounts a wipe deletes — never the caller. Shared by preview and wipe. */
+const wipeTarget = (req, include) => ({
+  role: { in: include.flatMap((c) => WIPE_ROLES[c] || []) },
+  id: { not: req.user.id },
+});
+
+/**
+ * What goes with the accounts, and with "every shift". Every shift also takes
+ * the generated weekly offs and the "shift assigned" notices with it — what
+ * outletResetOps() clears for one restaurant, here for all of them. Shift
+ * patterns are kept, so Auto-Allocate can rebuild the roster.
+ */
+const wipeScope = (employeeId, allShifts) => ({
+  notification: { OR: [{ employeeId }, ...(allShifts ? [{ type: 'SHIFT_ASSIGNED' }] : [])] },
+  attendance: { employeeId },
+  leave: { OR: [{ employeeId }, ...(allShifts ? [{ reason: AUTO_OFF_REASON }] : [])] },
+  shift: allShifts ? {} : { employeeId },
+});
+
+// GET /api/employees/stats/wipe-preview?include=staff,heads,managers,shifts
 //
 // Two path segments on purpose: a single-segment literal such as /wipe-preview
 // would be captured by `router.get('/:id')` above and looked up as an employee.
+//
+// `byChoice` counts every tick box, ticked or not, so each can show its size.
 router.get('/stats/wipe-preview', authenticateToken, can('STAFF_WIPE_PREVIEW'), async (req, res) => {
   try {
+    const { include, error } = readWipeSelection(req.query.include);
+    if (error) return res.status(400).json({ error });
+
     const targets = await prisma.employee.findMany({
-      where: wipeTarget(req),
+      where: wipeTarget(req, include),
       select: { id: true },
     });
-    const employeeId = { in: targets.map((t) => t.id) };
+    const scope = wipeScope({ in: targets.map((t) => t.id) }, include.includes('shifts'));
 
-    const [shifts, attendance, leaves, notifications, keeping] = await Promise.all([
-      prisma.shift.count({ where: { employeeId } }),
-      prisma.attendance.count({ where: { employeeId } }),
-      prisma.leave.count({ where: { employeeId } }),
-      prisma.notification.count({ where: { employeeId } }),
-      prisma.employee.count({ where: { role: { not: 'STAFF' } } }),
+    const [shifts, attendance, leaves, notifications, everyone, roleCounts, allShifts] = await Promise.all([
+      prisma.shift.count({ where: scope.shift }),
+      prisma.attendance.count({ where: scope.attendance }),
+      prisma.leave.count({ where: scope.leave }),
+      prisma.notification.count({ where: scope.notification }),
+      prisma.employee.count(),
+      prisma.employee.groupBy({ by: ['role'], where: { id: { not: req.user.id } }, _count: { _all: true } }),
+      prisma.shift.count(),
     ]);
+    const countRoles = (roles) => roleCounts
+      .filter((r) => roles.includes(r.role))
+      .reduce((sum, r) => sum + r._count._all, 0);
 
-    res.json({ employees: targets.length, shifts, attendance, leaves, notifications, keeping });
+    res.json({
+      include,
+      employees: targets.length,
+      shifts,
+      attendance,
+      leaves,
+      notifications,
+      keeping: everyone - targets.length,
+      byChoice: {
+        staff: countRoles(WIPE_ROLES.staff),
+        heads: countRoles(WIPE_ROLES.heads),
+        managers: countRoles(WIPE_ROLES.managers),
+        shifts: allShifts,
+      },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/employees/wipe-staff
+// POST /api/employees/wipe-staff  { confirm, include: ['staff', 'shifts', …] }
 //
 // POST, not DELETE, because the API client's delete() sends no body and this
 // requires a typed confirmation.
@@ -859,26 +928,33 @@ router.post('/wipe-staff', authenticateToken, can('STAFF_WIPE'), async (req, res
         error: `Confirmation phrase required. Send { "confirm": "${WIPE_CONFIRMATION}" }.`,
       });
     }
+    const { include, error } = readWipeSelection(req.body?.include);
+    if (error) return res.status(400).json({ error });
 
-    // One interactive transaction so the id lookup and all five deletes commit
+    // One interactive transaction so the id lookup and every delete commit
     // together. No relation in the schema declares onDelete, so every foreign key
     // to Employee defaults to Restrict — children must go first, and a failure
     // part-way through must roll back rather than leave a half-wiped database.
+    //
+    // Prisma closes an interactive transaction after 5 seconds by default. On
+    // the hosted database, thousands of rows over the network can take longer,
+    // and a wipe that always times out rolls back every time.
     const result = await prisma.$transaction(async (tx) => {
       const targets = await tx.employee.findMany({
-        where: wipeTarget(req),
+        where: wipeTarget(req, include),
         select: { id: true },
       });
       const employeeId = { in: targets.map((t) => t.id) };
+      const scope = wipeScope(employeeId, include.includes('shifts'));
 
-      const notifications = await tx.notification.deleteMany({ where: { employeeId } });
-      const attendance = await tx.attendance.deleteMany({ where: { employeeId } });
-      const leaves = await tx.leave.deleteMany({ where: { employeeId } });
-      const shifts = await tx.shift.deleteMany({ where: { employeeId } });
+      const notifications = await tx.notification.deleteMany({ where: scope.notification });
+      const attendance = await tx.attendance.deleteMany({ where: scope.attendance });
+      const leaves = await tx.leave.deleteMany({ where: scope.leave });
+      const shifts = await tx.shift.deleteMany({ where: scope.shift });
       // TransferRequest.employee is a required relation with no onDelete
-      // clause, so it defaults to Restrict — any staff member who ever
-      // submitted a transfer request would otherwise abort this whole
-      // transaction with a foreign-key violation.
+      // clause, so it defaults to Restrict — anyone who ever submitted a
+      // transfer request would otherwise abort this whole transaction with a
+      // foreign-key violation.
       await tx.transferRequest.deleteMany({ where: { employeeId } });
       const employees = await tx.employee.deleteMany({ where: { id: employeeId } });
 
@@ -889,15 +965,19 @@ router.post('/wipe-staff', authenticateToken, can('STAFF_WIPE'), async (req, res
         leaves: leaves.count,
         notifications: notifications.count,
       };
-    });
+    }, { timeout: 60000, maxWait: 10000 });
 
     console.log(
-      `[wipe-staff] ${req.user.id} deleted ${result.employees} staff, ${result.shifts} shifts`
+      `[wipe-staff] ${req.user.id} deleted [${include.join(', ')}]: ${result.employees} accounts, ${result.shifts} shifts`
     );
 
-    logAudit({ action: 'STAFF_WIPE', entity: 'Employee', actor: req.user, details: { count: result.employees, shifts: result.shifts } });
+    logAudit({ action: 'STAFF_WIPE', entity: 'Employee', actor: req.user, details: { include, ...result } });
 
-    res.json({ message: `Deleted ${result.employees} staff accounts`, ...result });
+    res.json({
+      message: `Deleted ${result.employees} accounts and ${result.shifts} shifts`,
+      include,
+      ...result,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
