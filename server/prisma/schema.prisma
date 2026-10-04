@@ -167,6 +167,11 @@ model Employee {
   outletId      String?
   outlet        Outlet?        @relation(fields: [outletId], references: [id])
   skills        String[]       @default([])
+  /// The weekly day off a department head chose for this person, as a JS
+  /// getDay() number: 1 = Monday … 4 = Thursday, the only days the allocator
+  /// gives weekly offs. Null = no preference, and the allocator picks. Always
+  /// honoured when set — see the weekly-off step in engine/shiftAllocator.js.
+  preferredOffDay Int?
   isActive      Boolean        @default(true)
   joinDate      DateTime       @default(now())
   createdAt     DateTime       @default(now())

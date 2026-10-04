@@ -21,6 +21,18 @@ const OUTLET_ROLES = [
 ];
 const MANAGEMENT_ROLES = [['SUPER_ADMIN', 'Super Admin'], ['ADMIN', 'Admin'], ['HR', 'HR']];
 
+/**
+ * The days a preferred day off may be, as getDay() numbers: the allocator only
+ * gives weekly offs Monday to Thursday. Mirrors PREFERRED_OFF_DAYS on the
+ * server, which refuses anything else.
+ */
+const PREFERRED_OFF_DAYS = [[1, 'Monday', 'Mon'], [2, 'Tuesday', 'Tue'], [3, 'Wednesday', 'Wed'], [4, 'Thursday', 'Thu']];
+
+/** The roles the allocator rosters — the only ones with a weekly off to prefer. */
+const DAY_OFF_ROLES = ['STAFF', 'HEAD_CHEF', 'MASTER_OF_HOUSE'];
+
+const offDayShort = (day) => PREFERRED_OFF_DAYS.find(([value]) => value === day)?.[2];
+
 export default function EmployeesPage() {
   // Only for the Add/Edit modal's Outlet field — this page has no outlet filter.
   // The list is scoped server-side from the caller's role.
@@ -85,7 +97,8 @@ export default function EmployeesPage() {
   // what saving it will do.
   const [grantingLogin, setGrantingLogin] = useState(false);
   const [formData, setFormData] = useState({
-    name: '', email: '', phone: '', role: 'STAFF', department: 'KITCHEN', outletId: '', skills: [], employeeCode: ''
+    name: '', email: '', phone: '', role: 'STAFF', department: 'KITCHEN', outletId: '', skills: [], employeeCode: '',
+    preferredOffDay: '',
   });
   /**
    * The one-time password just issued, shown once and then gone.
@@ -235,7 +248,7 @@ export default function EmployeesPage() {
     setEditingEmployee(null);
     setFormData(
       addMode === 'management'
-        ? { name: '', email: '', phone: '', role: 'HR', department: '', outletId: '', skills: [], employeeCode: '' }
+        ? { name: '', email: '', phone: '', role: 'HR', department: '', outletId: '', skills: [], employeeCode: '', preferredOffDay: '' }
         // The card already chose the outlet, so the form does not ask again.
         // The department a department head actually owns, not a hard-coded
         // KITCHEN. A Master of House is offered Service and Housekeeping only,
@@ -245,7 +258,7 @@ export default function EmployeesPage() {
         : {
           name: '', email: '', phone: '', role: 'STAFF',
           department: ownedDepartments[0] || 'KITCHEN',
-          outletId: selectedGroupId, skills: [], employeeCode: '',
+          outletId: selectedGroupId, skills: [], employeeCode: '', preferredOffDay: '',
         }
     );
     setIssued(null);
@@ -278,7 +291,9 @@ export default function EmployeesPage() {
       department: normaliseDepartment(emp.role, emp.department),
       outletId: emp.outletId || '',
       skills: emp.skills || [],
-      employeeCode: emp.employeeCode || ''
+      employeeCode: emp.employeeCode || '',
+      // The select needs a string; '' is "No preference".
+      preferredOffDay: emp.preferredOffDay == null ? '' : String(emp.preferredOffDay),
     });
     setIsModalOpen(true);
   };
@@ -704,6 +719,7 @@ export default function EmployeesPage() {
                             <div className="font-semibold" style={{ color: 'var(--ink-strong)' }}>{emp.name}</div>
                             <div className="text-xs text-muted">
                               {emp.email || (emp.employeeCode ? 'Clock-in only' : '—')}
+                              {offDayShort(emp.preferredOffDay) && ` · Off ${offDayShort(emp.preferredOffDay)}`}
                             </div>
                           </td>
                           <td>
@@ -1126,10 +1142,33 @@ export default function EmployeesPage() {
                 ))}
               </div>
               <p className="text-xs text-muted mt-1">
-                Auto-allocation prefers them for these stations. Leave all unticked if
-                they work anywhere.
+                Auto-allocation only puts them on the stations ticked here. With none
+                ticked, they are never given a station shift.
               </p>
             </fieldset>
+          )}
+
+          {/* Only the roles the allocator rosters have a weekly off to prefer. */}
+          {!managementForm && DAY_OFF_ROLES.includes(formData.role) && (
+            <div className="form-group">
+              <label className="form-label" htmlFor="preferred-off-day">Preferred day off</label>
+              <select
+                id="preferred-off-day"
+                className="form-select"
+                value={formData.preferredOffDay}
+                onChange={e => setFormData(prev => ({ ...prev, preferredOffDay: e.target.value }))}
+              >
+                <option value="">No preference</option>
+                {PREFERRED_OFF_DAYS.map(([value, label]) => (
+                  <option key={value} value={String(value)}>{label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-muted mt-1">
+                {formData.preferredOffDay
+                  ? `Auto-Allocate Week will always give ${formData.name?.trim() || 'them'} this day off.`
+                  : 'Auto-Allocate Week picks a day for them, Monday to Thursday.'}
+              </p>
+            </div>
           )}
 
           {!editingEmployee && (

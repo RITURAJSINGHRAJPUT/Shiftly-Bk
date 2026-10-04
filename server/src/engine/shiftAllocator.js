@@ -243,8 +243,9 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
 
   // --- Weekly off: ensure every employee has 1 approved leave Mon–Thu ------
   // Group dates by ISO week. For each employee without a Mon–Thu leave that
-  // week, pick the day where their department has the most other available
-  // staff and create an auto-approved leave.
+  // week, give them their preferred day off if a head set one, otherwise pick
+  // the day where their department has the most other available staff, and
+  // create an auto-approved leave.
   const dateRange = getDateRange(startDate, endDate);
   const weekBuckets = new Map();
   for (const d of dateRange) {
@@ -295,26 +296,47 @@ export async function autoAllocateShifts(prisma, outletId, startDate, endDate, {
       }
     }
 
-    for (const emp of employees) {
+    /**
+     * The day a department head chose for this person, if it falls in this
+     * week and they are not out at ODC on it — a day off spent at a catering
+     * job is no day off, so then the usual pick below applies instead.
+     *
+     * Always honoured otherwise, even when colleagues in the same department
+     * chose the same day: the head decided it, and a short day shows up in
+     * the shortfalls like any other.
+     */
+    const preferredDay = (emp) => (emp.preferredOffDay == null ? null : weekDays.find(
+      (wd) => startOfLocalDay(wd).getDay() === emp.preferredOffDay && !atOdc(emp.id, wd)
+    ) ?? null);
+
+    // Preferences first, so everyone without one is spread around them.
+    const byPreference = [...employees].sort(
+      (a, b) => Number(preferredDay(b) !== null) - Number(preferredDay(a) !== null)
+    );
+
+    for (const emp of byPreference) {
       const hasOff = emp.leaves?.some(l => weekDays.some(wd => leaveCoversDay(l, wd)));
       if (hasOff) continue;
 
-      // Prefer days where no same-department colleague is off
-      // A day off spent at ODC is no day off, so those days are skipped when
-      // there is any other choice.
-      const ownDays = weekDays.filter(wd => !atOdc(emp.id, wd));
-      const pool = ownDays.length > 0 ? ownDays : weekDays;
-      const freeDays = pool.filter(
-        wd => !coordinatedDepartments(emp).some(d => deptDayTaken.has(`${d}:${wd}`))
-      );
-      const candidates = freeDays.length > 0 ? freeDays : pool;
+      let bestDay = preferredDay(emp);
+      if (bestDay === null) {
+        // Prefer days where no same-department colleague is off
+        // A day off spent at ODC is no day off, so those days are skipped when
+        // there is any other choice.
+        const ownDays = weekDays.filter(wd => !atOdc(emp.id, wd));
+        const pool = ownDays.length > 0 ? ownDays : weekDays;
+        const freeDays = pool.filter(
+          wd => !coordinatedDepartments(emp).some(d => deptDayTaken.has(`${d}:${wd}`))
+        );
+        const candidates = freeDays.length > 0 ? freeDays : pool;
 
-      // Pick the day with the fewest total leaves — evens out the spread
-      let bestDay = candidates[0];
-      let lowest = Infinity;
-      for (const wd of candidates) {
-        const c = dayCount.get(wd) || 0;
-        if (c < lowest) { lowest = c; bestDay = wd; }
+        // Pick the day with the fewest total leaves — evens out the spread
+        bestDay = candidates[0];
+        let lowest = Infinity;
+        for (const wd of candidates) {
+          const c = dayCount.get(wd) || 0;
+          if (c < lowest) { lowest = c; bestDay = wd; }
+        }
       }
 
       for (const d of coordinatedDepartments(emp)) deptDayTaken.add(`${d}:${bestDay}`);

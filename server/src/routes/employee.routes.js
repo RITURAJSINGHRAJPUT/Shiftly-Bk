@@ -344,6 +344,29 @@ function readStations(skills, department) {
   )];
 }
 
+/** The days a preferred day off may name: the allocator's Monday–Thursday, as getDay() numbers. */
+const PREFERRED_OFF_DAYS = [1, 2, 3, 4];
+
+/** The roles the allocator rosters — the only ones with a weekly off to prefer. */
+const DAY_OFF_ROLES = ['STAFF', 'HEAD_CHEF', 'MASTER_OF_HOUSE'];
+
+/**
+ * A preferred weekly day off as it is stored. Returns { value } or { error }.
+ *
+ * '' or null means no preference, which is what the form's first option sends.
+ * Friday to Sunday are refused rather than stored, because the allocator never
+ * gives a weekly off on them and a stored Saturday would silently do nothing.
+ */
+function readPreferredOffDay(raw, role) {
+  if (!DAY_OFF_ROLES.includes(role)) return { value: null };
+  if (raw === undefined || raw === null || raw === '') return { value: null };
+  const day = Number(raw);
+  if (!PREFERRED_OFF_DAYS.includes(day)) {
+    return { error: 'Preferred day off must be Monday to Thursday' };
+  }
+  return { value: day };
+}
+
 /**
  * PUT /api/employees/codes — assign employee codes in bulk.
  *
@@ -517,6 +540,9 @@ router.post('/', authenticateToken, can('EMPLOYEE_ENROL'), async (req, res) => {
     const denied = assignmentDenied(req, { outletId: assignment.outletId, role: effectiveRole, department: assignment.department });
     if (denied) return res.status(403).json({ error: denied });
 
+    const preferred = readPreferredOffDay(req.body.preferredOffDay, effectiveRole);
+    if (preferred.error) return res.status(400).json({ error: preferred.error });
+
     // Generated here, never supplied. The old `password || 'shiftly123'` meant
     // every account in the system shared one password that nobody could change.
     const temporaryPassword = generateTemporaryPassword();
@@ -529,6 +555,7 @@ router.post('/', authenticateToken, can('EMPLOYEE_ENROL'), async (req, res) => {
         role: effectiveRole,
         employeeCode: cleanCode,
         ...assignment,
+        preferredOffDay: preferred.value,
         password: await bcrypt.hash(temporaryPassword, 10),
         mustChangePassword: true,
       },
@@ -658,6 +685,16 @@ router.put('/:id', authenticateToken, can('EMPLOYEE_ENROL'), async (req, res) =>
     }
 
     Object.assign(data, assignment);
+
+    // Partial like the rest of this handler: untouched when not sent — except
+    // that a move to a role that is never rostered clears it, since nothing
+    // would ever read it again. A department head may set it: it is not in
+    // the list of things they cannot change above.
+    if (req.body.preferredOffDay !== undefined || !DAY_OFF_ROLES.includes(effectiveRole)) {
+      const preferred = readPreferredOffDay(req.body.preferredOffDay, effectiveRole);
+      if (preferred.error) return res.status(400).json({ error: preferred.error });
+      data.preferredOffDay = preferred.value;
+    }
 
     /**
      * Giving a clock-in-only record an email is the moment it becomes an
