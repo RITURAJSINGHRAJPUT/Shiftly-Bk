@@ -33,6 +33,11 @@ const DAY_OFF_ROLES = ['STAFF', 'HEAD_CHEF', 'MASTER_OF_HOUSE'];
 
 const offDayShort = (day) => PREFERRED_OFF_DAYS.find(([value]) => value === day)?.[2];
 
+/** Names compared the way a person types them — the server's rule for the delete confirmation. */
+const sameName = (a, b) =>
+  String(a ?? '').trim().replace(/\s+/g, ' ').toLowerCase()
+  === String(b ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+
 export default function EmployeesPage() {
   // Only for the Add/Edit modal's Outlet field — this page has no outlet filter.
   // The list is scoped server-side from the caller's role.
@@ -225,6 +230,33 @@ export default function EmployeesPage() {
     } catch (err) {
       alert(err.message || 'Could not reactivate');
       return false;
+    }
+  };
+
+  // { emp, preview, typed, error } while the permanent-delete box is open.
+  const [purging, setPurging] = useState(null);
+  const [purgeBusy, setPurgeBusy] = useState(false);
+
+  const openPurge = async (emp) => {
+    setPurging({ emp, preview: null, typed: '', error: '' });
+    try {
+      const preview = await api.get(`/employees/${emp.id}/purge-preview`);
+      setPurging((p) => (p?.emp.id === emp.id ? { ...p, preview } : p));
+    } catch (err) {
+      setPurging((p) => (p?.emp.id === emp.id ? { ...p, error: err.message || 'Could not load what would be deleted' } : p));
+    }
+  };
+
+  const confirmPurge = async () => {
+    setPurgeBusy(true);
+    try {
+      await api.post(`/employees/${purging.emp.id}/purge`, { confirm: purging.typed });
+      setPurging(null);
+      await loadData();
+    } catch (err) {
+      setPurging((p) => ({ ...p, error: err.message || 'Could not delete' }));
+    } finally {
+      setPurgeBusy(false);
     }
   };
 
@@ -594,6 +626,11 @@ export default function EmployeesPage() {
                     <button className="btn btn-accent btn-sm" onClick={() => reactivate(emp)}>
                       <UserCheck size={14} />
                       <span>Reactivate</span>
+                    </button>
+                    <button className="btn btn-ghost btn-sm icon-crit" onClick={() => openPurge(emp)}
+                      title="Delete this person and their history permanently">
+                      <Trash2 size={14} />
+                      <span>Delete</span>
                     </button>
                   </div>
                 </div>
@@ -1250,6 +1287,69 @@ export default function EmployeesPage() {
             {savingCodes ? 'Saving…' : 'Save codes'}
           </button>
         </div>
+      </Modal>
+
+      {/* Permanent delete of a deactivated person. The counts are theirs,
+          fetched when the box opens; the name has to be typed, the same
+          friction as the staff wipe's phrase. */}
+      <Modal
+        isOpen={!!purging}
+        onClose={() => !purgeBusy && setPurging(null)}
+        title={purging ? `Delete ${purging.emp.name} permanently?` : ''}
+      >
+        {purging && (
+          <div className="flex flex-col gap-4">
+            <div className="text-sm text-secondary">
+              <p className="mb-2">This removes, for good:</p>
+              <ul style={{ margin: 0, paddingLeft: 'var(--space-5)' }}>
+                <li>the employee record{purging.emp.employeeCode ? ` (code ${purging.emp.employeeCode})` : ''}</li>
+                <li>
+                  {purging.preview
+                    ? `${purging.preview.shifts} shifts · ${purging.preview.attendance} attendance days · `
+                      + `${purging.preview.leaves} leave · ${purging.preview.notifications} notifications · `
+                      + `${purging.preview.transfers} transfer requests`
+                    : 'their shifts, attendance, leave, notifications and transfer requests'}
+                </li>
+              </ul>
+              <p className="mt-2">
+                It cannot be undone. Their punches in the punch machine log are not touched.
+              </p>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="purge-confirm">
+                Type <strong>{purging.emp.name}</strong> to confirm
+              </label>
+              <input
+                id="purge-confirm"
+                className="form-input"
+                value={purging.typed}
+                onChange={(e) => setPurging((p) => ({ ...p, typed: e.target.value }))}
+                placeholder={purging.emp.name}
+                autoComplete="off"
+              />
+            </div>
+
+            {purging.error && (
+              <p className="text-sm" style={{ color: 'var(--ink-crit)' }}>{purging.error}</p>
+            )}
+
+            <div className="flex gap-2" style={{ marginLeft: 'auto' }}>
+              <button type="button" className="btn btn-ghost" onClick={() => setPurging(null)} disabled={purgeBusy}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={confirmPurge}
+                disabled={purgeBusy || !sameName(purging.typed, purging.emp.name)}
+              >
+                <Trash2 size={14} />
+                <span>{purgeBusy ? 'Deleting…' : 'Delete permanently'}</span>
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

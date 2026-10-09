@@ -93,6 +93,14 @@ export const CAPABILITIES = {
       'nobody could bring them back or give their code to someone new. Super Admin only: ' +
       'undoing a lockout is a bigger step than applying one.',
   },
+  EMPLOYEE_PURGE: {
+    group: 'People', label: 'Permanently delete a deactivated employee and their history',
+    roles: ['SUPER_ADMIN'],
+    note: 'Only someone already deactivated, never yourself, and only after typing their name. Their ' +
+      'shifts, attendance, leave, notifications and transfer requests go with them, and none of it ' +
+      'can be brought back — reactivating is the undo for a deactivation, there is none for this. ' +
+      'The punch log is not touched.',
+  },
   EMPLOYEE_DEACTIVATE: {
     group: 'People', label: 'Deactivate an employee', minRole: 'HEAD_CHEF',
     note: 'Deactivation is a real lockout — the login handler refuses an inactive account. ' +

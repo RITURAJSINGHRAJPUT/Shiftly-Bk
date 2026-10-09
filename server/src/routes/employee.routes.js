@@ -302,6 +302,112 @@ router.post('/:id/release-code', authenticateToken, can('EMPLOYEE_REACTIVATE'), 
   }
 });
 
+/**
+ * Who a permanent delete may take, or why not. Shared by the preview and the
+ * delete, so the box that shows the counts and the button that acts on them
+ * can never disagree.
+ *
+ * Deactivated first, always: deactivation is the reversible step, and a
+ * record that never went through it was never meant to go. Never the caller —
+ * their token would outlive their row, and every request after would 500.
+ */
+async function purgeTarget(req) {
+  const target = await prisma.employee.findUnique({
+    where: { id: req.params.id },
+    select: { id: true, name: true, isActive: true, employeeCode: true, role: true },
+  });
+  if (!target) return { status: 404, error: 'Employee not found' };
+  if (target.id === req.user.id) return { status: 400, error: 'You cannot delete your own account' };
+  if (target.isActive) {
+    return { status: 400, error: `${target.name} is still active — deactivate them first` };
+  }
+  return { target };
+}
+
+/** Names compared the way a person types them: case and extra spaces ignored. */
+const sameName = (a, b) =>
+  String(a ?? '').trim().replace(/\s+/g, ' ').toLowerCase()
+  === String(b ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+
+// GET /api/employees/:id/purge-preview — what a permanent delete would remove.
+router.get('/:id/purge-preview', authenticateToken, can('EMPLOYEE_PURGE'), async (req, res) => {
+  try {
+    const { target, status, error } = await purgeTarget(req);
+    if (error) return res.status(status).json({ error });
+
+    const where = { employeeId: target.id };
+    const [shifts, attendance, leaves, notifications, transfers] = await Promise.all([
+      prisma.shift.count({ where }),
+      prisma.attendance.count({ where }),
+      prisma.leave.count({ where }),
+      prisma.notification.count({ where }),
+      prisma.transferRequest.count({ where }),
+    ]);
+
+    res.json({
+      name: target.name, employeeCode: target.employeeCode,
+      shifts, attendance, leaves, notifications, transfers,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/employees/:id/purge  { confirm: "<their name>" }
+ *
+ * Deletes one deactivated person and everything that points at them, for good.
+ * The single-person counterpart of /wipe-staff, in the same child-first order
+ * and the same one transaction, for the same reason: no relation declares
+ * onDelete, so every foreign key to Employee is Restrict, and a delete that
+ * fails half-way must roll back rather than leave orphans.
+ *
+ * The punch log is a separate system and is not touched; a punch from this
+ * code afterwards lands in the punch directory like any unenrolled one.
+ */
+router.post('/:id/purge', authenticateToken, can('EMPLOYEE_PURGE'), async (req, res) => {
+  try {
+    const { target, status, error } = await purgeTarget(req);
+    if (error) return res.status(status).json({ error });
+    if (!sameName(req.body?.confirm, target.name)) {
+      return res.status(400).json({ error: `Type "${target.name}" exactly to confirm` });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const where = { employeeId: target.id };
+      const notifications = await tx.notification.deleteMany({ where });
+      const attendance = await tx.attendance.deleteMany({ where });
+      const leaves = await tx.leave.deleteMany({ where });
+      const shifts = await tx.shift.deleteMany({ where });
+      const transfers = await tx.transferRequest.deleteMany({ where });
+      // Someone else's emergency leave they covered keeps its status; it only
+      // stops naming a person who no longer exists. A plain column, not a
+      // relation, so nothing would block — it would just point at nobody.
+      await tx.leave.updateMany({ where: { coveredById: target.id }, data: { coveredById: null } });
+      await tx.employee.delete({ where: { id: target.id } });
+
+      return {
+        shifts: shifts.count,
+        attendance: attendance.count,
+        leaves: leaves.count,
+        notifications: notifications.count,
+        transfers: transfers.count,
+      };
+    }, { timeout: 60000, maxWait: 10000 });
+
+    // EMPLOYEE_DELETE: already listed (and shown in red) on the audit page,
+    // and written by nothing else since deactivation took over the old DELETE.
+    logAudit({
+      action: 'EMPLOYEE_DELETE', entity: 'Employee', entityId: target.id, actor: req.user,
+      details: { employeeName: target.name, employeeCode: target.employeeCode, role: target.role, ...result },
+    });
+
+    res.json({ message: `Deleted ${target.name}`, ...result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/employees/:id
 router.get('/:id', authenticateToken, async (req, res) => {
   try {

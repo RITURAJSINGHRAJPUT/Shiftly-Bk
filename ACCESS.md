@@ -64,6 +64,7 @@ query parameter, so it cannot be widened by asking differently.
 | Add or correct an entry in the punch directory | ✅ | ✅ | ✅ | — | — | — | — |
 | Issue a new one-time password | ✅ | ✅ | ✅ | — | — | — | — |
 | See, reactivate, or free the code of a deactivated employee | ✅ | — | — | — | — | — | — |
+| Permanently delete a deactivated employee and their history | ✅ | — | — | — | — | — | — |
 | Deactivate an employee | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
 | See what a bulk delete would remove | ✅ | — | — | — | — | — | — |
 | Delete staff, heads, outlet managers or every shift, across all restaurants | ✅ | — | — | — | — | — | — |
@@ -77,6 +78,8 @@ query parameter, so it cannot be widened by asking differently.
 > **Issue a new one-time password** — The same floor as enrolment, because it is the same act from the other end: HR issues the first one-time password when they enrol someone, and a lost password is simply that again. Holding this above enrolment meant the role that creates accounts could not help the person whose password it had handed them. A department head still cannot — they enrol clock-in-only records, which have no sign-in to take over.
 
 > **See, reactivate, or free the code of a deactivated employee** — Deactivation hides a person everywhere and keeps their employee code, so without this nobody could bring them back or give their code to someone new. Super Admin only: undoing a lockout is a bigger step than applying one.
+
+> **Permanently delete a deactivated employee and their history** — Only someone already deactivated, never yourself, and only after typing their name. Their shifts, attendance, leave, notifications and transfer requests go with them, and none of it can be brought back — reactivating is the undo for a deactivation, there is none for this. The punch log is not touched.
 
 > **Deactivate an employee** — Deactivation is a real lockout — the login handler refuses an inactive account. A department head deactivates the same people they enrol, for when someone leaves: their own restaurant, their own department (Head Chef → Kitchen, Master of House → Service and Housekeeping), and the Staff role only — never another head or themselves. HR can deactivate anyone except management accounts (Super Admin, Admin, HR), matching the rule that HR cannot assign those roles. Only a Super Admin can bring anyone back.
 
